@@ -1,0 +1,3 @@
+model_registry:
+  root_path: s3://popiol-crypto-models/models
+names: data/names.csv

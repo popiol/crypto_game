@@ -1,22 +1,35 @@
 from src.config import Config
-from src.model_registry import ModelRegistry
-from src.evolution_handler import EvolutionHandler
-from src.model_serializer import ModelSerializer
 from src.agent import Agent
 import random
+import argparse
+import sys
+import time
 
 
 class RlRunner:
 
-    names_file_path = "data/names.csv"
+    def __init__(self, config: Config):
+        self.config = config
 
     def run(self):
-        model_registry = ModelRegistry(root_path="s3://popiol-crypto-models/models")
-        model_serializer = ModelSerializer()
-        config = Config(model_registry, model_serializer)
-        config.evolution_handler = EvolutionHandler(config)
-        with open(self.names_file_path) as f:
+        with open(self.config.names) as f:
             names = f.read().splitlines()
         random.shuffle(names)
-        agent = Agent(names[0], config)
+        agent = Agent(names[0], self.config)
         agent.process_quotes()
+
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config")
+    args, other = parser.parse_known_args(argv)
+    config = Config.from_yaml_file(args.config)
+    RlRunner(config).run()
+
+
+if __name__ == "__main__":
+    time1 = time.time()
+    main(sys.argv)
+    time2 = time.time()
+    print("Overall execution time:", time2 - time1)
+    
