@@ -13,10 +13,10 @@ class RlRunner:
     def run(self):
         model_registry = ModelRegistry(root_path="s3://popiol-crypto-models/models")
         model_serializer = ModelSerializer()
-        evolution_handler = EvolutionHandler(model_registry)
+        config = Config(model_registry, model_serializer)
+        config.evolution_handler = EvolutionHandler(config)
         with open(self.names_file_path) as f:
             names = f.read().splitlines()
         random.shuffle(names)
-        config = Config(model_registry, model_serializer, evolution_handler)
         agent = Agent(names[0], config)
         agent.process_quotes()

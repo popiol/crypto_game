@@ -1,11 +1,12 @@
-from src.model_registry import ModelRegistry
 import random
+from src.config import Config
 
 
 class EvolutionHandler:
 
-    def __init__(self, model_registry: ModelRegistry) -> None:
-        self.model_registry = model_registry
+    def __init__(self, config: Config) -> None:
+        self.model_registry = config.model_registry
+        self.model_serializer = config.model_serializer
 
     def create_model(self):
         method = random.randint(0, 2)
@@ -20,9 +21,10 @@ class EvolutionHandler:
         pass
 
     def get_random_model(self):
-        model_name, model_body = self.model_registry.get_random_model()
-        if model_body is None:
+        model_name, serialized_model = self.model_registry.get_random_model()
+        if model_name is None:
             return None, None
+        model = self.model_serializer.deserialize(serialized_model)
         return model_name, model
 
     def load_existing_model(self):

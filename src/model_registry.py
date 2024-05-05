@@ -27,7 +27,7 @@ class ModelRegistry:
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=self.prefix)
         keys = pages.search("Contents[].Key")
         if not keys:
-            return None
+            return None, None
         key = random.choice(keys)
         model_name = re.sub("^" + self.prefix + "/", "", key)
         return model_name, bucket.Object().get()["Body"]
