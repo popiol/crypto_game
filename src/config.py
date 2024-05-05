@@ -11,7 +11,9 @@ class Config:
     model_serializer: ModelSerializer = None
     evolution_handler: EvolutionHandler = None
     names: str
-
+    memory_length: int
+    n_companies_per_batch: int
+    
     @staticmethod
     def from_yaml_file(file_path: str):
         with open(file_path) as f:
