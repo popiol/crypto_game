@@ -9,7 +9,6 @@ class EvolutionHandler:
         self.model_registry = config.model_registry
         self.model_serializer = config.model_serializer
         self.memory_length = config.memory_length
-        self.n_companies_per_batch = config.n_companies_per_batch
         self.n_features = config.n_features
 
     def create_model(self, input_dim: int, output_dim: int) -> keras.Model:
@@ -22,13 +21,12 @@ class EvolutionHandler:
             return self.merge_existing_models(input_dim, output_dim)
 
     def create_new_model(self, input_dim: int, output_dim: int) -> keras.Model:
-        inputs = keras.layers.Input(shape=(self.memory_length, self.n_companies_per_batch, input_dim), name="input")
+        inputs = keras.layers.Input(shape=(self.memory_length, input_dim), name="input")
         l = inputs
         l = keras.layers.Flatten()(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(self.n_companies_per_batch * output_dim)(l)
-        l = keras.layers.Reshape((self.n_companies_per_batch, output_dim))(l)
+        l = keras.layers.Dense(output_dim)(l)
         outputs = l
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
