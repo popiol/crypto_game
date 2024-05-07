@@ -31,8 +31,7 @@ class Agent:
         score = auto()
         buy_price = auto()
         sell_price = auto()
-        volume = auto()
-
+        
     def __init__(self, agent_name: str, config: Config):
         self.agent_name = agent_name
         self.memory_length = config.memory_length
