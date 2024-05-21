@@ -41,8 +41,9 @@ The model structure is as follows:
 
 * Input: (n_assets, n_steps, n_features) 
 * Permute dimensions: (n_steps, n_features, n_assets)
-* Sparse layer (n_assets x n_assets): (n_steps, n_features, n_assets)
+* Dense layer: (n_steps, n_features, n_assets_hidden)
+* Dense layer: (n_steps, n_features, n_assets)
 * Permute dimensions: (n_assets, n_steps, n_features)
 * Reshape: (n_assets, n_steps * n_features)
-* Dense layer: (n_assets, n_internal)
+* Dense layer: (n_assets, n_hidden)
 * Output layer: (n_assets, n_outputs)
