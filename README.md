@@ -4,10 +4,12 @@ This is an implementation of a reinforcement learning method for a cryptocurrenc
 
 ## Basics
 
-The whole process starts with downloading the current quotes from a crypto exchange.
+The whole process starts with downloading hourly crypto exchange quotes from the last week.
 Those quotes are then passed to learning agents. The agents make decisions about
 buying and selling crypto assets based on an ML model. Each agent has its own model.
-The agents also train their models dynamically based on the recent results.
+The agents also train their models dynamically based on the recent results. 
+The training repeats with the current dataset for 24 hours, 
+after which a new dataset is downloaded and new models are created.
 
 ## Parallel processing and evolution
 
@@ -20,10 +22,6 @@ model_1 = input -> layer_1_1 -> layer_1_2 -> output
 model_2 = input -> layer_2_1 -> layer_2_2 -> output
 model_3 = input -> (layer_1_1, layer_2_1) -> concat(layer_1_2, layer_2_2) -> layer_3_3 -> output
 ```
-
-## Reinforcement learning
-
-The models are trained with the Soft Actor Critic method. The current value of the portfolio is used as the reward.
 
 ## Model structure
 
@@ -39,7 +37,7 @@ The sell_price is the sell price limit relative to the last transaction price (a
 
 The model structure is as follows:
 
-* Input: (n_assets, n_steps, n_features) 
+* Input: (n_assets, n_steps, n_features)
 * Permute dimensions: (n_steps, n_features, n_assets)
 * Dense layer: (n_steps, n_features, n_assets_hidden)
 * Dense layer: (n_steps, n_features, n_assets)

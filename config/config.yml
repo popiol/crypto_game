@@ -1,4 +1,13 @@
 model_registry:
-  root_path: s3://popiol-crypto-models
-names: data/names.csv
-memory_length: 10
+  remote_path: s3://popiol-crypto-models
+
+data_registry:
+  remote_path: s3://popiol-crypto/kraken
+  local_path: data/quotes
+
+agent_builder:
+  n_agents: 1
+  name_list_file: data/names.csv
+
+data_transformer:
+  memory_length: 10

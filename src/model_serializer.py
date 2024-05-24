@@ -1,6 +1,8 @@
-from tensorflow import keras
-import uuid
 import os
+import uuid
+
+from tensorflow import keras
+
 
 class ModelSerializer:
 
