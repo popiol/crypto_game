@@ -34,6 +34,19 @@ class InputFeatures(ModelFeatures):
     high_24h: float = None
     opening_price: float = None
 
+    @classmethod
+    def is_positive(cls, feature_index: int) -> bool:
+        fields(cls)[feature_index].name in [
+            "ask_price",
+            "bid_price",
+            "closing_price",
+            "low_today",
+            "low_24h",
+            "high_today",
+            "high_24h",
+            "opening_price",
+        ]
+
 
 @dataclass
 class OutputsFeatures(ModelFeatures):
@@ -58,6 +71,8 @@ class DataTransformer:
 
     def __init__(self, memory_length: int):
         self.memory_length = memory_length
+        self.memory = []
+        self.last_features = None
 
     def quotes_to_features(self, quotes: dict, asset_list: list[str]) -> np.array:
         """Returns matrix of shape (n_assets, n_features)"""
@@ -82,3 +97,18 @@ class DataTransformer:
         for index, features in sparse_features:
             feature_matrix[index, :] = features
         return feature_matrix
+
+    def scale_feature(self, feature_index: int, value: float, prev_value: float):
+        if InputFeatures.is_positive(feature_index):
+            return value / prev_value - 1
+        else:
+            return value / (prev_value + 1) - 1
+
+    def add_to_memory(self, features: np.array):
+        raw_features = features
+        features = features / self.last_features - 1
+        np.nan_to_num(features, copy=False)
+        for index in range(self.memory_length - 1):
+            self.memory[index, :] = self.memory[index, :] * 0.1 + self.memory[index + 1, :] * 0.9
+        self.memory.append(features)
+        self.last_features = raw_features

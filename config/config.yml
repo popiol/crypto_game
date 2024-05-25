@@ -4,8 +4,8 @@ model_registry:
 data_registry:
   quotes_remote_path: s3://popiol-crypto/kraken
   quotes_local_path: data/quotes
-  asset_list_remote_path: s3://popiol-crypto/config/asset_list.csv
-  asset_list_local_path: data/asset_list.csv
+  config_remote_path: s3://popiol-crypto/config
+  config_local_path: data
   retention_days: 7
 
 agent_builder:

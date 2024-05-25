@@ -1,3 +1,4 @@
+import json
 import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -12,15 +13,17 @@ class DataRegistry:
         self,
         quotes_remote_path: str,
         quotes_local_path: str,
-        asset_list_remote_path: str,
-        asset_list_local_path: str,
+        config_remote_path: str,
+        config_local_path: str,
         retention_days: int,
     ):
         self.remote_quotes = S3Utils(quotes_remote_path)
         self.quotes_local_path = quotes_local_path
-        self.remote_asset_list = S3Utils(asset_list_remote_path)
-        self.asset_list_local_path = asset_list_local_path
+        self.remote_config = S3Utils(config_remote_path)
+        self.config_local_path = config_local_path
         self.retention_days = retention_days
+        self.asset_list_file = "asset_list.csv"
+        self.stats_file = "stats.json"
 
     def get_start_dt(self, end_dt: datetime):
         return
@@ -55,6 +58,20 @@ class DataRegistry:
                 print("Removing", root)
                 # os.rmdir(root)
 
-    def download_asset_list(self):
-        print("Download", self.asset_list_local_path)
-        self.remote_asset_list.download_file(self.asset_list_local_path)
+    def get_asset_list(self) -> list[str]:
+        assets = []
+        if self.remote_config.download_file(f"{self.remote_config.path}/{self.asset_list_file}", self.config_local_path):
+            with open(f"{self.config_local_path}/{self.asset_list_file}") as f:
+                assets = f.read().splitlines()
+        return assets
+
+    def set_asset_list(self, assets: list[str]):
+        with open(self.asset_list_local_path, "w"):
+        self.remote_asset_list.upload_file(self.asset_list_local_path)
+
+    def download_stats(self) -> dict:
+        stats = {}
+        if self.remote_config.download_file(f"{self.remote_config.path}/{self.stats_file}", self.config_local_path):
+            with open(f"{self.config_local_path}/{self.stats_file}") as f:
+                stats = json.load(f)
+        return stats
