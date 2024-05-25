@@ -1,48 +1,84 @@
-from enum import Enum, auto
+from dataclasses import dataclass, fields
+
+import numpy as np
+
+
+class ModelFeatures:
+
+    def set_feature(self, name: str, value: float):
+        setattr(self, name, value)
+
+    def to_vector(self) -> np.array:
+        return np.array([getattr(self, f.name) for f in fields(self)])
+
+
+@dataclass
+class InputFeatures(ModelFeatures):
+    ask_price: float = None
+    ask_whole_lot_volume: float = None
+    ask_lot_volume: float = None
+    bid_price: float = None
+    bid_whole_lot_volume: float = None
+    bid_lot_volume: float = None
+    closing_price: float = None
+    closing_lot_volume: float = None
+    volume_today: float = None
+    volume_24h: float = None
+    volume_weighted_price_today: float = None
+    volume_weighted_price_24h: float = None
+    n_trades_today: float = None
+    n_trades_24h: float = None
+    low_today: float = None
+    low_24h: float = None
+    high_today: float = None
+    high_24h: float = None
+    opening_price: float = None
+
+
+@dataclass
+class OutputsFeatures(ModelFeatures):
+    score: float = None
+    relative_buy_price: float = None
+    relative_sell_price: float = None
 
 
 class DataTransformer:
 
-    class ModelFeatures(Enum):
-        ask_price = auto()
-        ask_whole_lot_volume = auto()
-        ask_lot_volume = auto()
-        bid_price = auto()
-        bid_whole_lot_volume = auto()
-        bid_lot_volume = auto()
-        closing_price = auto()
-        closing_lot_volume = auto()
-        volume_today = auto()
-        volume_24h = auto()
-        volume_weighted_price_today = auto()
-        volume_weighted_price_24h = auto()
-        n_trades_today = auto()
-        n_trades_24h = auto()
-        low_today = auto()
-        low_24h = auto()
-        high_today = auto()
-        high_24h = auto()
-        opening_price = auto()
-
-    class ModelOutputs(Enum):
-        score = auto()
-        buy_price = auto()
-        sell_price = auto()
-
     KEY_MAP = {
         "a": ["ask_price", "ask_whole_lot_volume", "ask_lot_volume"],
-        "o": "open",
-        "c": "close",
-        "l": "low",
-        "h": "high",
-        "v": "volume",
-        "b": "bid",
-        "p": "daily_mean",
-        "t": "n_trades",
+        "b": ["bid_price", "bid_whole_lot_volume", "bid_lot_volume"],
+        "c": ["closing_price", "closing_lot_volume"],
+        "v": ["volume_today", "volume_24h"],
+        "p": ["volume_weighted_price_today", "volume_weighted_price_24h"],
+        "t": ["n_trades_today", "n_trades_24h"],
+        "l": ["low_today", "low_24h"],
+        "h": ["high_today", "high_24h"],
+        "o": ["opening_price"],
     }
 
     def __init__(self, memory_length: int):
         self.memory_length = memory_length
 
-    def quotes_to_features(self, quotes: dict):
-
+    def quotes_to_features(self, quotes: dict, asset_list: list[str]) -> np.array:
+        """Returns matrix of shape (n_assets, n_features)"""
+        sparse_features = []
+        for asset_name, asset in quotes.items():
+            try:
+                asset_index = asset_list.index(asset_name)
+            except ValueError:
+                asset_list.append(asset_name)
+                asset_index = len(asset_list) - 1
+            features = InputFeatures()
+            for key, values in asset.items():
+                key_map = self.KEY_MAP[key]
+                for index, feature_name in enumerate(key_map):
+                    value = values[index] if type(values) == list else values
+                    value = float(value)
+                    features.set_feature(feature_name, value)
+            sparse_features.append((asset_index, features.to_vector()))
+        n_assets = len(asset_list)
+        n_features = len(sparse_features[0][1])
+        feature_matrix = np.zeros((n_assets, n_features))
+        for index, features in sparse_features:
+            feature_matrix[index, :] = features
+        return feature_matrix
