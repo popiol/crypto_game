@@ -5,7 +5,6 @@ data_registry:
   quotes_remote_path: s3://popiol-crypto/kraken
   quotes_local_path: data/quotes
   config_remote_path: s3://popiol-crypto/config
-  config_local_path: data
   retention_days: 7
 
 agent_builder:

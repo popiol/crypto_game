@@ -2,6 +2,7 @@ import os
 import subprocess
 
 import boto3
+from botocore.exceptions import ClientError
 
 
 class S3Utils:
@@ -22,25 +23,36 @@ class S3Utils:
         try:
             s3.download_file(self.bucket_name, remote_path, local_path)
             return True
-        except:
+        except ClientError:
             return False
 
-    def upload_file(self, local_path: str, remote_path: str):
+    def upload_file(self, local_path: str, remote_path: str) -> bool:
         print("Upload", local_path)
         s3 = boto3.client("s3")
-        s3.upload_file(local_path, self.bucket_name, remote_path)
+        try:
+            s3.upload_file(local_path, self.bucket_name, remote_path)
+            return True
+        except ClientError:
+            return False
 
-    def download_bytes(self, remote_path: str):
+    def download_bytes(self, remote_path: str) -> bytes:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
-        return bucket.Object(remote_path).get()["Body"]
+        try:
+            return bucket.Object(remote_path).get()["Body"]
+        except ClientError:
+            return None
 
-    def upload_bytes(self, remote_path: str, contents: bytes):
+    def upload_bytes(self, remote_path: str, contents: bytes) -> bool:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
-        bucket.put_object(Key=remote_path, Body=contents)
+        try:
+            bucket.put_object(Key=remote_path, Body=contents)
+            return True
+        except ClientError:
+            return False
 
-    def list_files(self, remote_path: str):
+    def list_files(self, remote_path: str) -> list[str]:
         s3 = boto3.resource("s3")
         paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=remote_path)
