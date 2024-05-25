@@ -24,9 +24,7 @@ def check_still_running(process_name: str):
     processes = [
         p.cmdline()
         for p in psutil.process_iter()
-        if len(p.cmdline()) > 2
-        and p.cmdline()[2] == process_name
-        and p.cmdline()[3:] == sys.argv[1:]
+        if len(p.cmdline()) > 2 and p.cmdline()[2] == process_name and p.cmdline()[3:] == sys.argv[1:]
     ]
     if len(processes) > 1:
         print("Master process up and running")

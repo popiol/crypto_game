@@ -70,14 +70,10 @@ class EvolutionHandler:
             hidden2 = keras.layers.Flatten(name=f"flatten_{model_id_2}")(hidden2)
         hidden2 = keras.layers.Dense(50, name=f"dense_{model_id_2}")(hidden2)
         model_id_3 = self.new_model_id(model_id_1, model_id_2)
-        l = keras.layers.Concatenate(
-            name=f"concatenate_{model_id_1}_{model_id_2}_{model_id_3}"
-        )([hidden1, hidden2])
+        l = keras.layers.Concatenate(name=f"concatenate_{model_id_1}_{model_id_2}_{model_id_3}")([hidden1, hidden2])
         l = keras.layers.Dense(self.OUTPUT_SIZE, name="output")(l)
         outputs = l
-        model = keras.Model(
-            inputs=inputs, outputs=outputs, name=f"{model_id_1}_{model_id_2}"
-        )
+        model = keras.Model(inputs=inputs, outputs=outputs, name=f"{model_id_1}_{model_id_2}")
         model.compile(
             optimizer=keras.optimizers.Adam(learning_rate=0.001),
             loss="mean_squared_error",
@@ -90,13 +86,9 @@ class EvolutionHandler:
         for layer in model.layers:
             if layer.name.startswith("input"):
                 if inputs is None:
-                    inputs = keras.layers.Input(
-                        shape=layer.output_shape[0][1:], name="input"
-                    )
+                    inputs = keras.layers.Input(shape=layer.output_shape[0][1:], name="input")
             elif layer.name.startswith("reshape"):
-                self.add_layer(
-                    inputs, layer, keras.layers.Reshape, layer.output_shape[1:]
-                )
+                self.add_layer(inputs, layer, keras.layers.Reshape, layer.output_shape[1:])
             elif layer.name.startswith("permute"):
                 if not new_output:
                     l = self.add_layer(inputs, layer, keras.layers.Permute, layer.dims)
@@ -117,9 +109,7 @@ class EvolutionHandler:
                 l = self.add_layer(inputs, layer, keras.layers.Concatenate)
                 hidden = l
             elif layer.name.startswith("dense"):
-                self.add_layer(
-                    inputs, layer, keras.layers.Dense, layer.output_shape[-1]
-                )
+                self.add_layer(inputs, layer, keras.layers.Dense, layer.output_shape[-1])
             elif layer.name == "output":
                 if new_output:
                     l = keras.layers.Flatten()(hidden)
@@ -149,15 +139,10 @@ class EvolutionHandler:
             for model_id2 in model_ids:
                 del self.stacks[model_id2]
             kwargs["name"] = (
-                "concatenate_"
-                + "_".join([self.new_model_id(x) for x in model_ids])
-                + "_"
-                + self.new_model_id(model_id)
+                "concatenate_" + "_".join([self.new_model_id(x) for x in model_ids]) + "_" + self.new_model_id(model_id)
             )
         if "name" not in kwargs:
-            kwargs["name"] = (
-                old_layer.name.split("_")[0] + "_" + self.new_model_id(model_id)
-            )
+            kwargs["name"] = old_layer.name.split("_")[0] + "_" + self.new_model_id(model_id)
         l = new_layer(*args, **kwargs, **self.get_initializers(old_layer))(l)
         self.stacks[model_id] = l
         return l

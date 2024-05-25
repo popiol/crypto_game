@@ -17,14 +17,10 @@ class Agent:
         self.model_name = f"{agent_name}_{host_name}_{model_dt}_{self.model_id}"
         self.model_registry = config.model_registry
         self.model_serializer = config.model_serializer
-        self.model = config.evolution_handler.create_model(
-            len(self.ModelInputs), len(self.ModelOutputs)
-        )
+        self.model = config.evolution_handler.create_model(len(self.ModelInputs), len(self.ModelOutputs))
         self.metrics = {}
 
-    def process_quotes(
-        self, quotes: dict, portfolio: Portfolio
-    ) -> list[PortfolioAction]:
+    def process_quotes(self, quotes: dict, portfolio: Portfolio) -> list[PortfolioAction]:
         pass
 
     def train(self):

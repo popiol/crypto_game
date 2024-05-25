@@ -23,20 +23,14 @@ class ModelRegistry:
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
-        bucket.put_object(
-            Key=f"{self.current_prefix}/{model_name}", Body=serialized_model
-        )
-        bucket.put_object(
-            Key=f"{self.metrics_prefix}/{model_name}", Body=json.dumps(metrics)
-        )
+        bucket.put_object(Key=f"{self.current_prefix}/{model_name}", Body=serialized_model)
+        bucket.put_object(Key=f"{self.metrics_prefix}/{model_name}", Body=json.dumps(metrics))
 
     def get_random_model(self) -> tuple[str, bytes]:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
         paginator = s3.get_paginator("list_objects_v2")
-        pages = paginator.paginate(
-            Bucket=self.bucket_name, Prefix=self.current_prefix + "/"
-        )
+        pages = paginator.paginate(Bucket=self.bucket_name, Prefix=self.current_prefix + "/")
         keys = pages.search("Contents[].Key")
         if not keys:
             return None, None
