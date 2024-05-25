@@ -22,15 +22,14 @@ class DataRegistry:
         self.asset_list_local_path = asset_list_local_path
         self.retention_days = retention_days
 
-    def get_start_dt(self):
-        current_dt = datetime.now()
-        return current_dt - timedelta(days=self.retention_days - 1)
+    def get_start_dt(self, end_dt: datetime):
+        return
 
     def sync(self):
-        current_dt = datetime.now()
-        start_dt = self.get_start_dt()
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=self.retention_days - 1)
         self.remove_old_data(start_dt)
-        self.download_since_until(start_dt, current_dt)
+        self.download_since_until(start_dt, end_dt)
         self.download_asset_list()
 
     def download_since_until(self, start_dt: datetime, end_dt: datetime):
@@ -45,12 +44,13 @@ class DataRegistry:
             dt = dt + timedelta(days=1)
 
     def remove_old_data(self, older_than: datetime):
+        older_than_str = older_than.strftime("%Y%m%d")
         for root, dirs, files in os.walk(self.quotes_local_path):
             for file in files:
-                if file < older_than:
+                if file[:8] < older_than_str or not file.endswith(".json"):
                     print("Removing", os.join(root, file))
                     # os.remove(os.join(root, file))
-        for root, dirs, files in os.walk(self.quotes_local_path):
+        for root, dirs, files in os.walk(self.quotes_local_path, topdown=False):
             if not files and not dirs:
                 print("Removing", root)
                 # os.rmdir(root)
