@@ -35,7 +35,7 @@ class InputFeatures(ModelFeatures):
     opening_price: float = None
 
     @classmethod
-    def is_positive(cls, feature_index: int) -> bool:
+    def is_price(cls, feature_index: int) -> bool:
         fields(cls)[feature_index].name in [
             "ask_price",
             "bid_price",
@@ -73,6 +73,8 @@ class DataTransformer:
         self.memory_length = memory_length
         self.memory = []
         self.last_features = None
+        self.stats = None
+        self.stats_source_size = 0
 
     def quotes_to_features(self, quotes: dict, asset_list: list[str]) -> np.array:
         """Returns matrix of shape (n_assets, n_features)"""
@@ -98,11 +100,33 @@ class DataTransformer:
             feature_matrix[index, :] = features
         return feature_matrix
 
-    def scale_feature(self, feature_index: int, value: float, prev_value: float):
-        if InputFeatures.is_positive(feature_index):
-            return value / prev_value - 1
-        else:
-            return value / (prev_value + 1) - 1
+    def add_to_stats(self, features: np.array) -> dict:
+        n_assets = len(features)
+        n_features = len(features[0])
+        if self.stats is None:
+            self.stats = {"mean": np.zeros(n_features), "mean_squared": np.zeros(n_features), "std": np.zeros(n_features)}
+        self.stats["mean"] = (self.stats["mean"] * self.stats_source_size + features.mean(axis=0) * n_assets) / (
+            self.stats_source_size + n_assets
+        )
+        self.stats["mean_squared"] = (
+            self.stats["mean_squared"] * self.stats_source_size + np.power(features, 2).mean(axis=0) * n_assets
+        ) / (self.stats_source_size + n_assets)
+        self.stats["std"] = np.power(self.stats["mean_squared"] - np.power(self.stats["mean"], 2), 0.5)
+        self.stats_source_size += n_assets
+
+    def scale_features(self, features: np.array, stats: list[dict]):
+        raw_features = features
+        for feature_index in len(features[0]):
+            if InputFeatures.is_price(feature_index):
+                features[:, feature_index] = features[:, feature_index] / self.last_features[:, feature_index] - 1
+            else:
+                mean = stats[feature_index]["mean"]
+                std = stats[feature_index]["std"]
+                features[:, feature_index] = (features[:, feature_index] + mean + std) / (
+                    self.last_features[:, feature_index] + mean + std
+                ) - 1
+        np.nan_to_num(features, copy=False)
+        self.last_features = raw_features
 
     def add_to_memory(self, features: np.array):
         raw_features = features

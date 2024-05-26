@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 from dataclasses import dataclass
@@ -54,6 +55,18 @@ class DataRegistry:
             if not files and not dirs:
                 print("Removing", root)
                 # os.rmdir(root)
+
+    def quotes_iterator(self):
+        prefix = self.quotes_local_path
+        for year in sorted(glob.glob(prefix + "/*")):
+            prefix = f"{self.quotes_local_path}/{year}"
+            for month in sorted(glob.glob(prefix + "/*")):
+                prefix = f"{self.quotes_local_path}/{year}/{month}"
+                for day in sorted(glob.glob(prefix + "/*")):
+                    prefix = f"{self.quotes_local_path}/{year}/{month}/{day}"
+                    for file in sorted(glob.glob(prefix + "/*.json")):
+                        with open(file) as f:
+                            yield json.load(f)
 
     def get_asset_list(self) -> list[str]:
         assets = []
