@@ -37,7 +37,7 @@ The sell_price is the sell price limit relative to the last transaction price (a
 
 The model structure is as follows:
 
-* Input: (n_assets, n_steps, n_features)
+* Input: (n_steps, n_assets, n_features)
 * Permute dimensions: (n_steps, n_features, n_assets)
 * Dense layer: (n_steps, n_features, n_assets_hidden)
 * Dense layer: (n_steps, n_features, n_assets)

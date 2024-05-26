@@ -1,4 +1,5 @@
 import random
+import uuid
 
 from tensorflow import keras
 
@@ -10,22 +11,24 @@ class EvolutionHandler:
         self.model_serializer = config["model_serializer"]
         self.memory_length = config["memory_length"]
 
-    def create_model(self, input_dim: int, output_dim: int) -> keras.Model:
+    def create_model(self, n_steps: int, n_assets: int, n_features: int, n_outputs: int) -> keras.Model:
         method = random.randint(0, 2)
         if method == 0:
-            return self.create_new_model(input_dim, output_dim)
+            return self.create_new_model(n_steps, n_assets, n_features, n_outputs)
         elif method == 1:
-            return self.load_existing_model(input_dim, output_dim)
+            return self.load_existing_model(n_steps, n_assets, n_features, n_outputs)
         elif method == 2:
-            return self.merge_existing_models(input_dim, output_dim)
+            return self.merge_existing_models(n_steps, n_assets, n_features, n_outputs)
 
-    def create_new_model(self, input_dim: int, output_dim: int) -> keras.Model:
-        inputs = keras.layers.Input(shape=(self.memory_length, input_dim), name="input")
+    def create_new_model(self, n_steps: int, n_assets: int, n_features: int, n_outputs: int) -> keras.Model:
+        inputs = keras.layers.Input(shape=(n_steps, n_assets, n_features), name="input")
         l = inputs
+        l = keras.layers.Permute((1, 3, 2))(l)
+        l = keras.layers.Dense(100)(l)
         l = keras.layers.Flatten()(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(output_dim)(l)
+        l = keras.layers.Dense(n_outputs)(l)
         outputs = l
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -41,18 +44,18 @@ class EvolutionHandler:
         model = self.model_serializer.deserialize(serialized_model)
         return model_name, model
 
-    def load_existing_model(self, input_dim: int, output_dim: int) -> keras.Model:
+    def load_existing_model(self, n_steps: int, n_assets: int, n_features: int, n_outputs: int) -> keras.Model:
         model_name, self.model = self.get_random_model()
         if self.model is None:
-            return self.create_new_model(input_dim, output_dim)
+            return self.create_new_model(n_steps, n_assets, n_features, n_outputs)
         print("Existing model loaded:", model_name)
         return self.model
 
-    def merge_existing_models(self, input_dim: int, output_dim: int) -> keras.Model:
+    def merge_existing_models(self, n_steps: int, n_assets: int, n_features: int, n_outputs: int) -> keras.Model:
         model_name_1, model_1 = self.get_random_model()
         model_name_2, model_2 = self.get_random_model()
         if model_name_1 is None:
-            return self.create_new_model(input_dim, output_dim)
+            return self.create_new_model(n_steps, n_assets, n_features, n_outputs)
         if model_name_1 == model_name_2:
             print("Existing model loaded:", model_name_1)
             return model_1

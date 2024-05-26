@@ -127,6 +127,7 @@ class DataTransformer:
                 ) - 1
         np.nan_to_num(features, copy=False)
         self.last_features = raw_features
+        return features
 
     def add_to_memory(self, features: np.array):
         if self.memory is None:

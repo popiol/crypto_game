@@ -1,23 +1,62 @@
 import argparse
-import random
 import sys
 import time
 
 import psutil
+import yaml
 
 from src.agent import Agent
-from src.config import Config
+from src.agent_builder import AgentBuilder
+from src.data_registry import DataRegistry
+from src.data_transformer import DataTransformer
+from src.evolution_handler import EvolutionHandler
+from src.model_registry import ModelRegistry
+from src.model_serializer import ModelSerializer
 
 
 class RlRunner:
 
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self):
+        self.config = {}
+        self.agents = []
+
+    def load_config(self, file_path: str):
+        with open(file_path) as f:
+            self.config = yaml.load(f, Loader=yaml.FullLoader)
+
+    def create_agents(self):
+        agent_builder = AgentBuilder(**self.config["agent_builder"])
+        names = agent_builder.get_names()
+        for name in names:
+            agent = Agent(name, self.config)
+            self.agents.append(agent)
+
+    def prepare(self):
+        self.data_registry = DataRegistry(**self.config["data_registry"])
+        self.data_registry.sync()
+        self.data_transformer = DataTransformer(**self.config["data_transformer"])
+        self.asset_list = self.data_registry.get_asset_list()
+        self.stats = self.data_registry.get_stats()
+
+    def initial_run(self):
+        for quotes in self.data_registry.quotes_iterator():
+            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+            if not self.stats:
+                self.data_transformer.add_to_stats(features)
+        if not self.stats:
+            self.stats = self.data_transformer.stats
+            self.data_registry.set_stats(self.stats)
+
+    def main_loop(self):
+        for quotes in self.data_registry.quotes_iterator():
+            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+            features = self.data_transformer.scale_features(features)
+            self.data_transformer.add_to_memory(features)
 
     def run(self):
-        names = self.config.agent_builder.get_names()
-        agent = Agent(names[0], self.config)
-        agent.process_quotes()
+        self.prepare()
+        self.initial_run()
+        self.main_loop()
 
 
 def check_still_running(process_name: str):
@@ -42,8 +81,9 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--config")
     args, other = parser.parse_known_args(argv)
-    config = Config.from_yaml_file(args.config)
-    RlRunner(config).run()
+    rl_runner = RlRunner()
+    rl_runner.load_config(args.config)
+    rl_runner.run()
 
 
 if __name__ == "__main__":
