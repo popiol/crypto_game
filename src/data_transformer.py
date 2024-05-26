@@ -71,7 +71,7 @@ class DataTransformer:
 
     def __init__(self, memory_length: int):
         self.memory_length = memory_length
-        self.memory = []
+        self.memory = None
         self.last_features = None
         self.stats = None
         self.stats_source_size = 0
@@ -129,10 +129,8 @@ class DataTransformer:
         self.last_features = raw_features
 
     def add_to_memory(self, features: np.array):
-        raw_features = features
-        features = features / self.last_features - 1
-        np.nan_to_num(features, copy=False)
+        if self.memory is None:
+            self.memory = np.zeros((self.memory_length, *np.shape(features)))
         for index in range(self.memory_length - 1):
-            self.memory[index, :] = self.memory[index, :] * 0.1 + self.memory[index + 1, :] * 0.9
-        self.memory.append(features)
-        self.last_features = raw_features
+            self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
+        self.memory = np.concatenate((self.memory[:-1], np.expand_dims(features, 0)))
