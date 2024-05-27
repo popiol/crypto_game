@@ -11,29 +11,16 @@ from src.agent_builder import AgentBuilder
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer
 from src.evolution_handler import EvolutionHandler
+from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 
 
 class RlRunner:
 
-    def __init__(self):
-        self.config = {}
-        self.agents = []
-
     def load_config(self, file_path: str):
         with open(file_path) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
-
-    def create_agents(self):
-        agent_builder = AgentBuilder(**self.config["agent_builder"])
-        names = agent_builder.get_names()
-        model_registry = ModelRegistry(**self.config["model_registry"])
-        model_serializer = ModelSerializer(**self.config["model_serializer"])
-        evolution_handler = EvolutionHandler(**self.config["evolution_handler"])
-        for name in names:
-            agent = Agent(name, model_registry, model_serializer, evolution_handler)
-            self.agents.append(agent)
 
     def prepare(self):
         print("Sync data")
@@ -54,6 +41,30 @@ class RlRunner:
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
 
+    def create_agents(self):
+        print("Create agents")
+        self.agents = []
+        self.model_registry = ModelRegistry(**self.config["model_registry"])
+        self.model_serializer = ModelSerializer()
+        model_builder = ModelBuilder(
+            self.data_transformer.memory_length,
+            len(self.asset_list),
+            self.data_transformer.n_features,
+            self.data_transformer.n_outputs,
+        )
+        evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder)
+        agent_builder = AgentBuilder(**self.config["agent_builder"])
+        for name in agent_builder.get_names():
+            print(name)
+            model = evolution_handler.create_model()
+            agent = Agent(name, model)
+            self.agents.append(agent)
+
+    def save_model(self, agent: Agent):
+        print("save model", agent.model_name)
+        serialized_model = self.model_serializer.serialize(agent.model)
+        self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
+
     def main_loop(self):
         for simulation_index in range(1):
             print("Start simulation", simulation_index)
@@ -67,6 +78,7 @@ class RlRunner:
     def run(self):
         self.prepare()
         self.initial_run()
+        self.create_agents()
         self.main_loop()
 
 

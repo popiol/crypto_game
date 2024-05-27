@@ -11,6 +11,10 @@ class ModelFeatures:
     def to_vector(self) -> np.array:
         return np.array([getattr(self, f.name) for f in fields(self)])
 
+    @classmethod
+    def count(cls) -> int:
+        return len(fields(cls))
+
 
 @dataclass
 class InputFeatures(ModelFeatures):
@@ -76,6 +80,14 @@ class DataTransformer:
         self.stats = None
         self.stats_source_size = 0
 
+    @property
+    def n_features(self):
+        return InputFeatures.count()
+
+    @property
+    def n_outputs(self):
+        return OutputsFeatures.count()
+
     def quotes_to_features(self, quotes: dict, asset_list: list[str]) -> np.array:
         """Returns matrix of shape (n_assets, n_features)"""
         sparse_features = []
@@ -94,15 +106,14 @@ class DataTransformer:
                     features.set_feature(feature_name, value)
             sparse_features.append((asset_index, features.to_vector()))
         n_assets = len(asset_list)
-        n_features = len(sparse_features[0][1])
-        feature_matrix = np.zeros((n_assets, n_features))
+        feature_matrix = np.zeros((n_assets, self.n_features))
         for index, features in sparse_features:
             feature_matrix[index, :] = features
         return feature_matrix
 
     def add_to_stats(self, features: np.array) -> dict:
         n_assets = len(features)
-        n_features = len(features[0])
+        n_features = self.n_features
         if self.stats is None:
             self.stats = {"mean": np.zeros(n_features), "mean_squared": np.zeros(n_features), "std": np.zeros(n_features)}
         self.stats["mean"] = (self.stats["mean"] * self.stats_source_size + features.mean(axis=0) * n_assets) / (
