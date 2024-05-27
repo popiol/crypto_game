@@ -24,9 +24,6 @@ class DataRegistry:
         self.asset_list_file = "asset_list.csv"
         self.stats_file = "stats.json"
 
-    def get_start_dt(self, end_dt: datetime):
-        return
-
     def sync(self):
         end_dt = datetime.now()
         start_dt = end_dt - timedelta(days=self.retention_days)

@@ -3,6 +3,7 @@ import src.check_running_master  # isort: skip
 import argparse
 import sys
 import time
+from datetime import datetime, timedelta
 
 import yaml
 
@@ -17,6 +18,9 @@ from src.model_serializer import ModelSerializer
 
 
 class RlRunner:
+
+    def __init__(self):
+        self.start_dt = datetime.now()
 
     def load_config(self, file_path: str):
         with open(file_path) as f:
@@ -74,6 +78,8 @@ class RlRunner:
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
+            if datetime.now() - self.start_dt > timedelta(days=1):
+                break
 
     def run(self):
         self.prepare()

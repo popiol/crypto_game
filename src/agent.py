@@ -4,7 +4,7 @@ from socket import gethostname
 
 import numpy as np
 
-from ml_model import MlModel
+from src.ml_model import MlModel
 from src.portfolio import Portfolio, PortfolioAction
 
 

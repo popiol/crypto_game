@@ -15,7 +15,7 @@ class EvolutionHandler:
     model_builder: ModelBuilder
 
     def create_model(self) -> MlModel:
-        method = random.randint(0, 2)
+        method = 0  # TODO: random.randint(0, 2)
         if method == 0:
             return self.create_new_model()
         elif method == 1:
