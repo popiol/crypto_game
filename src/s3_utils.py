@@ -39,7 +39,7 @@ class S3Utils:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
         try:
-            return bucket.Object(remote_path).get()["Body"]
+            return bucket.Object(remote_path).get()["Body"].read()
         except ClientError:
             return None
 

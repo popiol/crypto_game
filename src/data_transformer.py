@@ -115,13 +115,16 @@ class DataTransformer:
         self.stats_source_size += n_assets
 
     def scale_features(self, features: np.array, stats: list[dict]):
+        if self.last_features is None:
+            self.last_features = features
+            return None
         raw_features = features
-        for feature_index in len(features[0]):
+        for feature_index in range(len(features[0])):
             if InputFeatures.is_price(feature_index):
                 features[:, feature_index] = features[:, feature_index] / self.last_features[:, feature_index] - 1
             else:
-                mean = stats[feature_index]["mean"]
-                std = stats[feature_index]["std"]
+                mean = stats["mean"][feature_index]
+                std = stats["std"][feature_index]
                 features[:, feature_index] = (features[:, feature_index] + mean + std) / (
                     self.last_features[:, feature_index] + mean + std
                 ) - 1

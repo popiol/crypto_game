@@ -2,10 +2,10 @@ import uuid
 from datetime import datetime
 from socket import gethostname
 
-from portfolio import Portfolio, PortfolioAction
 from src.evolution_handler import EvolutionHandler
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
+from src.portfolio import Portfolio, PortfolioAction
 
 
 class Agent:

@@ -29,7 +29,7 @@ class DataRegistry:
 
     def sync(self):
         end_dt = datetime.now()
-        start_dt = end_dt - timedelta(days=self.retention_days - 1)
+        start_dt = end_dt - timedelta(days=self.retention_days)
         self.remove_old_data(start_dt)
         self.download_since_until(start_dt, end_dt)
 
@@ -39,9 +39,10 @@ class DataRegistry:
             datetime_path = dt.strftime("year=%Y/month=%m/day=%d")
             relative_path = f"{self.remote_quotes.path}/{datetime_path}"
             source = f"s3://{self.remote_quotes.bucket_name}/{relative_path}"
-            target = f"{self.quotes_local_path}/{relative_path}"
-            print("Download", source)
-            self.remote_quotes.sync(source, target)
+            target = f"{self.quotes_local_path}/{datetime_path}"
+            if not os.path.exists(target) or dt.strftime("%Y%m%d") == datetime.now().strftime("%Y%m%d"):
+                print("Download", source)
+                self.remote_quotes.sync(source, target)
             dt = dt + timedelta(days=1)
 
     def remove_old_data(self, older_than: datetime):
@@ -49,22 +50,19 @@ class DataRegistry:
         for root, dirs, files in os.walk(self.quotes_local_path):
             for file in files:
                 if file[:8] < older_than_str or not file.endswith(".json"):
-                    print("Removing", os.join(root, file))
-                    # os.remove(os.join(root, file))
+                    print("Removing", os.path.join(root, file))
+                    os.remove(os.path.join(root, file))
         for root, dirs, files in os.walk(self.quotes_local_path, topdown=False):
             if not files and not dirs:
                 print("Removing", root)
-                # os.rmdir(root)
+                os.rmdir(root)
 
     def quotes_iterator(self):
         prefix = self.quotes_local_path
         for year in sorted(glob.glob(prefix + "/*")):
-            prefix = f"{self.quotes_local_path}/{year}"
-            for month in sorted(glob.glob(prefix + "/*")):
-                prefix = f"{self.quotes_local_path}/{year}/{month}"
-                for day in sorted(glob.glob(prefix + "/*")):
-                    prefix = f"{self.quotes_local_path}/{year}/{month}/{day}"
-                    for file in sorted(glob.glob(prefix + "/*.json")):
+            for month in sorted(glob.glob(year + "/*")):
+                for day in sorted(glob.glob(month + "/*")):
+                    for file in sorted(glob.glob(day + "/*.json")):
                         with open(file) as f:
                             yield json.load(f)
 
