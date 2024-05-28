@@ -13,3 +13,8 @@ agent_builder:
 
 data_transformer:
   memory_length: 10
+
+portfolio_manager:
+  init_cash: 1000
+  transaction_fee: 0.03
+  

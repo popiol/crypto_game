@@ -4,7 +4,9 @@ import argparse
 import sys
 import time
 from datetime import datetime, timedelta
+from multiprocessing import Pool
 
+import numpy as np
 import yaml
 
 from src.agent import Agent
@@ -15,6 +17,7 @@ from src.evolution_handler import EvolutionHandler
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
+from src.portfolio_manager import PortfolioManager
 
 
 class RlRunner:
@@ -47,7 +50,6 @@ class RlRunner:
 
     def create_agents(self):
         print("Create agents")
-        self.agents = []
         self.model_registry = ModelRegistry(**self.config["model_registry"])
         self.model_serializer = ModelSerializer()
         model_builder = ModelBuilder(
@@ -57,17 +59,28 @@ class RlRunner:
             self.data_transformer.n_outputs,
         )
         evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder)
-        agent_builder = AgentBuilder(**self.config["agent_builder"])
-        for name in agent_builder.get_names():
-            print(name)
-            model = evolution_handler.create_model()
-            agent = Agent(name, model)
-            self.agents.append(agent)
+        agent_builder = AgentBuilder(evolution_handler, **self.config["agent_builder"])
+        self.agents = agent_builder.create_agents()
+        self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
 
     def save_model(self, agent: Agent):
-        print("save model", agent.model_name)
+        print("Save model", agent.model_name)
         serialized_model = self.model_serializer.serialize(agent.model)
         self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
+
+    @staticmethod
+    def run_agent(inputs: np.array, agent: Agent, portfolio_manager: PortfolioManager):
+        orders = agent.process_quotes(inputs, portfolio_manager.portfolio)
+        portfolio_manager.handle_orders()
+        portfolio_manager.place_orders(orders)
+        return portfolio_manager
+
+    def run_agents(self, inputs: np.array):
+        params = [(inputs, agent, portfolio_manager) for agent, portfolio_manager in zip(self.agents, self.portfolio_managers)]
+        with Pool(1) as pool:
+            portfolio_managers = pool.starmap(RlRunner.run_agent, params)
+        print("Portfolio values", [manager.portfolio.value for manager in portfolio_managers])
+        print("Portfolio values2", [manager.portfolio.value for manager in self.portfolio_managers])
 
     def main_loop(self):
         for simulation_index in range(1):
@@ -78,6 +91,7 @@ class RlRunner:
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
+                self.run_agents(self.data_transformer.memory)
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

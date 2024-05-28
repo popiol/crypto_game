@@ -2,14 +2,14 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 
-class PortfolioActionType(Enum):
+class PortfolioOrderType(Enum):
     buy = auto()
     sell = auto()
 
 
 @dataclass
-class PortfolioAction:
-    action_type: PortfolioActionType
+class PortfolioOrder:
+    action_type: PortfolioOrderType
     asset: str
     volume: float
     price: float

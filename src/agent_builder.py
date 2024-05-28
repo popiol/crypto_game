@@ -1,10 +1,15 @@
 import random
 from dataclasses import dataclass
 
+from src.agent import Agent
+from src.evolution_handler import EvolutionHandler
+from src.portfolio_manager import PortfolioManager
+
 
 @dataclass
 class AgentBuilder:
 
+    evolution_handler: EvolutionHandler
     n_agents: int
     name_list_file: str
 
@@ -13,3 +18,12 @@ class AgentBuilder:
             names = f.read().splitlines()
         random.shuffle(names)
         return names[: self.n_agents]
+
+    def create_agents(self) -> list[Agent]:
+        agents = []
+        for name in self.get_names():
+            print(name)
+            model = self.evolution_handler.create_model()
+            agent = Agent(name, model)
+            agents.append(agent)
+        return agents
