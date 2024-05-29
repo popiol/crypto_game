@@ -12,7 +12,7 @@ import yaml
 from src.agent import Agent
 from src.agent_builder import AgentBuilder
 from src.data_registry import DataRegistry
-from src.data_transformer import DataTransformer
+from src.data_transformer import DataTransformer, QuotesSnapshot
 from src.evolution_handler import EvolutionHandler
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
@@ -39,7 +39,8 @@ class RlRunner:
 
     def initial_run(self):
         print("Initial run")
-        for quotes in self.data_registry.quotes_iterator():
+        for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+            quotes = QuotesSnapshot(raw_quotes)
             features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             if not self.stats:
                 self.data_transformer.add_to_stats(features)
@@ -68,31 +69,23 @@ class RlRunner:
         serialized_model = self.model_serializer.serialize(agent.model)
         self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
 
-    @staticmethod
-    def run_agent(inputs: np.array, agent: Agent, portfolio_manager: PortfolioManager):
-        print("run agent", agent.agent_name)
-        orders = agent.process_quotes(inputs, portfolio_manager.portfolio)
-        portfolio_manager.handle_orders()
-        portfolio_manager.place_orders(orders)
-        return portfolio_manager
-
-    def run_agents(self, inputs: np.array):
-        params = [(inputs, agent, portfolio_manager) for agent, portfolio_manager in zip(self.agents, self.portfolio_managers)]
-        with get_context("spawn").Pool(1) as pool:
-            portfolio_managers = pool.starmap(RlRunner.run_agent, params)
-        self.portfolio_managers = portfolio_managers
+    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, inputs: np.array):
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            orders = agent.make_decision(inputs, portfolio_manager.portfolio)
+            portfolio_manager.handle_orders(timestamp, quotes)
+            portfolio_manager.place_orders(timestamp, orders)
 
     def main_loop(self):
         for simulation_index in range(1):
             print("Start simulation", simulation_index)
-            for quotes in self.data_registry.quotes_iterator():
+            for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+                quotes = QuotesSnapshot(raw_quotes)
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
-                self.run_agents(self.data_transformer.memory)
-                break
+                self.run_agents(timestamp, quotes, self.data_transformer.memory)
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

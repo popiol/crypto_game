@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+
+from src.data_transformer import QuotesSnapshot
 from src.portfolio import (
     Portfolio,
     PortfolioOrder,
@@ -8,15 +11,51 @@ from src.portfolio import (
 
 class PortfolioManager:
 
-    def __init__(self, init_cash: float, transaction_fee: float):
+    def __init__(self, init_cash: float, transaction_fee: float, expiration_time_sec: int):
+        self.init_cash = init_cash
         self.portfolio = Portfolio([], init_cash, init_cash)
         self.transaction_fee = transaction_fee
-        self.orders = []
+        self.expiration_time_sec = expiration_time_sec
+        self.orders: list[PortfolioOrder] = []
 
-    def place_orders(self, orders: list[PortfolioOrder]):
-        print("Place orders")
+    def place_orders(self, timestamp: datetime, orders: list[PortfolioOrder]):
+        for order in orders:
+            order.place_dt = timestamp
         self.orders.extend(orders)
 
-    def handle_orders(self):
-        print("Handle orders")
-        self.portfolio.value += 1
+    def handle_orders(self, timestamp: datetime, quotes: QuotesSnapshot):
+        new_orders = []
+        for order in self.orders:
+            if timestamp - order.place_dt > timedelta(seconds=self.expiration_time_sec):
+                continue
+            asset_index = None
+            for index, position in enumerate(self.portfolio.positions):
+                if position.asset == order.asset:
+                    asset_index = index
+                    break
+            if order.order_type == PortfolioOrderType.buy:
+                if quotes.closing_price(order.asset) < order.price:
+                    cost = order.price * order.volume * (1 + self.transaction_fee)
+                    if cost > self.portfolio.cash:
+                        print("Not enough funds to buy", order.asset)
+                        continue
+                    self.portfolio.cash -= cost
+                    if asset_index is None:
+                        self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume))
+                    else:
+                        self.portfolio.positions[asset_index].volume += order.volume
+                    continue
+            else:
+                if quotes.closing_price(order.asset) > order.price:
+                    position: PortfolioPosition = self.portfolio.positions[asset_index]
+                    prev_volume = position.volume
+                    position.volume = max(0, prev_volume - order.volume)
+                    if position.volume * quotes.closing_price(order.asset) < self.init_cash / 1000:
+                        position.volume = 0
+                    actual_order_volume = prev_volume - position.volume
+                    self.portfolio.cash += order.price * actual_order_volume * (1 - self.transaction_fee)
+                    self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
+                    continue
+            new_orders.append(order)
+        self.portfolio.update_value(quotes)
+        self.orders = new_orders

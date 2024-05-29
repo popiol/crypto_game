@@ -19,6 +19,5 @@ class Agent:
         self.model_name = f"{agent_name}_{host_name}_{model_dt}_{self.model_id}"
         self.metrics = {}
 
-    def process_quotes(self, inputs: np.array, portfolio: Portfolio) -> list[PortfolioOrder]:
-        print("Process quotes")
+    def make_decision(self, inputs: np.array, portfolio: Portfolio) -> list[PortfolioOrder]:
         return []
