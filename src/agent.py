@@ -20,4 +20,5 @@ class Agent:
         self.metrics = {}
 
     def process_quotes(self, inputs: np.array, portfolio: Portfolio) -> list[PortfolioOrder]:
-        pass
+        print("Process quotes")
+        return []

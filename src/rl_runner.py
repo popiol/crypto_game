@@ -4,7 +4,7 @@ import argparse
 import sys
 import time
 from datetime import datetime, timedelta
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 
 import numpy as np
 import yaml
@@ -70,6 +70,7 @@ class RlRunner:
 
     @staticmethod
     def run_agent(inputs: np.array, agent: Agent, portfolio_manager: PortfolioManager):
+        print("run agent", agent.agent_name)
         orders = agent.process_quotes(inputs, portfolio_manager.portfolio)
         portfolio_manager.handle_orders()
         portfolio_manager.place_orders(orders)
@@ -77,10 +78,9 @@ class RlRunner:
 
     def run_agents(self, inputs: np.array):
         params = [(inputs, agent, portfolio_manager) for agent, portfolio_manager in zip(self.agents, self.portfolio_managers)]
-        with Pool(1) as pool:
+        with get_context("spawn").Pool(1) as pool:
             portfolio_managers = pool.starmap(RlRunner.run_agent, params)
-        print("Portfolio values", [manager.portfolio.value for manager in portfolio_managers])
-        print("Portfolio values2", [manager.portfolio.value for manager in self.portfolio_managers])
+        self.portfolio_managers = portfolio_managers
 
     def main_loop(self):
         for simulation_index in range(1):
@@ -92,6 +92,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(self.data_transformer.memory)
+                break
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

@@ -14,7 +14,9 @@ class PortfolioManager:
         self.orders = []
 
     def place_orders(self, orders: list[PortfolioOrder]):
+        print("Place orders")
         self.orders.extend(orders)
 
     def handle_orders(self):
-        pass
+        print("Handle orders")
+        self.portfolio.value += 1
