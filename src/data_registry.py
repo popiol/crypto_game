@@ -60,7 +60,7 @@ class DataRegistry:
             for month in sorted(glob.glob(year + "/*")):
                 for day in sorted(glob.glob(month + "/*")):
                     for file in sorted(glob.glob(day + "/*.json")):
-                        timestamp = datetime.strptime(file.split(".")[0], "%Y%m%d%H%M%S")
+                        timestamp = datetime.strptime(file.split("/")[-1].split(".")[0], "%Y%m%d%H%M%S")
                         with open(file) as f:
                             yield timestamp, json.load(f)
 
