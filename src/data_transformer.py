@@ -17,11 +17,15 @@ class QuotesSnapshot:
         "o": ["opening_price"],
     }
 
-    def __init__(self, quotes: dict):
-        self.quotes = quotes
+    def __init__(self, quotes: dict = None):
+        self.quotes = quotes or {}
+
+    def update(self, quotes: dict):
+        quotes = {key: val for key, val in quotes.items() if float(val["c"][0]) > 0}
+        self.quotes = {**self.quotes, **quotes}
 
     def closing_price(self, asset: str) -> float:
-        return self.quotes[asset]["c"][0]
+        return float(self.quotes[asset]["c"][0])
 
     def items(self):
         return ((name, self.features(asset)) for name, asset in self.quotes.items())

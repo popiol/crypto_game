@@ -24,7 +24,7 @@ class Agent:
     def make_decision(
         self, inputs: np.array, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ) -> list[PortfolioOrder]:
-        output_matrix = self.model.predict([inputs])[0]
+        output_matrix = self.model.predict(np.array([inputs]))[0]
         output = self.data_transformer.transform_output(output_matrix, asset_list)
         orders = []
         for position in portfolio.positions:
@@ -35,7 +35,8 @@ class Agent:
                 price=quotes.closing_price(position.asset) * output[position.asset].relative_sell_price,
             )
             orders.append(sell_order)
-        best_asset_index = output_matrix[:, 0].argmax()
+        scores = [features.score if asset in quotes.quotes else np.nan for asset, features in output.items()]
+        best_asset_index = np.nanargmax(scores)
         best_asset = asset_list[best_asset_index]
         cost = portfolio.cash * output[best_asset].relative_buy_volume
         buy_price = quotes.closing_price(best_asset) * output[best_asset].relative_buy_price

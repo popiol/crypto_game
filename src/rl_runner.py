@@ -78,8 +78,9 @@ class RlRunner:
     def main_loop(self):
         for simulation_index in range(1):
             print("Start simulation", simulation_index)
+            quotes = QuotesSnapshot()
             for timestamp, raw_quotes in self.data_registry.quotes_iterator():
-                quotes = QuotesSnapshot(raw_quotes)
+                quotes.update(raw_quotes)
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:

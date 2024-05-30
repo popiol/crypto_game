@@ -12,11 +12,11 @@ class PortfolioOrderType(Enum):
 
 @dataclass
 class PortfolioOrder:
-    place_dt: datetime
     order_type: PortfolioOrderType
     asset: str
     volume: float
     price: float
+    place_dt: datetime = None
 
 
 @dataclass

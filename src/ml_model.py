@@ -14,4 +14,4 @@ class MlModel:
         return self.model.evaluate(x, y)
 
     def predict(self, x: np.array):
-        return self.model.predict(x)
+        return self.model.predict(x, verbose=0)
