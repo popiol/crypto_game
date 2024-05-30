@@ -11,11 +11,12 @@ from src.portfolio import (
 
 class PortfolioManager:
 
-    def __init__(self, init_cash: float, transaction_fee: float, expiration_time_sec: int):
+    def __init__(self, init_cash: float, transaction_fee: float, expiration_time_sec: int, min_transaction: float):
         self.init_cash = init_cash
         self.portfolio = Portfolio([], init_cash, init_cash)
         self.transaction_fee = transaction_fee
         self.expiration_time_sec = expiration_time_sec
+        self.min_transaction = min_transaction
         self.orders: list[PortfolioOrder] = []
 
     def place_orders(self, timestamp: datetime, orders: list[PortfolioOrder]):
@@ -43,6 +44,8 @@ class PortfolioManager:
         if cost > self.portfolio.cash:
             print("Not enough funds to buy", order.asset)
             return False
+        if cost < self.min_transaction:
+            return False
         self.portfolio.cash -= cost
         if asset_index is None:
             self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume))
@@ -58,7 +61,7 @@ class PortfolioManager:
         position: PortfolioPosition = self.portfolio.positions[asset_index]
         prev_volume = position.volume
         position.volume = max(0, prev_volume - order.volume)
-        if position.volume * quotes.closing_price(order.asset) < self.init_cash / 1000:
+        if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         actual_order_volume = prev_volume - position.volume
         self.portfolio.cash += order.price * actual_order_volume * (1 - self.transaction_fee)

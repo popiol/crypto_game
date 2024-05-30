@@ -60,7 +60,7 @@ class RlRunner:
             self.data_transformer.n_outputs,
         )
         evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder)
-        agent_builder = AgentBuilder(evolution_handler, **self.config["agent_builder"])
+        agent_builder = AgentBuilder(evolution_handler, self.data_transformer, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
 
@@ -71,7 +71,7 @@ class RlRunner:
 
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, inputs: np.array):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            orders = agent.make_decision(inputs, portfolio_manager.portfolio)
+            orders = agent.make_decision(inputs, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.handle_orders(timestamp, quotes)
             portfolio_manager.place_orders(timestamp, orders)
 

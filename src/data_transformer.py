@@ -84,16 +84,18 @@ class InputFeatures(ModelFeatures):
 
 
 @dataclass
-class OutputsFeatures(ModelFeatures):
+class OutputFeatures(ModelFeatures):
     score: float = None
+    relative_buy_volume: float = None
     relative_buy_price: float = None
     relative_sell_price: float = None
 
 
 class DataTransformer:
 
-    def __init__(self, memory_length: int):
+    def __init__(self, memory_length: int, expected_daily_change: float):
         self.memory_length = memory_length
+        self.expected_daily_change = expected_daily_change
         self.memory = None
         self.last_features = None
         self.stats = None
@@ -105,7 +107,7 @@ class DataTransformer:
 
     @property
     def n_outputs(self):
-        return OutputsFeatures.count()
+        return OutputFeatures.count()
 
     def quotes_to_features(self, quotes: QuotesSnapshot, asset_list: list[str]) -> np.array:
         """Returns matrix of shape (n_assets, n_features)"""
@@ -164,3 +166,13 @@ class DataTransformer:
         for index in range(self.memory_length - 1):
             self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
         self.memory = np.concatenate((self.memory[:-1], np.expand_dims(features, 0)))
+
+    def transform_output(self, output_matrix: np.array, asset_list: list[str]) -> dict[str, OutputFeatures]:
+        score = output_matrix[:, 0]
+        relative_buy_volume = np.clip(output_matrix[:, 0] / np.max(output_matrix[:, 0]), 0, 1)
+        relative_buy_price = (output_matrix[:, 1] - 1) * self.expected_daily_change + 1
+        relative_sell_price = output_matrix[:, 2] * self.expected_daily_change + 1
+        return {
+            row[0]: OutputFeatures(*row[1:])
+            for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price)
+        }
