@@ -14,6 +14,7 @@ from src.agent_builder import AgentBuilder
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer, QuotesSnapshot
 from src.evolution_handler import EvolutionHandler
+from src.logger import Logger
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
@@ -28,6 +29,7 @@ class RlRunner:
     def load_config(self, file_path: str):
         with open(file_path) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
+        self.logger = Logger(**self.config["logger"])
 
     def prepare(self):
         print("Sync data")
@@ -71,8 +73,8 @@ class RlRunner:
 
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, inputs: np.array):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            orders = agent.make_decision(inputs, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.handle_orders(timestamp, quotes)
+            orders = agent.make_decision(inputs, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.place_orders(timestamp, orders)
 
     def main_loop(self):
@@ -87,6 +89,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
+                self.logger.log_portfolios(self.agents, [p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

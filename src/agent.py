@@ -47,4 +47,4 @@ class Agent:
             price=buy_price,
         )
         orders.append(buy_order)
-        return []
+        return orders

@@ -23,6 +23,7 @@ class PortfolioOrder:
 class PortfolioPosition:
     asset: str
     volume: float
+    value: float = None
 
 
 @dataclass
@@ -32,4 +33,6 @@ class Portfolio:
     value: float
 
     def update_value(self, quotes: QuotesSnapshot):
-        self.value = sum(p.volume * quotes.closing_price(p.asset) for p in self.positions) + self.cash
+        for p in self.positions:
+            p.value = p.volume * quotes.closing_price(p.asset)
+        self.value = sum(p.value for p in self.positions) + self.cash

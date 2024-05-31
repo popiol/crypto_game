@@ -21,3 +21,5 @@ portfolio_manager:
   expiration_time_sec: 86400
   min_transaction: 1
   
+logger:
+  log_portfolio_once_per: 24

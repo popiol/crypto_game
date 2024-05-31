@@ -19,12 +19,20 @@ class PortfolioManager:
         self.min_transaction = min_transaction
         self.orders: list[PortfolioOrder] = []
 
+    def adjust_buy_volume(self, orders: list[PortfolioOrder]):
+        cost = sum(o.volume * o.price for o in self.orders if o.order_type == PortfolioOrderType.buy)
+        if cost > self.portfolio.cash:
+            c = self.portfolio.cash / cost
+            for order in orders:
+                if order.order_type == PortfolioOrderType.buy:
+                    order.volume *= c
+
     def place_orders(self, timestamp: datetime, orders: list[PortfolioOrder]):
         for order in orders:
             order.place_dt = timestamp
-        orders = [o for o in orders if o.volume > 0]
-        assets = [o.asset for o in orders]
-        self.orders = [o for o in self.orders if o.asset not in assets]
+        assets = set([o.asset for o in self.orders])
+        orders = [o for o in orders if o.volume > 0 and o.asset not in assets]
+        self.adjust_buy_volume(orders)
         self.orders.extend(orders)
 
     def find_position(self, asset: str) -> int:
@@ -40,12 +48,14 @@ class PortfolioManager:
             return False
         if quotes.closing_price(order.asset) >= order.price:
             return False
-        cost = order.price * order.volume * (1 + self.transaction_fee)
-        if cost > self.portfolio.cash:
+        cost = order.price * order.volume
+        if cost > self.portfolio.cash * 1.1:
             print("Not enough funds to buy", order.asset)
-            return False
+            return True
+        cost = min(cost, self.portfolio.cash)
         if cost < self.min_transaction:
-            return False
+            return True
+        order.volume = cost / order.price / (1 + self.transaction_fee)
         self.portfolio.cash -= cost
         if asset_index is None:
             self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume))
@@ -56,6 +66,8 @@ class PortfolioManager:
     def sell_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int) -> bool:
         if order.order_type != PortfolioOrderType.sell:
             return False
+        if asset_index is None:
+            return True
         if quotes.closing_price(order.asset) <= order.price:
             return False
         position: PortfolioPosition = self.portfolio.positions[asset_index]
@@ -63,8 +75,8 @@ class PortfolioManager:
         position.volume = max(0, prev_volume - order.volume)
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
-        actual_order_volume = prev_volume - position.volume
-        self.portfolio.cash += order.price * actual_order_volume * (1 - self.transaction_fee)
+        order.volume = prev_volume - position.volume
+        self.portfolio.cash += order.price * order.volume * (1 - self.transaction_fee)
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
         return True
 
