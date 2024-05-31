@@ -27,12 +27,28 @@ class PortfolioManager:
                 if order.order_type == PortfolioOrderType.buy:
                     order.volume *= c
 
-    def place_orders(self, timestamp: datetime, orders: list[PortfolioOrder]):
+    def validate_order(self, order: PortfolioOrder):
+        assets = set([o.asset for o in self.orders])
+        if order.asset in assets:
+            return False
+        if order.order_type == PortfolioOrderType.buy and order.volume * order.price < self.min_transaction:
+            return False
+        if order.order_type == PortfolioOrderType.sell:
+            asset_index = self.find_position(order.asset)
+            if asset_index is None:
+                return False
+            if (order.volume - self.portfolio.positions[asset_index].volume) * order.price < self.min_transaction:
+                order.volume = self.portfolio.positions[asset_index].volume
+        return True
+
+    def fix_orders(self, timestamp: datetime, orders: list[PortfolioOrder]) -> list[PortfolioOrder]:
         for order in orders:
             order.place_dt = timestamp
-        assets = set([o.asset for o in self.orders])
-        orders = [o for o in orders if o.volume > 0 and o.asset not in assets]
         self.adjust_buy_volume(orders)
+        return [o for o in orders if self.validate_order(o)]
+
+    def place_orders(self, timestamp: datetime, orders: list[PortfolioOrder]):
+        orders = self.fix_orders(timestamp, orders)
         self.orders.extend(orders)
 
     def find_position(self, asset: str) -> int:

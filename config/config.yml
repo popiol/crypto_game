@@ -19,7 +19,7 @@ portfolio_manager:
   init_cash: 1000
   transaction_fee: 0.03
   expiration_time_sec: 86400
-  min_transaction: 1
+  min_transaction: 10
   
 logger:
   log_portfolio_once_per: 24
