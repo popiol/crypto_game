@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from src.agent import Agent
 from src.data_transformer import DataTransformer
 from src.evolution_handler import EvolutionHandler
+from src.trainset import Trainset
 
 
 @dataclass
@@ -11,6 +12,7 @@ class AgentBuilder:
 
     evolution_handler: EvolutionHandler
     data_transformer: DataTransformer
+    trainset: Trainset
     n_agents: int
     name_list_file: str
 
@@ -25,6 +27,6 @@ class AgentBuilder:
         for name in self.get_names():
             print(name)
             model = self.evolution_handler.create_model()
-            agent = Agent(name, model, self.data_transformer)
+            agent = Agent(name, model, self.data_transformer, self.trainset)
             agents.append(agent)
         return agents

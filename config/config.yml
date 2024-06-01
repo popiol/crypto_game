@@ -23,3 +23,6 @@ portfolio_manager:
   
 logger:
   log_portfolio_once_per: 24
+
+trainset:
+  local_path: data/trainset

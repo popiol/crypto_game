@@ -19,6 +19,7 @@ from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.portfolio_manager import PortfolioManager
+from src.trainset import Trainset
 
 
 class RlRunner:
@@ -62,7 +63,8 @@ class RlRunner:
             self.data_transformer.n_outputs,
         )
         evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder)
-        agent_builder = AgentBuilder(evolution_handler, self.data_transformer, **self.config["agent_builder"])
+        self.trainset = Trainset(**self.config["trainset"])
+        agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
 
@@ -71,10 +73,11 @@ class RlRunner:
         serialized_model = self.model_serializer.serialize(agent.model)
         self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
 
-    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, inputs: np.array):
+    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, input: np.array):
+        self.trainset.store_input(timestamp, input)
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             portfolio_manager.handle_orders(timestamp, quotes)
-            orders = agent.make_decision(inputs, quotes, portfolio_manager.portfolio, self.asset_list)
+            orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.place_orders(timestamp, orders)
 
     def main_loop(self):
