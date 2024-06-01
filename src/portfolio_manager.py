@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
 from src.portfolio import (
+    ClosedTransaction,
     Portfolio,
     PortfolioOrder,
     PortfolioOrderType,
@@ -74,12 +75,19 @@ class PortfolioManager:
         order.volume = cost / order.price / (1 + self.transaction_fee)
         self.portfolio.cash -= cost
         if asset_index is None:
-            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume))
+            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, order.place_dt))
         else:
-            self.portfolio.positions[asset_index].volume += order.volume
+            position = self.portfolio.positions[asset_index]
+            position.buy_price = (position.buy_price * position.volume + order.price * order.volume) / (
+                position.volume + order.volume
+            )
+            position.volume += order.volume
+            position.place_dt = order.place_dt
         return True
 
-    def sell_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int) -> bool:
+    def sell_asset(
+        self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, closed_transactions: list[ClosedTransaction]
+    ) -> bool:
         if order.order_type != PortfolioOrderType.sell:
             return False
         if asset_index is None:
@@ -94,9 +102,13 @@ class PortfolioManager:
         order.volume = prev_volume - position.volume
         self.portfolio.cash += order.price * order.volume * (1 - self.transaction_fee)
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
+        closed_transactions.append(
+            ClosedTransaction(order.asset, order.volume, position.buy_price, order.price, position.place_dt, order.place_dt)
+        )
         return True
 
-    def handle_orders(self, timestamp: datetime, quotes: QuotesSnapshot):
+    def handle_orders(self, timestamp: datetime, quotes: QuotesSnapshot) -> list[ClosedTransaction]:
+        closed_transactions = []
         new_orders = []
         for order in self.orders:
             if timestamp - order.place_dt > timedelta(seconds=self.expiration_time_sec):
@@ -104,8 +116,9 @@ class PortfolioManager:
             asset_index = self.find_position(order.asset)
             if self.buy_asset(order, quotes, asset_index):
                 continue
-            if self.sell_asset(order, quotes, asset_index):
+            if self.sell_asset(order, quotes, asset_index, closed_transactions):
                 continue
             new_orders.append(order)
         self.portfolio.update_value(quotes)
         self.orders = new_orders
+        return closed_transactions

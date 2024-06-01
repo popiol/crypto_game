@@ -6,17 +6,26 @@ import numpy as np
 
 from src.data_transformer import DataTransformer, QuotesSnapshot
 from src.ml_model import MlModel
-from src.portfolio import Portfolio, PortfolioOrder, PortfolioOrderType
+from src.portfolio import (
+    ClosedTransaction,
+    Portfolio,
+    PortfolioOrder,
+    PortfolioOrderType,
+)
+from src.rl_trainer import RlTrainer
 from src.trainset import Trainset
 
 
 class Agent:
 
-    def __init__(self, agent_name: str, model: MlModel, data_transformer: DataTransformer, trainset: Trainset):
+    def __init__(
+        self, agent_name: str, model: MlModel, data_transformer: DataTransformer, trainset: Trainset, rl_trainer: RlTrainer
+    ):
         self.agent_name = agent_name
         self.model = model
         self.data_transformer = data_transformer
         self.trainset = trainset
+        self.rl_trainer = rl_trainer
         self.model_id = uuid.uuid4().hex[:5]
         model_dt = datetime.now().strftime("%Y%m%d")
         host_name = gethostname()
@@ -51,3 +60,12 @@ class Agent:
         )
         orders.append(buy_order)
         return orders
+
+    def train(self, closed_transactions: list[ClosedTransaction]):
+        for transaction in closed_transactions:
+            buy_input, buy_output = self.trainset.get_by_timestamp(transaction.place_buy_dt, self.agent_name)
+            sell_input, sell_output = self.trainset.get_by_timestamp(transaction.place_sell_dt, self.agent_name)
+            input = np.array([buy_input, sell_input])
+            output = np.array([buy_output, sell_output])
+            reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
+            self.rl_trainer.train(self.model, input, output, reward)

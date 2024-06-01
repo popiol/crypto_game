@@ -23,6 +23,8 @@ class PortfolioOrder:
 class PortfolioPosition:
     asset: str
     volume: float
+    buy_price: float
+    place_dt: datetime
     value: float = None
 
 
@@ -36,3 +38,13 @@ class Portfolio:
         for p in self.positions:
             p.value = p.volume * quotes.closing_price(p.asset)
         self.value = sum(p.value for p in self.positions) + self.cash
+
+
+@dataclass
+class ClosedTransaction:
+    asset: str
+    volume: float
+    buy_price: float
+    sell_price: float
+    place_buy_dt: datetime
+    place_sell_dt: datetime
