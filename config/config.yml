@@ -8,7 +8,7 @@ data_registry:
   retention_days: 7
 
 agent_builder:
-  n_agents: 1
+  n_agents: 5
   name_list_file: data/names.csv
 
 data_transformer:

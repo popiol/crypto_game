@@ -4,7 +4,6 @@ import argparse
 import sys
 import time
 from datetime import datetime, timedelta
-from multiprocessing import Pool, get_context
 
 import numpy as np
 import yaml
@@ -94,6 +93,7 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
                 self.logger.log_portfolios(self.agents, [p.portfolio for p in self.portfolio_managers])
+            self.logger.log_portfolios(self.agents, [p.portfolio for p in self.portfolio_managers], force=True)
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

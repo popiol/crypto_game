@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from tensorflow import keras
+
+from src.keras import keras
 
 
 class MlModel:
@@ -15,7 +16,7 @@ class MlModel:
     def test(self, x: np.array, y: np.array):
         return self.model.evaluate(x, y)
 
-    def predict(self, x: np.array):
+    def predict(self, x: np.array) -> np.array:
         return self.model.predict(x, verbose=0)
 
     def copy(self) -> MlModel:

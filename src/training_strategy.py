@@ -1,7 +1,6 @@
 import random
 
 import numpy as np
-from tensorflow import keras
 
 from src.ml_model import MlModel
 

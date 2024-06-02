@@ -1,8 +1,7 @@
 import uuid
 from dataclasses import dataclass
 
-from tensorflow import keras
-
+from src.keras import keras
 from src.ml_model import MlModel
 
 

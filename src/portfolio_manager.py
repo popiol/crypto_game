@@ -67,7 +67,6 @@ class PortfolioManager:
             return False
         cost = order.price * order.volume
         if cost > self.portfolio.cash * 1.1:
-            print("Not enough funds to buy", order.asset)
             return True
         cost = min(cost, self.portfolio.cash)
         if cost < self.min_transaction:
