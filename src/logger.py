@@ -31,8 +31,11 @@ class Logger:
 
     def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):
         for transaction in transactions:
-            self.transactions[agent].append(f"{transaction.asset}:{transaction.profit - transaction.cost}")
+            self.transactions[agent].append(f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}")
 
     def log_simulation_results(self, portfolios: list[Portfolio]):
-        results = {agent: [portfolio.value, *self.transactions[agent]] for agent, portfolio in zip(self.transactions, portfolios)}
+        results = {
+            agent: [round(portfolio.value, 2), *self.transactions[agent]]
+            for agent, portfolio in zip(self.transactions, portfolios)
+        }
         self.print_table(results)
