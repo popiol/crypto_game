@@ -18,11 +18,8 @@ data_transformer:
 portfolio_manager:
   init_cash: 1000
   transaction_fee: 0.03
-  expiration_time_sec: 86400
+  expiration_time_sec: 5400
   min_transaction: 10
-  
-logger:
-  log_portfolio_once_per: 24
 
 trainset:
   local_path: data/trainset

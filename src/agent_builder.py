@@ -30,5 +30,4 @@ class AgentBuilder:
             training_strategy = StrategyPicker().pick(model)
             agent = Agent(name, self.data_transformer, self.trainset, training_strategy)
             agents.append(agent)
-            print(name, training_strategy.__class__.__name__)
         return agents

@@ -29,10 +29,10 @@ class RlRunner:
     def load_config(self, file_path: str):
         with open(file_path) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
-        self.logger = Logger(**self.config["logger"])
 
     def prepare(self):
-        print("Sync data")
+        self.logger = Logger()
+        self.logger.log("Sync data")
         self.data_registry = DataRegistry(**self.config["data_registry"])
         self.data_registry.sync()
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
@@ -40,7 +40,7 @@ class RlRunner:
         self.stats = self.data_registry.get_stats()
 
     def initial_run(self):
-        print("Initial run")
+        self.logger.log("Initial run")
         for timestamp, raw_quotes in self.data_registry.quotes_iterator():
             quotes = QuotesSnapshot(raw_quotes)
             features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
@@ -52,7 +52,7 @@ class RlRunner:
         self.data_registry.set_asset_list(self.asset_list)
 
     def create_agents(self):
-        print("Create agents")
+        self.logger.log("Create agents")
         self.model_registry = ModelRegistry(**self.config["model_registry"])
         self.model_serializer = ModelSerializer()
         model_builder = ModelBuilder(
@@ -66,9 +66,10 @@ class RlRunner:
         agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
+        self.logger.log_agents(self.agents)
 
     def save_model(self, agent: Agent):
-        print("Save model", agent.model_name)
+        self.logger.log("Save model", agent.model_name)
         serialized_model = self.model_serializer.serialize(agent.model)
         self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
 
@@ -79,10 +80,11 @@ class RlRunner:
             agent.train(closed_transactions)
             orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.place_orders(timestamp, orders)
+            self.logger.log_transactions(agent.agent_name, closed_transactions)
 
     def main_loop(self):
         for simulation_index in range(1):
-            print("Start simulation", simulation_index)
+            self.logger.log("Start simulation", simulation_index)
             quotes = QuotesSnapshot()
             for timestamp, raw_quotes in self.data_registry.quotes_iterator():
                 quotes.update(raw_quotes)
@@ -92,8 +94,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
-                self.logger.log_portfolios(self.agents, [p.portfolio for p in self.portfolio_managers])
-            self.logger.log_portfolios(self.agents, [p.portfolio for p in self.portfolio_managers], force=True)
+            self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
 

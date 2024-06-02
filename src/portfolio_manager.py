@@ -74,7 +74,7 @@ class PortfolioManager:
         order.volume = cost / order.price / (1 + self.transaction_fee)
         self.portfolio.cash -= cost
         if asset_index is None:
-            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, order.place_dt))
+            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, cost, order.place_dt))
         else:
             position = self.portfolio.positions[asset_index]
             position.buy_price = (position.buy_price * position.volume + order.price * order.volume) / (
@@ -99,10 +99,20 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
-        self.portfolio.cash += order.price * order.volume * (1 - self.transaction_fee)
+        profit = order.price * order.volume * (1 - self.transaction_fee)
+        self.portfolio.cash += profit
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
         closed_transactions.append(
-            ClosedTransaction(order.asset, order.volume, position.buy_price, order.price, position.place_dt, order.place_dt)
+            ClosedTransaction(
+                order.asset,
+                order.volume,
+                position.buy_price,
+                order.price,
+                position.place_dt,
+                order.place_dt,
+                position.cost,
+                profit,
+            )
         )
         return True
 

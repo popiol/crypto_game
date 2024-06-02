@@ -24,6 +24,7 @@ class PortfolioPosition:
     asset: str
     volume: float
     buy_price: float
+    cost: float
     place_dt: datetime
     value: float = None
 
@@ -48,3 +49,5 @@ class ClosedTransaction:
     sell_price: float
     place_buy_dt: datetime
     place_sell_dt: datetime
+    cost: float
+    profit: float
