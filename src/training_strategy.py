@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+from tensorflow import keras
 
 from src.ml_model import MlModel
 
@@ -41,7 +42,10 @@ class LearnOnMistakes(TrainingStrategy):
 class LearnOnSuccess(TrainingStrategy):
 
     def predict(self, model: MlModel, input: np.array) -> np.array:
-        return model.predict(np.array([input]))[0]
+        cloned = keras.models.clone_model(model)
+        for layer in cloned.get_weights():
+            layer += np.random.normal(loc=0.0, scale=0.7, size=layer.shape)
+        return cloned.predict(np.array([input]))[0]
 
     def train(self, model: MlModel, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
