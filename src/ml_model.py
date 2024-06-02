@@ -7,8 +7,8 @@ class MlModel:
     def __init__(self, model: keras.Model):
         self.model = model
 
-    def train(self, x: np.array, y: np.array):
-        self.model.fit(x, y)
+    def train(self, x: np.array, y: np.array, n_epochs: int = 1):
+        self.model.fit(x, y, epochs=n_epochs)
 
     def test(self, x: np.array, y: np.array):
         return self.model.evaluate(x, y)

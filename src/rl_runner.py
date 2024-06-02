@@ -19,7 +19,6 @@ from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.portfolio_manager import PortfolioManager
-from src.rl_trainer import RlTrainer
 from src.trainset import Trainset
 
 
@@ -65,10 +64,7 @@ class RlRunner:
         )
         evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder)
         self.trainset = Trainset(**self.config["trainset"])
-        rl_trainer = RlTrainer()
-        agent_builder = AgentBuilder(
-            evolution_handler, self.data_transformer, self.trainset, rl_trainer, **self.config["agent_builder"]
-        )
+        agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
 

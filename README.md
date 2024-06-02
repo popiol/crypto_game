@@ -6,7 +6,7 @@ This is an implementation of a reinforcement learning method for a cryptocurrenc
 
 The whole process starts with downloading hourly crypto exchange quotes from the last week.
 Those quotes are then passed to learning agents. The agents make decisions about
-buying and selling crypto assets based on an ML model. Each agent has its own model.
+buying and selling crypto assets based on their ML models. Each agent has its own model.
 The agents also train their models dynamically based on the recent results. 
 The training repeats with the current dataset for 24 hours, 
 after which a new dataset is downloaded and new models are created.
@@ -45,3 +45,13 @@ The model structure is as follows:
 * Reshape: (n_assets, n_steps * n_features)
 * Dense layer: (n_assets, n_hidden)
 * Output layer: (n_assets, n_outputs)
+
+## Learning
+
+Each model follows one of the strategies:
+
+* learn on mistakes
+    use only losing transactions and change each output value x to 1 - x
+
+* learn on success
+    randomize the model weights on prediction and learn on the best results only
