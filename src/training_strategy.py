@@ -42,11 +42,13 @@ class LearnOnMistakes(TrainingStrategy):
 
 class LearnOnSuccess(TrainingStrategy):
 
+    def __init__(self, model: MlModel):
+        super().__init__(model)
+        self.clone = self.model.copy()
+        self.clone.add_noise(0.7)
+
     def predict(self, input: np.array) -> np.array:
-        cloned = keras.models.clone_model(self.model)
-        for layer in cloned.get_weights():
-            layer += np.random.normal(loc=0.0, scale=0.7, size=layer.shape)
-        return cloned.predict(np.array([input]))[0]
+        return self.clone.predict(np.array([input]))[0]
 
     def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)

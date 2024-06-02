@@ -77,6 +77,7 @@ class RlRunner:
         self.trainset.store_input(timestamp, input)
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
+            agent.train(closed_transactions)
             orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.place_orders(timestamp, orders)
 
