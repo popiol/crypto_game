@@ -8,13 +8,14 @@ from src.ml_model import MlModel
 
 class TrainingStrategy:
 
-    def __init__(self):
+    def __init__(self, model: MlModel):
+        self.model = model
         self.stats: dict = None
 
-    def predict(self, model: MlModel, input: np.array) -> np.array:
+    def predict(self, input: np.array) -> np.array:
         raise NotImplementedError()
 
-    def train(self, model: MlModel, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.array, output: np.array, reward: float):
         raise NotImplementedError()
 
     def add_to_stats(self, reward: float):
@@ -28,29 +29,29 @@ class TrainingStrategy:
 
 class LearnOnMistakes(TrainingStrategy):
 
-    def predict(self, model: MlModel, input: np.array) -> np.array:
-        return model.predict(np.array([input]))[0]
+    def predict(self, input: np.array) -> np.array:
+        return self.model.predict(np.array([input]))[0]
 
-    def train(self, model: MlModel, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
         if reward < 0:
             output = 1 - output
             n_epochs = 1 if reward > self.stats["mean"] - self.stats["std"] else 2
-            model.train(input, output, n_epochs=n_epochs)
+            self.model.train(input, output, n_epochs=n_epochs)
 
 
 class LearnOnSuccess(TrainingStrategy):
 
-    def predict(self, model: MlModel, input: np.array) -> np.array:
-        cloned = keras.models.clone_model(model)
+    def predict(self, input: np.array) -> np.array:
+        cloned = keras.models.clone_model(self.model)
         for layer in cloned.get_weights():
             layer += np.random.normal(loc=0.0, scale=0.7, size=layer.shape)
         return cloned.predict(np.array([input]))[0]
 
-    def train(self, model: MlModel, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
         if reward > self.stats["mean"] + self.stats["std"]:
-            model.train(input, output)
+            self.model.train(input, output)
 
 
 class StrategyPicker:
@@ -58,6 +59,6 @@ class StrategyPicker:
     def __init__(self):
         self.strategies = [LearnOnMistakes, LearnOnSuccess]
 
-    def pick(self) -> TrainingStrategy:
+    def pick(self, model: MlModel) -> TrainingStrategy:
         index = random.randrange(len(self.strategies))
-        return self.strategies[index]()
+        return self.strategies[index](model)

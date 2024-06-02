@@ -12,22 +12,16 @@ from src.portfolio import (
     PortfolioOrder,
     PortfolioOrderType,
 )
-from src.training_strategy import StrategyPicker
+from src.training_strategy import TrainingStrategy
 from src.trainset import Trainset
 
 
 class Agent:
 
     def __init__(
-        self,
-        agent_name: str,
-        model: MlModel,
-        data_transformer: DataTransformer,
-        trainset: Trainset,
-        strategy_picker: StrategyPicker,
+        self, agent_name: str, data_transformer: DataTransformer, trainset: Trainset, training_strategy: TrainingStrategy
     ):
         self.agent_name = agent_name
-        self.model = model
         self.data_transformer = data_transformer
         self.trainset = trainset
         self.model_id = uuid.uuid4().hex[:5]
@@ -35,12 +29,12 @@ class Agent:
         host_name = gethostname()
         self.model_name = f"{agent_name}_{host_name}_{model_dt}_{self.model_id}"
         self.metrics = {}
-        self.training_strategy = strategy_picker.pick()
+        self.training_strategy = training_strategy
 
     def make_decision(
         self, timestamp: datetime, input: np.array, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ) -> list[PortfolioOrder]:
-        output_matrix = self.training_strategy.predict(self.model, input)
+        output_matrix = self.training_strategy.predict(input)
         self.trainset.store_output(timestamp, output_matrix, self.agent_name)
         output = self.data_transformer.transform_output(output_matrix, asset_list)
         orders = []
@@ -73,4 +67,4 @@ class Agent:
             input = np.array([buy_input, sell_input])
             output = np.array([buy_output, sell_output])
             reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
-            self.training_strategy.train(self.model, input, output, reward)
+            self.training_strategy.train(input, output, reward)
