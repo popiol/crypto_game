@@ -16,7 +16,7 @@ class S3Utils:
         self.path = re.sub("/+$", "", self.path)
 
     def sync(self, source: str, target: str) -> bool:
-        proc = subprocess.Popen(["aws", "s3", "sync", source, target], stdout=subprocess.PIPE)
+        proc = subprocess.Popen(["/usr/local/bin/aws", "s3", "sync", source, target], stdout=subprocess.PIPE)
         out, err = proc.communicate()
         return b"download" in out or b"upload" in out
 
@@ -64,7 +64,7 @@ class S3Utils:
     def upload_json(self, remote_path: str, json_obj) -> bool:
         return self.upload_bytes(remote_path, json.dumps(json_obj).encode())
 
-    def list_files(self, remote_path: str, older_than_days: int) -> list[str]:
+    def list_files(self, remote_path: str, older_than_days: int = None) -> list[str]:
         s3 = boto3.client("s3")
         paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=remote_path)

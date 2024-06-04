@@ -1,6 +1,7 @@
 import src.check_running_master  # isort: skip
 
 import argparse
+import itertools
 import sys
 import time
 from datetime import datetime, timedelta
@@ -84,10 +85,16 @@ class RlRunner:
             metrics = {"reward_stats": agent.training_strategy.stats}
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
+    def reset_simulation(self):
+        self.data_transformer.reset()
+        for portfolio_manager in self.portfolio_managers:
+            portfolio_manager.reset()
+
     def main_loop(self):
-        for simulation_index in range(1):
+        for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
             quotes = QuotesSnapshot()
+            self.reset_simulation()
             for timestamp, raw_quotes in self.data_registry.quotes_iterator():
                 quotes.update(raw_quotes)
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)

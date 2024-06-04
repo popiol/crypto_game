@@ -100,10 +100,13 @@ class DataTransformer:
     def __init__(self, memory_length: int, expected_daily_change: float):
         self.memory_length = memory_length
         self.expected_daily_change = expected_daily_change
-        self.memory = None
-        self.last_features = None
         self.stats = None
         self.stats_source_size = 0
+        self.reset()
+
+    def reset(self):
+        self.memory = None
+        self.last_features = None
 
     @property
     def n_features(self):

@@ -14,10 +14,13 @@ class PortfolioManager:
 
     def __init__(self, init_cash: float, transaction_fee: float, expiration_time_sec: int, min_transaction: float):
         self.init_cash = init_cash
-        self.portfolio = Portfolio([], init_cash, init_cash)
         self.transaction_fee = transaction_fee
         self.expiration_time_sec = expiration_time_sec
         self.min_transaction = min_transaction
+        self.reset()
+
+    def reset(self):
+        self.portfolio = Portfolio([], self.init_cash, self.init_cash)
         self.orders: list[PortfolioOrder] = []
 
     def adjust_buy_volume(self, orders: list[PortfolioOrder]):

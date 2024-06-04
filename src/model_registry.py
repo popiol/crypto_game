@@ -34,8 +34,8 @@ class ModelRegistry:
         for file in files:
             metrics = self.s3_utils.download_json(file)
             stats = metrics["reward_stats"]
-            print(file.split("/")[-1], stats["count"], stats["mean"], stats["std"])
-            if stats["count"] < self.   :
+            print(file.split("/")[-1], "count", stats["count"], "mean", stats["mean"], "std", stats["std"])
+            if stats["count"] < self.maturity_min_stats_count:
                 continue
             models.append((file.split("/")[-1], stats["mean"] - stats["std"]))
         if len(models) > self.max_mature_models:

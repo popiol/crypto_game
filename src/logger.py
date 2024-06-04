@@ -39,3 +39,5 @@ class Logger:
             for agent, portfolio in zip(self.transactions, portfolios)
         }
         self.print_table(results)
+        for agent in self.transactions:
+            self.transactions[agent] = []
