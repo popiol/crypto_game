@@ -31,16 +31,19 @@ class ModelRegistry:
     def archive_old_models(self):
         files = self.s3_utils.list_files(self.metrics_prefix + "/", self.maturity_min_days)
         models = []
+        to_archive = []
         for file in files:
             metrics = self.s3_utils.download_json(file)
             stats = metrics["reward_stats"]
             print(file.split("/")[-1], "count", stats["count"], "mean", stats["mean"], "std", stats["std"])
+            model_and_score = (file.split("/")[-1], stats["mean"] - stats["std"])
             if stats["count"] < self.maturity_min_stats_count:
-                continue
-            models.append((file.split("/")[-1], stats["mean"] - stats["std"]))
+                to_archive.append(model_and_score)
+            else:
+                models.append(model_and_score)
         if len(models) > self.max_mature_models:
-            to_archive = sorted(models, key=lambda x: x[1])[: len(models) - self.max_mature_models]
-            for model, _ in to_archive:
-                print("archive", model)
-                self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
-                self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
+            to_archive.extend(sorted(models, key=lambda x: x[1])[: len(models) - self.max_mature_models])
+        for model, _ in to_archive:
+            print("archive", model)
+            self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
+            self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
