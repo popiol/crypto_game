@@ -1,5 +1,8 @@
 model_registry:
   remote_path: s3://popiol-crypto-models
+  maturity_min_days: 0
+  maturity_min_stats_count: 1
+  max_mature_models: 5
 
 data_registry:
   quotes_remote_path: s3://popiol-crypto/kraken

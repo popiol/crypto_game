@@ -20,7 +20,9 @@ class MlModel:
         return self.model.predict(x, verbose=0)
 
     def copy(self) -> MlModel:
-        return MlModel(keras.models.clone_model(self.model))
+        clone = keras.models.clone_model(self.model)
+        clone.set_weights(self.model.get_weights())
+        return MlModel(clone)
 
     def add_noise(self, std: float):
         for layer in self.model.get_weights():

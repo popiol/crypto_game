@@ -8,7 +8,7 @@ from src.ml_model import MlModel
 class ModelSerializer:
 
     def serialize(self, model: MlModel) -> bytes:
-        tmp_file_name = uuid.uuid4().hex
+        tmp_file_name = uuid.uuid4().hex + ".keras"
         model.model.save(tmp_file_name)
         with open(tmp_file_name, "rb") as f:
             serialized_model = f.read()
@@ -16,7 +16,7 @@ class ModelSerializer:
         return serialized_model
 
     def deserialize(self, serialized_model: bytes) -> MlModel:
-        tmp_file_name = uuid.uuid4().hex
+        tmp_file_name = uuid.uuid4().hex + ".keras"
         with open(tmp_file_name, "wb") as f:
             f.write(serialized_model)
         model = keras.models.load_model(tmp_file_name)

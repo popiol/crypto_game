@@ -1,5 +1,7 @@
-import os
+import json
+import re
 import subprocess
+from datetime import datetime, timedelta, timezone
 
 import boto3
 from botocore.exceptions import ClientError
@@ -10,7 +12,8 @@ class S3Utils:
     def __init__(self, s3_path: str):
         assert s3_path.startswith("s3://")
         self.bucket_name = s3_path.split("/")[2]
-        self.path = os.path.normpath("/".join(s3_path.split("/")[3:]))
+        self.path = "/".join(s3_path.split("/")[3:])
+        self.path = re.sub("/+$", "", self.path)
 
     def sync(self, source: str, target: str) -> bool:
         proc = subprocess.Popen(["aws", "s3", "sync", source, target], stdout=subprocess.PIPE)
@@ -52,8 +55,26 @@ class S3Utils:
         except ClientError:
             return False
 
-    def list_files(self, remote_path: str) -> list[str]:
-        s3 = boto3.resource("s3")
+    def download_json(self, remote_path: str):
+        contents = self.download_bytes(remote_path)
+        if contents is None:
+            return {}
+        return json.loads(contents.decode())
+
+    def upload_json(self, remote_path: str, json_obj) -> bool:
+        return self.upload_bytes(remote_path, json.dumps(json_obj).encode())
+
+    def list_files(self, remote_path: str, older_than_days: int) -> list[str]:
+        s3 = boto3.client("s3")
         paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=remote_path)
-        return pages.search("Contents[].Key")
+        filter = ""
+        if older_than_days is not None:
+            timestamp = (datetime.now(timezone.utc) - timedelta(days=older_than_days)).strftime("%Y-%m-%d %H:%M:%S+0000")
+            filter = f"?to_string(LastModified)<'\"{timestamp}\"'"
+        return (x for x in pages.search(f"Contents[{filter}].Key") if x is not None)
+
+    def move_file(self, source: str, target: str):
+        s3 = boto3.resource("s3")
+        s3.Object(self.bucket_name, target).copy_from(CopySource=f"{self.bucket_name}/{source}")
+        s3.Object(self.bucket_name, source).delete()

@@ -68,11 +68,6 @@ class RlRunner:
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
         self.logger.log_agents(self.agents)
 
-    def save_model(self, agent: Agent):
-        self.logger.log("Save model", agent.model_name)
-        serialized_model = self.model_serializer.serialize(agent.model)
-        self.model_registry.save_model(agent.model_name, serialized_model, agent.metrics)
-
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, input: np.array):
         self.trainset.store_input(timestamp, input)
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
@@ -81,6 +76,13 @@ class RlRunner:
             orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
             portfolio_manager.place_orders(timestamp, orders)
             self.logger.log_transactions(agent.agent_name, closed_transactions)
+
+    def save_models(self):
+        for agent in self.agents:
+            self.logger.log("Save model", agent.model_name)
+            serialized_model = self.model_serializer.serialize(agent.training_strategy.model)
+            metrics = {"reward_stats": agent.training_strategy.stats}
+            self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def main_loop(self):
         for simulation_index in range(1):
@@ -97,6 +99,8 @@ class RlRunner:
             self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(days=1):
                 break
+        self.save_models()
+        self.model_registry.archive_old_models()
 
     def run(self):
         self.prepare()
