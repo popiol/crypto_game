@@ -87,7 +87,8 @@ class RlRunner:
 
     def reset_simulation(self):
         self.data_transformer.reset()
-        for portfolio_manager in self.portfolio_managers:
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            agent.reset()
             portfolio_manager.reset()
 
     def main_loop(self):

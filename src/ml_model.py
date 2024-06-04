@@ -25,5 +25,7 @@ class MlModel:
         return MlModel(clone)
 
     def add_noise(self, std: float):
-        for layer in self.model.get_weights():
+        weights = self.model.get_weights()
+        for layer in weights:
             layer += np.random.normal(loc=0.0, scale=std, size=layer.shape)
+        self.model.set_weights(weights)

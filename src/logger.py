@@ -41,3 +41,4 @@ class Logger:
         self.print_table(results)
         for agent in self.transactions:
             self.transactions[agent] = []
+        print(flush=True)

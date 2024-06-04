@@ -27,6 +27,9 @@ class Agent:
         model_dt = datetime.now().strftime("%Y%m%d")
         self.model_name = f"{agent_name}_{model_dt}_{self.model_id}"
 
+    def reset(self):
+        self.training_strategy.reset()
+
     def make_decision(
         self, timestamp: datetime, input: np.array, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ) -> list[PortfolioOrder]:

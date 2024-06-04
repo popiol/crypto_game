@@ -11,6 +11,9 @@ class TrainingStrategy:
         self.model = model
         self.stats: dict = None
 
+    def reset(self):
+        pass
+
     def predict(self, input: np.array) -> np.array:
         raise NotImplementedError()
 
@@ -43,6 +46,9 @@ class LearnOnSuccess(TrainingStrategy):
 
     def __init__(self, model: MlModel):
         super().__init__(model)
+        self.reset()
+        
+    def reset(self):
         self.clone = self.model.copy()
         self.clone.add_noise(0.7)
 
