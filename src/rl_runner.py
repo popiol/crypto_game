@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import yaml
 
-from src.agent import Agent
 from src.agent_builder import AgentBuilder
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer, QuotesSnapshot
