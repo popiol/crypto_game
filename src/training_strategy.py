@@ -37,7 +37,7 @@ class LearnOnMistakes(TrainingStrategy):
     def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
         if reward < 0:
-            output = 1 - output
+            output = np.round(1 - output)
             n_epochs = 1 if reward > self.stats["mean"] - self.stats["std"] else 2
             self.model.train(input, output, n_epochs=n_epochs)
 
