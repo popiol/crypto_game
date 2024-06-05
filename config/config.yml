@@ -1,3 +1,6 @@
+rl_runner:
+  training_time_hours: 1
+
 model_registry:
   remote_path: s3://popiol-crypto-models
   maturity_min_days: 1

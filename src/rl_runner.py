@@ -30,6 +30,7 @@ class RlRunner:
     def load_config(self, file_path: str):
         with open(file_path) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
+        self.training_time_hours: int = self.config["rl_runner"]["training_time_hours"]
 
     def prepare(self):
         self.logger = Logger()
@@ -105,7 +106,7 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
             self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
-            if datetime.now() - self.start_dt > timedelta(days=1):
+            if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break
         self.save_models()
         self.model_registry.archive_old_models()
