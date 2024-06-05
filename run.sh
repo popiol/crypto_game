@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if pidof -x "run.sh" >/dev/null; then
+    echo "Process already running"
+    exit 0
+fi
+
 . ../.profile
 
 mkdir -p logs/archive
