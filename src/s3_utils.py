@@ -64,13 +64,13 @@ class S3Utils:
     def upload_json(self, remote_path: str, json_obj) -> bool:
         return self.upload_bytes(remote_path, json.dumps(json_obj).encode())
 
-    def list_files(self, remote_path: str, older_than_days: int = None) -> list[str]:
+    def list_files(self, remote_path: str, older_than_hours: int = None) -> list[str]:
         s3 = boto3.client("s3")
         paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=remote_path)
         filter = ""
-        if older_than_days is not None:
-            timestamp = (datetime.now(timezone.utc) - timedelta(days=older_than_days)).strftime("%Y-%m-%d %H:%M:%S+0000")
+        if older_than_hours is not None:
+            timestamp = (datetime.now(timezone.utc) - timedelta(hours=older_than_hours)).strftime("%Y-%m-%d %H:%M:%S+0000")
             filter = f"?to_string(LastModified)<'\"{timestamp}\"'"
         return (x for x in pages.search(f"Contents[{filter}].Key") if x is not None)
 

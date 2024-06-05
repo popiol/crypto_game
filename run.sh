@@ -1,9 +1,11 @@
 #!/bin/bash
 
-if pidof -x "run.sh" >/dev/null; then
-    echo "Process already running"
-    exit 0
-fi
+for pid in $(pidof -x run.sh); do
+    if [ $pid != $$ ]; then
+        echo "Process already running"
+        exit 1
+    fi
+done
 
 . ../.profile
 

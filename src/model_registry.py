@@ -7,9 +7,9 @@ from src.s3_utils import S3Utils
 
 class ModelRegistry:
 
-    def __init__(self, remote_path: str, maturity_min_days: int, maturity_min_stats_count: int, max_mature_models: int):
+    def __init__(self, remote_path: str, maturity_min_hours: int, maturity_min_stats_count: int, max_mature_models: int):
         self.s3_utils = S3Utils(remote_path)
-        self.maturity_min_days = maturity_min_days
+        self.maturity_min_hours = maturity_min_hours
         self.maturity_min_stats_count = maturity_min_stats_count
         self.max_mature_models = max_mature_models
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
@@ -29,7 +29,7 @@ class ModelRegistry:
         return model_name, self.s3_utils.download_bytes(key)
 
     def archive_old_models(self):
-        files = self.s3_utils.list_files(self.metrics_prefix + "/", self.maturity_min_days)
+        files = self.s3_utils.list_files(self.metrics_prefix + "/", self.maturity_min_hours)
         models = []
         to_archive = []
         for file in files:
