@@ -29,3 +29,10 @@ portfolio_manager:
 
 trainset:
   local_path: data/trainset
+
+evolution_handler:
+  remove_layer_prob: 0.4
+  add_layer_prob: 0.1
+  shrink_prob: 0.1
+  extend_prob: 0.1
+  resize_by: 10

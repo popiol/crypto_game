@@ -28,6 +28,18 @@ class ModelBuilder:
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
         return MlModel(model)
+    
+    def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
+        pass
+
+    def add_dense_layer(self, model: MlModel, layer_index: int, size: int):
+        pass
+
+    def add_conv_layer(self, model: MlModel, layer_index: int):
+        pass
+    
+    def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
+        pass
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         inputs, hidden1, outputs1 = self.copy_structure(model_1.model)

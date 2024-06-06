@@ -3,8 +3,14 @@ from __future__ import annotations
 import numpy as np
 
 from src.keras import keras
+from dataclasses import dataclass
 
 
+@dataclass
+class MlModelLayer:
+    shape: tuple
+    input_shape: tuple
+    
 class MlModel:
 
     def __init__(self, model: keras.Model):
@@ -29,3 +35,7 @@ class MlModel:
         for layer in weights:
             layer += np.random.normal(loc=0.0, scale=std, size=layer.shape)
         self.model.set_weights(weights)
+
+    def get_layers(self) -> list[tuple]:
+        return [tuple(w.shape) for w in self.model.weights]
+    
