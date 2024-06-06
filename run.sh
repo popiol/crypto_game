@@ -9,6 +9,8 @@ done
 
 . ../.profile
 
+git reset --hard
+git pull
 mkdir -p logs/archive
 timestamp=$(date '+%Y%m%d%H%M%S')
 mv logs/stderr.log logs/archive/stderr_$timestamp.log 2> /dev/null
