@@ -36,7 +36,7 @@ class MlModel:
             layer += np.random.normal(loc=0.0, scale=std, size=layer.shape)
         self.model.set_weights(weights)
 
-    def get_layers(self) -> list[tuple]:
+    def get_layers(self) -> list[MlModelLayer]:
         layers = []
         input_shape = self.model.layers[0].batch_shape
         for l in self.model.layers[1:]:
