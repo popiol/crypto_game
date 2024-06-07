@@ -47,7 +47,7 @@ class ModelRegistry:
             except:
                 to_archive.append((model_name, 0))
         if len(models) > self.max_mature_models:
-            to_archive.extend(sorted(models, key=lambda x: x[1])[: len(models) - self.max_mature_models])
+            to_archive.extend(sorted(models, key=lambda x: x[1])[: - self.max_mature_models])
         for model, _ in to_archive:
             print("archive", model)
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
