@@ -29,6 +29,12 @@ class ModelBuilder:
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
         return MlModel(model)
     
+    def adjust_n_assets(self, model: MlModel) -> MlModel:
+        model.get_layers()
+        if self.n_assets > model.model.layers[0].batch_shape[2]:
+            config = model.model.get_config()
+            config["layers"]["config"]["batch_shape"] = (None, self.n_steps, self.n_assets, self.n_features)
+    
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
         pass
 

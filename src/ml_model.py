@@ -37,5 +37,12 @@ class MlModel:
         self.model.set_weights(weights)
 
     def get_layers(self) -> list[tuple]:
-        return [tuple(w.shape) for w in self.model.weights]
-    
+        layers = []
+        input_shape = self.model.layers[0].batch_shape
+        for l in self.model.layers[1:]:
+            layers.append(MlModelLayer(
+                shape=tuple(l.weights[0].shape) if l.weights else None,
+                input_shape=input_shape
+            ))
+            input_shape = l.compute_output_shape(input_shape)
+        return layers

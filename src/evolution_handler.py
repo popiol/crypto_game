@@ -27,7 +27,9 @@ class EvolutionHandler:
             model = self.load_existing_model()
         elif method == 2:
             model = self.merge_existing_models()
-        return self.mutate(model)
+        model = self.model_builder.adjust_n_assets(model)
+        model = self.mutate(model)
+        return model
 
     def create_new_model(self) -> MlModel:
         return self.model_builder.build_model()
@@ -52,9 +54,6 @@ class EvolutionHandler:
         model_2 = self.model_serializer.deserialize(serialized_model_2)
         print("Merging models:", model_name_1, "and", model_name_2)
         return self.model_builder.merge_models(model_1, model_2)
-    
-    def adjust_n_assets(self, model: MlModel):
-        pass
 
     def mutate(self, model: MlModel) -> MlModel:
         return model
