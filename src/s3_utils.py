@@ -38,6 +38,14 @@ class S3Utils:
         except ClientError:
             return False
 
+    def delete_file(self, remote_path: str) -> bool:
+        s3 = boto3.client("s3")
+        try:
+            s3.delete_object(Bucket=self.bucket_name, Key=remote_path)
+            return True
+        except ClientError:
+            return False
+
     def download_bytes(self, remote_path: str) -> bytes:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)

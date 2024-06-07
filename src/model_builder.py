@@ -14,7 +14,7 @@ class ModelBuilder:
     n_outputs: int
 
     def build_model(self) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name="input")
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         l = keras.layers.Permute((1, 3, 2))(l)
         l = keras.layers.Dense(100)(l)
@@ -30,11 +30,21 @@ class ModelBuilder:
         return MlModel(model)
     
     def adjust_n_assets(self, model: MlModel) -> MlModel:
-        model.get_layers()
-        if self.n_assets > model.model.layers[0].batch_shape[2]:
-            config = model.model.get_config()
-            config["layers"]["config"]["batch_shape"] = (None, self.n_steps, self.n_assets, self.n_features)
-    
+        layers = model.get_layers()
+        assert self.n_assets >= layers[0].input_shape[2]
+        if self.n_assets == layers[0].input_shape[2]:
+            return model
+        input_shape = (None, self.n_steps, self.n_assets, self.n_features)
+        inputs = keras.layers.Input(shape=input_shape[1:])
+        tensor = inputs
+        for index, l in enumerate(model.model.layers[1:]):
+            new_layer = l.from_config(l.get_config())
+            tensor = new_layer(tensor)
+        outputs = tensor
+        new_model = keras.Model(inputs=inputs, outputs=outputs)
+        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
+        return MlModel(new_model)
+                
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
         pass
 
