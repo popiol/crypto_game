@@ -69,6 +69,14 @@ class ModelBuilder:
             new_weights.append(w1)
         return new_weights
 
+    def copy_weights(self, from_model: keras.Model, to_model: keras.Model):
+        for index, l in enumerate(to_model.layers[1:], 1):
+            if not l.get_weights():
+                continue
+            weights = from_model.layers[index].get_weights()
+            new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
+            l.set_weights(new_weights)
+
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
@@ -88,16 +96,22 @@ class ModelBuilder:
             tensor = new_layer(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        for index, l in enumerate(new_model.layers[1:], 1):
-            if not l.get_weights():
-                continue
-            weights = model.model.layers[index].get_weights()
-            new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
-            l.set_weights(new_weights)
+        self.copy_weights(model.model, new_model)
         return MlModel(new_model)
 
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
-        pass
+        assert 0 <= layer_index < len(model.model.layers) - 2
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+
+        tensor = inputs
+        for l in model.model.layers[1:]:
+            config = l.get_config()
+            new_layer = l.from_config(config)
+            tensor = new_layer(tensor)
+        new_model = keras.Model(inputs=inputs, outputs=tensor)
+        self.compile_model(new_model)
+        self.copy_weights(model.model, new_model)
+        return MlModel(new_model)
 
     def add_dense_layer(self, model: MlModel, layer_index: int, size: int):
         pass
