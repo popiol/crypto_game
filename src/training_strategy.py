@@ -10,6 +10,7 @@ class TrainingStrategy:
     def __init__(self, model: MlModel):
         self.model = model
         self.stats: dict = None
+        self.reset()
 
     def reset(self):
         pass
@@ -43,10 +44,6 @@ class LearnOnMistakes(TrainingStrategy):
 
 
 class LearnOnSuccess(TrainingStrategy):
-
-    def __init__(self, model: MlModel):
-        super().__init__(model)
-        self.reset()
 
     def reset(self):
         self.clone = self.model.copy()

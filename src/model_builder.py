@@ -1,6 +1,8 @@
 import uuid
 from dataclasses import dataclass
 
+import numpy as np
+
 from src.keras import keras
 from src.ml_model import MlModel
 
@@ -24,32 +26,52 @@ class ModelBuilder:
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
-        outputs = l
-        model = keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile(model)
         return MlModel(model)
 
+    def compile_model(self, model):
+        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
+
+    @staticmethod
+    def adjust_array_shape(array: np.array, dim: int, size: int) -> np.array:
+        assert size > 0
+        old_shape = np.shape(array)
+        assert 0 <= dim < len(old_shape)
+        old_size = old_shape[dim]
+        if size == old_size:
+            return array
+        if size < old_size:
+            index = [slice(x) for x in old_shape]
+            index[dim] = slice(size)
+            array = array[*index]
+        elif size > old_size:
+            add_shape = list(old_shape)
+            add_shape[dim] = size - old_size
+            array = np.concatenate((array, np.zeros(add_shape)), axis=dim)
+        return array
+
     def adjust_weights_shape(self, weights: keras.KerasTensor, input_size: int, output_size: int) -> keras.KerasTensor:
-        print("adjust", weights, input_size, output_size)
+        return weights
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
-        layers = model.get_layers()
-        assert self.n_assets >= layers[0].input_shape[2]
-        if self.n_assets == layers[0].input_shape[2]:
+        n_assets = model.model.layers[0].batch_shape[2]
+        assert self.n_assets >= n_assets
+        if self.n_assets == n_assets:
             return model
-        input_shape = (None, self.n_steps, self.n_assets, self.n_features)
-        inputs = keras.layers.Input(shape=input_shape[1:])
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensor = inputs
-        for index, l in enumerate(model.model.layers[1:]):
-            weights = model.layers[index + 1].get_weights()
-            output_size = l.compute_output_shape(tensor.shape)
-            new_weights = self.adjust_weights_shape(weights, tensor.shape[-1], output_size)
+        for l in model.model.layers[1:]:
             new_layer = l.from_config(l.get_config())
-            new_layer.set_Weights(new_weights)
             tensor = new_layer(tensor)
-        outputs = tensor
-        new_model = keras.Model(inputs=inputs, outputs=outputs)
-        new_model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
+        new_model = keras.Model(inputs=inputs, outputs=tensor)
+        self.compile_model(new_model)
+        for index, l in enumerate(new_model.layers[1:], 1):
+            if not l.get_weights():
+                continue
+            weights = model.model.layers[index].get_weights()
+            new_weights = self.adjust_weights_shape(weights, *np.shape(new_model.get_weights()[0]))
+            l.set_weights(new_weights)
         return MlModel(new_model)
 
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
