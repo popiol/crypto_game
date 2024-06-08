@@ -25,6 +25,35 @@ class TestEvolution:
         y = ModelBuilder.adjust_array_shape(x, 1, 5)
         assert np.array_equal(y, [[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]])
 
+    def test_adjust_weights_shape(self):
+        builder = ModelBuilder(10, 11, 12, 13)
+        model = builder.build_model()
+        weights = model.model.get_weights()[:2]
+        input_size, output_size = np.shape(weights[0])
+        with pytest.raises(AssertionError):
+            builder.adjust_weights_shape(model.model.get_weights(), input_size, output_size)
+        with pytest.raises(AssertionError):
+            builder.adjust_weights_shape(weights, 0, output_size)
+        with pytest.raises(AssertionError):
+            builder.adjust_weights_shape(weights, input_size, 0)
+        new_weights = builder.adjust_weights_shape(weights, input_size, output_size)
+        for w1, w2 in zip(weights, new_weights):
+            assert np.array_equal(w1, w2)
+        new_weights = builder.adjust_weights_shape(weights, input_size - 2, output_size)
+        assert np.array_equal(weights[0][:-2, :], new_weights[0])
+        assert np.array_equal(weights[1], new_weights[1])
+        new_weights = builder.adjust_weights_shape(weights, input_size + 2, output_size)
+        assert np.array_equal(weights[0], new_weights[0][:-2, :])
+        assert (new_weights[0][-2:, :] == 0).all()
+        assert np.array_equal(weights[1], new_weights[1])
+        new_weights = builder.adjust_weights_shape(weights, input_size, output_size - 2)
+        assert np.array_equal(weights[0][:, :-2], new_weights[0])
+        assert np.array_equal(weights[1][:-2], new_weights[1])
+        new_weights = builder.adjust_weights_shape(weights, input_size, output_size + 2)
+        assert np.array_equal(weights[0], new_weights[0][:, :-2])
+        assert (new_weights[0][:, -2:] == 0).all()
+        assert np.array_equal(weights[1], new_weights[1][:-2])
+
     def test_adjust_n_assets(self):
         builder = ModelBuilder(10, 11, 12, 13)
         model = builder.build_model()

@@ -27,7 +27,7 @@ class ModelBuilder:
         l = keras.layers.Dense(100)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
-        self.compile(model)
+        self.compile_model(model)
         return MlModel(model)
 
     def compile_model(self, model):
@@ -51,8 +51,20 @@ class ModelBuilder:
             array = np.concatenate((array, np.zeros(add_shape)), axis=dim)
         return array
 
-    def adjust_weights_shape(self, weights: keras.KerasTensor, input_size: int, output_size: int) -> keras.KerasTensor:
-        return weights
+    def adjust_weights_shape(self, weights: list[np.array], input_size: int, output_size: int) -> list[np.array]:
+        new_weights = []
+        if not weights:
+            return new_weights
+        assert len(weights) <= 2
+        assert input_size > 0
+        assert output_size > 0
+        w0 = self.adjust_array_shape(weights[0], 0, input_size)
+        w0 = self.adjust_array_shape(w0, 1, output_size)
+        new_weights.append(w0)
+        if len(weights) > 1:
+            w1 = self.adjust_array_shape(weights[1], 0, output_size)
+            new_weights.append(w1)
+        return new_weights
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
