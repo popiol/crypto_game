@@ -33,6 +33,7 @@ class EvolutionHandler:
 
     def create_new_model(self) -> MlModel:
         asset_dependant = random.randint(0, 1)
+        print("create model, asset_dependant:", asset_dependant)
         return self.model_builder.build_model(asset_dependant)
 
     def load_existing_model(self) -> MlModel:
