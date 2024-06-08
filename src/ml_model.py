@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from src.keras import keras
-from dataclasses import dataclass
 
 
 @dataclass
 class MlModelLayer:
     shape: tuple
     input_shape: tuple
-    
+
+
 class MlModel:
 
     def __init__(self, model: keras.Model):
@@ -40,9 +42,6 @@ class MlModel:
         layers = []
         input_shape = self.model.layers[0].batch_shape
         for l in self.model.layers[1:]:
-            layers.append(MlModelLayer(
-                shape=tuple(l.weights[0].shape) if l.weights else None,
-                input_shape=input_shape
-            ))
+            layers.append(MlModelLayer(shape=tuple(l.weights[0].shape) if l.weights else None, input_shape=input_shape))
             input_shape = l.compute_output_shape(input_shape)
         return layers

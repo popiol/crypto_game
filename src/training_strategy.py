@@ -47,7 +47,7 @@ class LearnOnSuccess(TrainingStrategy):
     def __init__(self, model: MlModel):
         super().__init__(model)
         self.reset()
-        
+
     def reset(self):
         self.clone = self.model.copy()
         self.clone.add_noise(0.7)

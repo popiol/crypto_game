@@ -28,7 +28,10 @@ class ModelBuilder:
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
         return MlModel(model)
-    
+
+    def adjust_weights_shape(self, weights: keras.KerasTensor, input_size: int, output_size: int) -> keras.KerasTensor:
+        print("adjust", weights, input_size, output_size)
+
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         layers = model.get_layers()
         assert self.n_assets >= layers[0].input_shape[2]
@@ -38,13 +41,17 @@ class ModelBuilder:
         inputs = keras.layers.Input(shape=input_shape[1:])
         tensor = inputs
         for index, l in enumerate(model.model.layers[1:]):
+            weights = model.layers[index + 1].get_weights()
+            output_size = l.compute_output_shape(tensor.shape)
+            new_weights = self.adjust_weights_shape(weights, tensor.shape[-1], output_size)
             new_layer = l.from_config(l.get_config())
+            new_layer.set_Weights(new_weights)
             tensor = new_layer(tensor)
         outputs = tensor
         new_model = keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
+        new_model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
         return MlModel(new_model)
-                
+
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
         pass
 
@@ -53,7 +60,7 @@ class ModelBuilder:
 
     def add_conv_layer(self, model: MlModel, layer_index: int):
         pass
-    
+
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         pass
 

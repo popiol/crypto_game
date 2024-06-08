@@ -62,7 +62,9 @@ class RlRunner:
             self.data_transformer.n_features,
             self.data_transformer.n_outputs,
         )
-        evolution_handler = EvolutionHandler(self.model_registry, self.model_serializer, model_builder, **self.config["evolution_handler"])
+        evolution_handler = EvolutionHandler(
+            self.model_registry, self.model_serializer, model_builder, **self.config["evolution_handler"]
+        )
         self.trainset = Trainset(**self.config["trainset"])
         agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
