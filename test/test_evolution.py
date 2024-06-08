@@ -21,9 +21,11 @@ class TestEvolution:
         y = ModelBuilder.adjust_array_shape(x, 0, 2)
         assert np.array_equal(y, [[1, 2, 3], [4, 5, 6]])
         y = ModelBuilder.adjust_array_shape(x, 0, 4)
-        assert np.array_equal(y, [[1, 2, 3], [4, 5, 6], [0, 0, 0], [0, 0, 0]])
+        assert np.shape(y) == (4, 3)
+        assert np.array_equal(y[:2, :], [[1, 2, 3], [4, 5, 6]])
         y = ModelBuilder.adjust_array_shape(x, 1, 5)
-        assert np.array_equal(y, [[1, 2, 3, 0, 0], [4, 5, 6, 0, 0]])
+        assert np.shape(y) == (2, 5)
+        assert np.array_equal(y[:, :3], [[1, 2, 3], [4, 5, 6]])
 
     def test_adjust_weights_shape(self):
         builder = ModelBuilder(10, 11, 12, 13)
@@ -44,19 +46,21 @@ class TestEvolution:
         assert np.array_equal(weights[1], new_weights[1])
         new_weights = builder.adjust_weights_shape(weights, input_size + 2, output_size)
         assert np.array_equal(weights[0], new_weights[0][:-2, :])
-        assert (new_weights[0][-2:, :] == 0).all()
+        assert abs(new_weights[0][-2:, :].mean()) < 1
+        assert new_weights[0][-2:, :].std() > 0
         assert np.array_equal(weights[1], new_weights[1])
         new_weights = builder.adjust_weights_shape(weights, input_size, output_size - 2)
         assert np.array_equal(weights[0][:, :-2], new_weights[0])
         assert np.array_equal(weights[1][:-2], new_weights[1])
         new_weights = builder.adjust_weights_shape(weights, input_size, output_size + 2)
         assert np.array_equal(weights[0], new_weights[0][:, :-2])
-        assert (new_weights[0][:, -2:] == 0).all()
+        assert abs(new_weights[0][:, -2:].mean()) < 1
+        assert new_weights[0][:, -2:].std() > 0
         assert np.array_equal(weights[1], new_weights[1][:-2])
 
     def test_adjust_n_assets(self):
         builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model()
+        model = builder.build_model(asset_dependant=True)
         layers = model.get_layers()
         builder.n_assets = 14
         model2 = builder.adjust_n_assets(model)
@@ -64,4 +68,6 @@ class TestEvolution:
         assert layers[0].input_shape == (None, 10, 11, 12)
         assert layers2[0].input_shape == (None, 10, 14, 12)
         assert len(layers) == len(layers2)
-        assert False
+        input = np.zeros([*layers2[0].input_shape[1:]])
+        output = model2.predict(np.array([input]))[0]
+        assert np.shape(output) == (14, 13)

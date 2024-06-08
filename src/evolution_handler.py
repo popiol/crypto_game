@@ -27,12 +27,13 @@ class EvolutionHandler:
             model = self.load_existing_model()
         elif method == 2:
             model = self.merge_existing_models()
-        # model = self.model_builder.adjust_n_assets(model)
+        model = self.model_builder.adjust_n_assets(model)
         # model = self.mutate(model)
         return model
 
     def create_new_model(self) -> MlModel:
-        return self.model_builder.build_model()
+        asset_dependant = random.randint(0, 1)
+        return self.model_builder.build_model(asset_dependant)
 
     def load_existing_model(self) -> MlModel:
         model_name, serialized_model = self.model_registry.get_random_model()

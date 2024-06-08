@@ -15,13 +15,16 @@ class ModelBuilder:
     n_features: int
     n_outputs: int
 
-    def build_model(self) -> MlModel:
+    def build_model(self, asset_dependant=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        l = keras.layers.Permute((1, 3, 2))(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(self.n_assets)(l)
-        l = keras.layers.Permute((3, 1, 2))(l)
+        if asset_dependant:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 1, 2))(l)
+        else:
+            l = keras.layers.Permute((2, 1, 3))(l)
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
@@ -48,7 +51,7 @@ class ModelBuilder:
         elif size > old_size:
             add_shape = list(old_shape)
             add_shape[dim] = size - old_size
-            array = np.concatenate((array, np.zeros(add_shape)), axis=dim)
+            array = np.concatenate((array, np.random.normal(0, array.std(), add_shape)), axis=dim)
         return array
 
     def adjust_weights_shape(self, weights: list[np.array], input_size: int, output_size: int) -> list[np.array]:
@@ -73,8 +76,15 @@ class ModelBuilder:
             return model
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensor = inputs
+        layer_names = []
         for l in model.model.layers[1:]:
-            new_layer = l.from_config(l.get_config())
+            config = l.get_config()
+            layer_names.append(config["name"].split("_")[0])
+            if layer_names[-1] == "reshape":
+                config["target_shape"] = (tensor.shape[1], tensor.shape[2] * tensor.shape[3])
+            if layer_names[-3:] == ["permute", "dense", "dense"] and config["units"] == n_assets:
+                config["units"] = self.n_assets
+            new_layer = l.from_config(config)
             tensor = new_layer(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
@@ -82,7 +92,7 @@ class ModelBuilder:
             if not l.get_weights():
                 continue
             weights = model.model.layers[index].get_weights()
-            new_weights = self.adjust_weights_shape(weights, *np.shape(new_model.get_weights()[0]))
+            new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
             l.set_weights(new_weights)
         return MlModel(new_model)
 
