@@ -28,7 +28,7 @@ class EvolutionHandler:
         elif method == 2:
             model = self.merge_existing_models()
         model = self.model_builder.adjust_n_assets(model)
-        # model = self.mutate(model)
+        model = self.mutate(model)
         return model
 
     def create_new_model(self) -> MlModel:
@@ -58,13 +58,20 @@ class EvolutionHandler:
         return self.model_builder.merge_models(model_1, model_2)
 
     def mutate(self, model: MlModel) -> MlModel:
-        for index, layer in enumerate(model.get_layers()):
-            if random.random() < self.remove_layer_prob:
-                model = self.model_builder.remove_layer(model, index)
+        skip = 0
+        for index, layer in enumerate(model.get_layers()[:-1]):
+            if skip > 0:
+                skip -= 1
                 continue
-            if random.random() < self.shrink_prob and layer.shape[1] >= 2 * self.resize_by:
+            if random.random() < self.remove_layer_prob:
+                offset = abs(round(random.gauss(0, 2)))
+                offset = min(offset, len(model.get_layers()) - index - 2)
+                model = self.model_builder.remove_layer(model, index, index + offset)
+                skip = offset
+                continue
+            if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * self.resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - self.resize_by)
-            elif random.random() < self.extend_prob:
+            elif random.random() < self.extend_prob and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + self.resize_by)
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)

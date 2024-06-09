@@ -77,14 +77,21 @@ class TestEvolution:
         model = builder.build_model(asset_dependant=True)
         layers = model.get_layers()
         for index in range(len(layers) - 1):
-            model2 = builder.remove_layer(model, index)
-            layers2 = model2.get_layers()
-            if index in [2, 3, 4]:
-                assert len(layers) == len(layers2)
-                assert [x.name for x in layers] == [x.name for x in layers2]
-            else:
-                assert len(layers) == len(layers2) + 1
-                assert [x.name for x in layers[:index]] + [x.name for x in layers[index + 1 :]] == [x.name for x in layers2]
-            input = np.zeros([*layers2[0].input_shape])
-            output = model2.predict(np.array([input]))[0]
-            assert np.shape(output) == (11, 13)
+            for length in range(1, 3):
+                if index + length - 1 > len(layers) - 2:
+                    with pytest.raises(AssertionError):
+                        model2 = builder.remove_layer(model, index, index + length - 1)
+                    continue
+                model2 = builder.remove_layer(model, index, index + length - 1)
+                layers2 = model2.get_layers()
+                if index in [2, 3, 4]:
+                    assert len(layers) == len(layers2)
+                    assert [x.name for x in layers] == [x.name for x in layers2]
+                else:
+                    assert len(layers) == len(layers2) + length
+                    assert [x.name for x in layers[:index]] + [x.name for x in layers[index + length :]] == [
+                        x.name for x in layers2
+                    ]
+                input = np.zeros([*layers2[0].input_shape])
+                output = model2.predict(np.array([input]))[0]
+                assert np.shape(output) == (11, 13)

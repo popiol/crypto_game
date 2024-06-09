@@ -69,18 +69,23 @@ class ModelBuilder:
             new_weights.append(w1)
         return new_weights
 
-    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, skip_index: int = None):
+    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, skip_start: int = None, skip_end: int = None):
+        if skip_start is not None:
+            skip_end = skip_start if skip_end is None else skip_end
+            assert skip_start <= skip_end
+        else:
+            assert skip_end is None
         for index, l in enumerate(to_model.layers[1:]):
             if not l.get_weights():
                 continue
-            if skip_index is not None:
+            if skip_start is not None:
                 if len(from_model.layers) < len(to_model.layers):
-                    if index == skip_index:
+                    if skip_start <= index <= skip_end:
                         continue
-                    elif index > skip_index:
-                        index -= 1
-                elif len(from_model.layers) > len(to_model.layers) and index >= skip_index:
-                    index += 1
+                    elif index > skip_end:
+                        index -= skip_end - skip_start + 1
+                elif len(from_model.layers) > len(to_model.layers) and index >= skip_start:
+                    index += skip_end - skip_start + 1
             weights = from_model.layers[index + 1].get_weights()
             new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
             l.set_weights(new_weights)
@@ -113,12 +118,12 @@ class ModelBuilder:
         self.copy_weights(model.model, new_model)
         return MlModel(new_model)
 
-    def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
-        assert 0 <= layer_index < len(model.model.layers) - 2
+    def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
+        assert 0 <= start_index <= end_index < len(model.model.layers) - 2
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensor = inputs
         for index, l in enumerate(model.model.layers[1:]):
-            if index == layer_index:
+            if start_index <= index <= end_index:
                 continue
             config = l.get_config()
             self.fix_reshape(config, tensor.shape[1:])
@@ -128,17 +133,17 @@ class ModelBuilder:
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        self.copy_weights(model.model, new_model, layer_index)
+        self.copy_weights(model.model, new_model, start_index, end_index)
         return MlModel(new_model)
 
     def add_dense_layer(self, model: MlModel, layer_index: int, size: int):
-        pass
+        return model
 
     def add_conv_layer(self, model: MlModel, layer_index: int):
-        pass
+        return model
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
-        pass
+        return model
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         inputs, hidden1, outputs1 = self.copy_structure(model_1.model)
