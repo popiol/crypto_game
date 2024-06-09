@@ -136,8 +136,23 @@ class ModelBuilder:
         self.copy_weights(model.model, new_model, start_index, end_index)
         return MlModel(new_model)
 
-    def add_dense_layer(self, model: MlModel, layer_index: int, size: int):
-        return model
+    def add_dense_layer(self, model: MlModel, before_index: int, size: int):
+        assert 0 <= before_index <= len(model.model.layers) - 1
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        tensor = inputs
+        for index, l in enumerate(model.model.layers[1:]):
+            if index == before_index:
+                tensor = keras.layers.Dense(size)(tensor)
+            config = l.get_config()
+            self.fix_reshape(config, tensor.shape[1:])
+            new_layer = l.from_config(config)
+            tensor = new_layer(tensor)
+        if tensor.shape != model.model.output_shape:
+            return model
+        new_model = keras.Model(inputs=inputs, outputs=tensor)
+        self.compile_model(new_model)
+        self.copy_weights(model.model, new_model, before_index)
+        return MlModel(new_model)
 
     def add_conv_layer(self, model: MlModel, layer_index: int):
         return model

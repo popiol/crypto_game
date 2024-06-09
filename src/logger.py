@@ -27,6 +27,7 @@ class Logger:
     def log_agents(self, agents: list[Agent]):
         for agent in agents:
             print(agent.agent_name, agent.training_strategy.__class__.__name__)
+            print(agent.training_strategy.model)
         self.transactions = {agent.agent_name: [] for agent in agents}
 
     def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):

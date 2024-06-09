@@ -69,10 +69,11 @@ class EvolutionHandler:
                 model = self.model_builder.remove_layer(model, index, index + offset)
                 skip = offset
                 continue
-            if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * self.resize_by:
-                model = self.model_builder.resize_layer(model, index, layer.shape[1] - self.resize_by)
+            resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
+            if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * resize_by:
+                model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
             elif random.random() < self.extend_prob and layer.shape:
-                model = self.model_builder.resize_layer(model, index, layer.shape[1] + self.resize_by)
+                model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 if choice == 0:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass
 
 import numpy as np
@@ -50,3 +51,8 @@ class MlModel:
             )
             input_shape = l.compute_output_shape(input_shape)
         return layers
+
+    def __str__(self):
+        s = io.StringIO()
+        self.model.summary(print_fn=lambda x: s.write(x + "\n"))
+        return s.getvalue()
