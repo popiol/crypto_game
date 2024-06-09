@@ -119,6 +119,7 @@ class ModelBuilder:
         return MlModel(new_model)
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
+        print("remove layers", start_index, end_index)
         assert 0 <= start_index <= end_index < len(model.model.layers) - 2
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensor = inputs
@@ -137,6 +138,7 @@ class ModelBuilder:
         return MlModel(new_model)
 
     def add_dense_layer(self, model: MlModel, before_index: int, size: int):
+        print("add dense layer", before_index, size)
         assert 0 <= before_index <= len(model.model.layers) - 1
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensor = inputs

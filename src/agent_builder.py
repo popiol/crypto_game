@@ -29,5 +29,6 @@ class AgentBuilder:
             model = self.evolution_handler.create_model()
             training_strategy = StrategyPicker().pick(model)
             agent = Agent(name, self.data_transformer, self.trainset, training_strategy)
+            model.model.name = agent.model_name
             agents.append(agent)
         return agents

@@ -59,14 +59,18 @@ class EvolutionHandler:
 
     def mutate(self, model: MlModel) -> MlModel:
         skip = 0
+        n_layers = len(model.get_layers())
+        n_layers_diff = 0
         for index, layer in enumerate(model.get_layers()[:-1]):
             if skip > 0:
                 skip -= 1
                 continue
             if random.random() < self.remove_layer_prob:
                 offset = abs(round(random.gauss(0, 2)))
-                offset = min(offset, len(model.get_layers()) - index - 2)
-                model = self.model_builder.remove_layer(model, index, index + offset)
+                offset = min(offset, n_layers - index - 2)
+                prev_n_layers = len(model.get_layers())
+                model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
+                n_layers_diff += len(model.get_layers()) - prev_n_layers
                 skip = offset
                 continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
@@ -76,8 +80,10 @@ class EvolutionHandler:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
+                prev_n_layers = len(model.get_layers())
                 if choice == 0:
                     model = self.model_builder.add_dense_layer(model, index, 100)
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
+                n_layers_diff += len(model.get_layers()) - prev_n_layers
         return model
