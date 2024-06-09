@@ -72,7 +72,9 @@ class ModelBuilder:
     def copy_weights(self, from_model: keras.Model, to_model: keras.Model, skip_start: int = None, skip_end: int = None):
         if skip_start is not None:
             skip_end = skip_start if skip_end is None else skip_end
-            assert skip_start <= skip_end
+            if skip_end < skip_start:
+                skip_start = None
+                skip_end = None
         else:
             assert skip_end is None
         for index, l in enumerate(to_model.layers[1:]):
@@ -156,8 +158,32 @@ class ModelBuilder:
         self.copy_weights(model.model, new_model, before_index)
         return MlModel(new_model)
 
-    def add_conv_layer(self, model: MlModel, layer_index: int):
-        return model
+    def add_conv_layer(self, model: MlModel, before_index: int):
+        print("add conv layer", before_index)
+        assert 0 <= before_index <= len(model.model.layers) - 1
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        tensor = inputs
+        n_added = 0
+        for index, l in enumerate(model.model.layers[1:]):
+            if index == before_index:
+                if len(tensor.shape) == 3:
+                    tensor = keras.layers.Permute((2, 1))(tensor)
+                    tensor = keras.layers.Conv1D(tensor.shape[-1], 3)(tensor)
+                    tensor = keras.layers.Permute((2, 1))(tensor)
+                    n_added = 3
+                elif len(tensor.shape) == 4:
+                    tensor = keras.layers.Conv2D(tensor.shape[-1], 3)(tensor)
+                    n_added = 1
+            config = l.get_config()
+            self.fix_reshape(config, tensor.shape[1:])
+            new_layer = l.from_config(config)
+            tensor = new_layer(tensor)
+        if tensor.shape != model.model.output_shape:
+            return model
+        new_model = keras.Model(inputs=inputs, outputs=tensor)
+        self.compile_model(new_model)
+        self.copy_weights(model.model, new_model, before_index, before_index + n_added - 1)
+        return MlModel(new_model)
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         return model

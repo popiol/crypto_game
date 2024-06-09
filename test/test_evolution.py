@@ -101,7 +101,6 @@ class TestEvolution:
         model = builder.build_model(asset_dependant=True)
         layers = model.get_layers()
         for index in range(len(layers)):
-            print(index)
             model2 = builder.add_dense_layer(model, index, 111)
             layers2 = model2.get_layers()
             if index in [3]:
@@ -113,6 +112,25 @@ class TestEvolution:
                     x.name for x in layers2
                 ]
                 assert layers2[index].shape[-1] == 111
+            input = np.zeros([*layers2[0].input_shape])
+            output = model2.predict(np.array([input]))[0]
+            assert np.shape(output) == (11, 13)
+
+    def test_add_conv_layer(self):
+        builder = ModelBuilder(10, 11, 12, 13)
+        model = builder.build_model(asset_dependant=True)
+        layers = model.get_layers()
+        for index in range(len(layers)):
+            model2 = builder.add_conv_layer(model, index)
+            layers2 = model2.get_layers()
+            if index in [4]:
+                assert len(layers) == len(layers2)
+                assert [x.name for x in layers] == [x.name for x in layers2]
+            else:
+                assert len(layers) + 1 == len(layers2) or len(layers) + 3 == len(layers2)
+                assert [x.name for x in layers[:index]] + ["permute", "conv1d", "permute"] + [x.name for x in layers[index:]] == [
+                    x.name for x in layers2
+                ] or [x.name for x in layers[:index]] + ["conv2d"] + [x.name for x in layers[index:]] == [x.name for x in layers2]
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(np.array([input]))[0]
             assert np.shape(output) == (11, 13)
