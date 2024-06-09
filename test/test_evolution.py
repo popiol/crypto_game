@@ -33,30 +33,35 @@ class TestEvolution:
         weights = model.model.get_weights()[:2]
         input_size, output_size = np.shape(weights[0])
         with pytest.raises(AssertionError):
-            builder.adjust_weights_shape(model.model.get_weights(), input_size, output_size)
+            builder.adjust_weights_shape(model.model.get_weights(), (input_size, output_size))
         with pytest.raises(AssertionError):
-            builder.adjust_weights_shape(weights, 0, output_size)
+            builder.adjust_weights_shape(weights, (0, output_size))
         with pytest.raises(AssertionError):
-            builder.adjust_weights_shape(weights, input_size, 0)
-        new_weights = builder.adjust_weights_shape(weights, input_size, output_size)
+            builder.adjust_weights_shape(weights, (input_size, 0))
+        new_weights = builder.adjust_weights_shape(weights, (input_size, output_size))
         for w1, w2 in zip(weights, new_weights):
             assert np.array_equal(w1, w2)
-        new_weights = builder.adjust_weights_shape(weights, input_size - 2, output_size)
+        new_weights = builder.adjust_weights_shape(weights, (input_size - 2, output_size))
         assert np.array_equal(weights[0][:-2, :], new_weights[0])
         assert np.array_equal(weights[1], new_weights[1])
-        new_weights = builder.adjust_weights_shape(weights, input_size + 2, output_size)
+        new_weights = builder.adjust_weights_shape(weights, (input_size + 2, output_size))
         assert np.array_equal(weights[0], new_weights[0][:-2, :])
         assert abs(new_weights[0][-2:, :].mean()) < 1
         assert new_weights[0][-2:, :].std() > 0
         assert np.array_equal(weights[1], new_weights[1])
-        new_weights = builder.adjust_weights_shape(weights, input_size, output_size - 2)
+        new_weights = builder.adjust_weights_shape(weights, (input_size, output_size - 2))
         assert np.array_equal(weights[0][:, :-2], new_weights[0])
         assert np.array_equal(weights[1][:-2], new_weights[1])
-        new_weights = builder.adjust_weights_shape(weights, input_size, output_size + 2)
+        new_weights = builder.adjust_weights_shape(weights, (input_size, output_size + 2))
         assert np.array_equal(weights[0], new_weights[0][:, :-2])
         assert abs(new_weights[0][:, -2:].mean()) < 1
         assert new_weights[0][:, -2:].std() > 0
         assert np.array_equal(weights[1], new_weights[1][:-2])
+        weights[0] = np.arange(2 * 3 * 4).reshape((2, 3, 4))
+        weights[1] = np.zeros(4)
+        new_weights = builder.adjust_weights_shape(weights, (4, 3, 2))
+        assert np.shape(new_weights[0]) == (4, 3, 2)
+        assert np.shape(new_weights[1]) == (2,)
 
     def test_adjust_n_assets(self):
         builder = ModelBuilder(10, 11, 12, 13)
@@ -119,11 +124,12 @@ class TestEvolution:
     def test_add_conv_layer(self):
         builder = ModelBuilder(10, 11, 12, 13)
         model = builder.build_model(asset_dependant=True)
+        model = builder.add_conv_layer(model, 0)
         layers = model.get_layers()
         for index in range(len(layers)):
             model2 = builder.add_conv_layer(model, index)
             layers2 = model2.get_layers()
-            if index in [4]:
+            if index in [5]:
                 assert len(layers) == len(layers2)
                 assert [x.name for x in layers] == [x.name for x in layers2]
             else:

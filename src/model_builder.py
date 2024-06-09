@@ -54,18 +54,19 @@ class ModelBuilder:
             array = np.concatenate((array, np.random.normal(0, array.std(), add_shape)), axis=dim)
         return array
 
-    def adjust_weights_shape(self, weights: list[np.array], input_size: int, output_size: int) -> list[np.array]:
+    def adjust_weights_shape(self, weights: list[np.array], target_shape: tuple[int]) -> list[np.array]:
         new_weights = []
         if not weights:
             return new_weights
         assert len(weights) <= 2
-        assert input_size > 0
-        assert output_size > 0
-        w0 = self.adjust_array_shape(weights[0], 0, input_size)
-        w0 = self.adjust_array_shape(w0, 1, output_size)
+        for x in target_shape:
+            assert x > 0
+        w0 = weights[0]
+        for dim, size in enumerate(target_shape):
+            w0 = self.adjust_array_shape(w0, dim, size)
         new_weights.append(w0)
         if len(weights) > 1:
-            w1 = self.adjust_array_shape(weights[1], 0, output_size)
+            w1 = self.adjust_array_shape(weights[1], 0, target_shape[-1])
             new_weights.append(w1)
         return new_weights
 
@@ -89,7 +90,7 @@ class ModelBuilder:
                 elif len(from_model.layers) > len(to_model.layers) and index >= skip_start:
                     index += skip_end - skip_start + 1
             weights = from_model.layers[index + 1].get_weights()
-            new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
+            new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
             l.set_weights(new_weights)
 
     def fix_reshape(self, config: dict, input_shape: tuple[int]):
