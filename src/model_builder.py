@@ -69,13 +69,28 @@ class ModelBuilder:
             new_weights.append(w1)
         return new_weights
 
-    def copy_weights(self, from_model: keras.Model, to_model: keras.Model):
-        for index, l in enumerate(to_model.layers[1:], 1):
+    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, skip_index: int = None):
+        for index, l in enumerate(to_model.layers[1:]):
             if not l.get_weights():
                 continue
-            weights = from_model.layers[index].get_weights()
+            if skip_index is not None:
+                if len(from_model.layers) < len(to_model.layers):
+                    if index == skip_index:
+                        continue
+                    elif index > skip_index:
+                        index -= 1
+                elif len(from_model.layers) > len(to_model.layers) and index >= skip_index:
+                    index += 1
+            weights = from_model.layers[index + 1].get_weights()
             new_weights = self.adjust_weights_shape(weights, *np.shape(l.get_weights()[0]))
             l.set_weights(new_weights)
+
+    def fix_reshape(self, config: dict, input_shape: tuple[int]):
+        if config["name"].split("_")[0] == "reshape":
+            target_n_dim = len(config["target_shape"])
+            assert 0 < target_n_dim <= len(input_shape)
+            output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
+            config["target_shape"] = output_shape
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
@@ -88,8 +103,7 @@ class ModelBuilder:
         for l in model.model.layers[1:]:
             config = l.get_config()
             layer_names.append(config["name"].split("_")[0])
-            if layer_names[-1] == "reshape":
-                config["target_shape"] = (tensor.shape[1], tensor.shape[2] * tensor.shape[3])
+            self.fix_reshape(config, tensor.shape[1:])
             if layer_names[-3:] == ["permute", "dense", "dense"] and config["units"] == n_assets:
                 config["units"] = self.n_assets
             new_layer = l.from_config(config)
@@ -102,15 +116,19 @@ class ModelBuilder:
     def remove_layer(self, model: MlModel, layer_index: int) -> MlModel:
         assert 0 <= layer_index < len(model.model.layers) - 2
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-
         tensor = inputs
-        for l in model.model.layers[1:]:
+        for index, l in enumerate(model.model.layers[1:]):
+            if index == layer_index:
+                continue
             config = l.get_config()
+            self.fix_reshape(config, tensor.shape[1:])
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
+        if tensor.shape != model.model.output_shape:
+            return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        self.copy_weights(model.model, new_model)
+        self.copy_weights(model.model, new_model, layer_index)
         return MlModel(new_model)
 
     def add_dense_layer(self, model: MlModel, layer_index: int, size: int):

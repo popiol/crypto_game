@@ -9,6 +9,7 @@ from src.keras import keras
 
 @dataclass
 class MlModelLayer:
+    name: str
     shape: tuple
     input_shape: tuple
 
@@ -42,6 +43,10 @@ class MlModel:
         layers = []
         input_shape = self.model.layers[0].batch_shape
         for l in self.model.layers[1:]:
-            layers.append(MlModelLayer(shape=tuple(l.weights[0].shape) if l.weights else None, input_shape=input_shape))
+            layers.append(
+                MlModelLayer(
+                    name=l.name.split("_")[0], shape=tuple(l.weights[0].shape) if l.weights else None, input_shape=input_shape[1:]
+                )
+            )
             input_shape = l.compute_output_shape(input_shape)
         return layers

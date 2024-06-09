@@ -65,9 +65,26 @@ class TestEvolution:
         builder.n_assets = 14
         model2 = builder.adjust_n_assets(model)
         layers2 = model2.get_layers()
-        assert layers[0].input_shape == (None, 10, 11, 12)
-        assert layers2[0].input_shape == (None, 10, 14, 12)
+        assert layers[0].input_shape == (10, 11, 12)
+        assert layers2[0].input_shape == (10, 14, 12)
         assert len(layers) == len(layers2)
-        input = np.zeros([*layers2[0].input_shape[1:]])
+        input = np.zeros([*layers2[0].input_shape])
         output = model2.predict(np.array([input]))[0]
         assert np.shape(output) == (14, 13)
+
+    def test_remove_layer(self):
+        builder = ModelBuilder(10, 11, 12, 13)
+        model = builder.build_model(asset_dependant=True)
+        layers = model.get_layers()
+        for index in range(len(layers) - 1):
+            model2 = builder.remove_layer(model, index)
+            layers2 = model2.get_layers()
+            if index in [2, 3, 4]:
+                assert len(layers) == len(layers2)
+                assert [x.name for x in layers] == [x.name for x in layers2]
+            else:
+                assert len(layers) == len(layers2) + 1
+                assert [x.name for x in layers[:index]] + [x.name for x in layers[index + 1 :]] == [x.name for x in layers2]
+            input = np.zeros([*layers2[0].input_shape])
+            output = model2.predict(np.array([input]))[0]
+            assert np.shape(output) == (11, 13)
