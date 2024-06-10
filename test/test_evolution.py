@@ -140,3 +140,19 @@ class TestEvolution:
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(np.array([input]))[0]
             assert np.shape(output) == (11, 13)
+
+    def test_resize_layer(self):
+        builder = ModelBuilder(10, 11, 12, 13)
+        model = builder.build_model(asset_dependant=True)
+        layers = model.get_layers()
+        for index in range(len(layers) - 1):
+            for size in [50, 150]:
+                model2 = builder.resize_layer(model, index, size)
+                layers2 = model2.get_layers()
+                assert len(layers) == len(layers2)
+                assert [x.name for x in layers] == [x.name for x in layers2]
+                if layers[index].name == "dense" and index not in [2]:
+                    assert layers2[index].shape[-1] == size
+                input = np.zeros([*layers2[0].input_shape])
+                output = model2.predict(np.array([input]))[0]
+                assert np.shape(output) == (11, 13)

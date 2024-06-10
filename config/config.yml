@@ -32,8 +32,8 @@ trainset:
   local_path: data/trainset
 
 evolution_handler:
-  remove_layer_prob: 0.1
-  add_layer_prob: 0.1
-  shrink_prob: 0.1
-  extend_prob: 0.1
+  remove_layer_prob: 0.02
+  add_layer_prob: 0.02
+  shrink_prob: 0.02
+  extend_prob: 0.02
   resize_by: 10
