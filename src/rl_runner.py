@@ -80,6 +80,10 @@ class RlRunner:
             portfolio_manager.place_orders(timestamp, orders)
             self.logger.log_transactions(agent.agent_name, closed_transactions)
 
+    def train_on_open_positions(self):
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            agent.train_on_open_positions(portfolio_manager.portfolio.positions)
+
     def save_models(self):
         for agent in self.agents:
             self.logger.log("Save model", agent.model_name)
@@ -106,6 +110,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
+            self.train_on_open_positions()
             self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break

@@ -9,6 +9,7 @@ from src.portfolio import (
     Portfolio,
     PortfolioOrder,
     PortfolioOrderType,
+    PortfolioPosition,
 )
 from src.training_strategy import TrainingStrategy
 from src.trainset import Trainset
@@ -66,4 +67,12 @@ class Agent:
             input = np.array([buy_input, sell_input])
             output = np.array([buy_output, sell_output])
             reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
+            self.training_strategy.train(input, output, reward)
+
+    def train_on_open_positions(self, positions: list[PortfolioPosition]):
+        for position in positions:
+            buy_input, buy_output = self.trainset.get_by_timestamp(position.place_dt, self.agent_name)
+            input = np.array([buy_input])
+            output = np.array([buy_output])
+            reward = position.value - position.buy_price * position.volume
             self.training_strategy.train(input, output, reward)

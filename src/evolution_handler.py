@@ -82,7 +82,8 @@ class EvolutionHandler:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())
                 if choice == 0:
-                    model = self.model_builder.add_dense_layer(model, index, 100)
+                    size = max(10, round(random.gauss(100, 30)))
+                    model = self.model_builder.add_dense_layer(model, index, size)
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
                 n_layers_diff += len(model.get_layers()) - prev_n_layers

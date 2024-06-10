@@ -24,7 +24,7 @@ data_transformer:
 
 portfolio_manager:
   init_cash: 1000
-  transaction_fee: 0.03
+  transaction_fee: 0.005
   expiration_time_sec: 5400
   min_transaction: 10
 
