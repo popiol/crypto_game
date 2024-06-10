@@ -32,8 +32,12 @@ class TrainingStrategy:
 
 class LearnOnMistakes(TrainingStrategy):
 
+    def reset(self):
+        self.clone = self.model.copy()
+        self.clone.add_noise(0.1)
+
     def predict(self, input: np.array) -> np.array:
-        return self.model.predict(np.array([input]))[0]
+        return self.clone.predict(np.array([input]))[0]
 
     def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
