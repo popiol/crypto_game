@@ -6,6 +6,7 @@ model_registry:
   maturity_min_hours: 2
   maturity_min_stats_count: 20
   max_mature_models: 10
+  retirement_min_hours: 24
   archive_retention_days: 1
 
 data_registry:

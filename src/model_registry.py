@@ -13,12 +13,14 @@ class ModelRegistry:
         maturity_min_hours: int,
         maturity_min_stats_count: int,
         max_mature_models: int,
+        retirement_min_hours: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
         self.maturity_min_hours = maturity_min_hours
         self.maturity_min_stats_count = maturity_min_stats_count
         self.max_mature_models = max_mature_models
+        self.retirement_min_hours = retirement_min_hours
         self.archive_retention_days = archive_retention_days
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
         self.archived_prefix = os.path.join(self.s3_utils.path, "archived")
@@ -36,7 +38,20 @@ class ModelRegistry:
         model_name = re.sub("^" + self.current_prefix + "/", "", key)
         return model_name, self.s3_utils.download_bytes(key)
 
+    def archive_models(self):
+        self.archive_old_models()
+        self.archive_weak_models()
+        self.clean_archive()
+
     def archive_old_models(self):
+        files = self.s3_utils.list_files(self.metrics_prefix + "/", self.retirement_min_hours)
+        for file in files:
+            model = file.split("/")[-1]
+            print("archive", model)
+            self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
+            self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
+
+    def archive_weak_models(self):
         files = self.s3_utils.list_files(self.metrics_prefix + "/", self.maturity_min_hours)
         models = []
         to_archive = []
@@ -59,7 +74,6 @@ class ModelRegistry:
             print("archive", model)
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
-        self.clean_archive()
 
     def clean_archive(self):
         files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)

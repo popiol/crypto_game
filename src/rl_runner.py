@@ -115,7 +115,7 @@ class RlRunner:
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break
         self.save_models()
-        self.model_registry.archive_old_models()
+        self.model_registry.archive_models()
 
     def run(self):
         self.prepare()
