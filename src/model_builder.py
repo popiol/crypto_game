@@ -183,22 +183,12 @@ class ModelBuilder:
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        tensor = inputs
-        n_added = 0
-        for index, l in enumerate(model.model.layers[1:]):
-            config = l.get_config()
+
+        def modification(index: int, config: dict, tensor: keras.KerasTensor):
             if index == layer_index and config["name"].split("_")[0] == "dense":
                 config["units"] = new_size
-            self.fix_reshape(config, tensor.shape[1:])
-            new_layer = l.from_config(config)
-            tensor = new_layer(tensor)
-        if tensor.shape != model.model.output_shape:
-            return model
-        new_model = keras.Model(inputs=inputs, outputs=tensor)
-        self.compile_model(new_model)
-        self.copy_weights(model.model, new_model)
-        return MlModel(new_model)
+
+        return self.modify_model(model, modification)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         return MlModel(model_1)
