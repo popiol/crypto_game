@@ -40,16 +40,28 @@ class MlModel:
             layer += np.random.normal(loc=0.0, scale=std, size=layer.shape)
         self.model.set_weights(weights)
 
+    def get_parent_layer_names(self, index) -> list[str]:
+        model_config = self.model.get_config()
+        return [
+            [arg["config"]["keras_history"][0]] if type(arg) == dict else [x["config"]["keras_history"][0] for x in arg]
+            for arg in model_config["layers"][index + 1]["inbound_nodes"][0]["args"]
+        ][0]
+
     def get_layers(self) -> list[MlModelLayer]:
         layers = []
-        input_shape = self.model.layers[0].batch_shape
-        for l in self.model.layers[1:]:
+        input_shapes = {self.model.layers[0].name: self.model.layers[0].batch_shape}
+        for index, l in enumerate(self.model.layers[1:]):
+            parent_layers = self.get_parent_layer_names(index)
+            input_shape = input_shapes[parent_layers[0]] if len(parent_layers) == 1 else [input_shapes[x] for x in parent_layers]
+            input_shape_without_batch = input_shape[1:] if type(input_shape) == tuple else [x[1:] for x in input_shape]
             layers.append(
                 MlModelLayer(
-                    name=l.name.split("_")[0], shape=tuple(l.weights[0].shape) if l.weights else None, input_shape=input_shape[1:]
+                    name=l.name.split("_")[0],
+                    shape=tuple(l.weights[0].shape) if l.weights else None,
+                    input_shape=input_shape_without_batch,
                 )
             )
-            input_shape = l.compute_output_shape(input_shape)
+            input_shapes[l.name] = l.compute_output_shape(input_shape)
         return layers
 
     def __str__(self):

@@ -88,7 +88,7 @@ class RlRunner:
         for agent in self.agents:
             self.logger.log("Save model", agent.model_name)
             serialized_model = self.model_serializer.serialize(agent.training_strategy.model)
-            metrics = {"reward_stats": agent.training_strategy.stats}
+            metrics = {"reward_stats": agent.training_strategy.stats, "model_id": agent.model_id}
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def reset_simulation(self):

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
 
 
@@ -27,9 +28,18 @@ class TestEvolution:
         assert np.shape(y) == (2, 5)
         assert np.array_equal(y[:, :3], [[1, 2, 3], [4, 5, 6]])
 
-    def test_adjust_weights_shape(self):
-        builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model()
+    @pytest.fixture
+    def builder(self):
+        return ModelBuilder(10, 11, 12, 13)
+
+    @pytest.fixture
+    def complex_model(self, builder):
+        model_1 = builder.build_model(asset_dependant=True)
+        model_2 = builder.build_model(asset_dependant=False)
+        return builder.merge_models(model_1, model_2)
+
+    def test_adjust_weights_shape(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
         weights = model.model.get_weights()[:2]
         input_size, output_size = np.shape(weights[0])
         with pytest.raises(AssertionError):
@@ -63,9 +73,8 @@ class TestEvolution:
         assert np.shape(new_weights[0]) == (4, 3, 2)
         assert np.shape(new_weights[1]) == (2,)
 
-    def test_adjust_n_assets(self):
-        builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model(asset_dependant=True)
+    def test_adjust_n_assets(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
         layers = model.get_layers()
         builder.n_assets = 14
         model2 = builder.adjust_n_assets(model)
@@ -156,3 +165,14 @@ class TestEvolution:
                 input = np.zeros([*layers2[0].input_shape])
                 output = model2.predict(np.array([input]))[0]
                 assert np.shape(output) == (11, 13)
+
+    def test_merge_models(self):
+        builder = ModelBuilder(10, 11, 12, 13)
+        model_1 = builder.build_model(asset_dependant=True)
+        model_2 = builder.build_model(asset_dependant=False)
+        model_3 = builder.merge_models(model_1, model_2)
+        assert len(model_3.get_layers()) == len(model_1.get_layers()) + len(model_2.get_layers())
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(np.array([input]))[0]
+        output_3 = model_3.predict(np.array([input]))[0]
+        assert np.shape(output_1) == np.shape(output_3)

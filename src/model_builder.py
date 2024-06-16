@@ -100,17 +100,20 @@ class ModelBuilder:
             new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
             l.set_weights(new_weights)
 
-    def fix_reshape(self, config: dict, input_shape: tuple[int]):
+    def fix_reshape(self, config: dict, tensor: keras.KerasTensor):
         if config["name"].split("_")[0] == "reshape":
             target_n_dim = len(config["target_shape"])
+            input_shape = tensor.shape[1:]
             assert 0 < target_n_dim <= len(input_shape)
             output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
             config["target_shape"] = output_shape
 
     def modify_model(self, model: MlModel, modification: Callable, start_index: int = None, end_index: int = None) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        tensor = inputs
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
+        tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
+            parent_layers = model.get_parent_layer_names(index)
+            tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
             resp: ModificationResult = modification(index, config, tensor)
             if resp and resp.skip:
@@ -119,9 +122,10 @@ class ModelBuilder:
                 tensor = resp.tensor
             if resp and resp.end_index is not None:
                 end_index = resp.end_index
-            self.fix_reshape(config, tensor.shape[1:])
+            self.fix_reshape(config, tensor)
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
+            tensors[l.name] = tensor
         if tensor.shape != (None, self.n_assets, self.n_outputs):
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
@@ -191,4 +195,40 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
-        return MlModel(model_1)
+        model_id_1 = model_1.model.name.split("_")[-1]
+        model_id_2 = model_2.model.name.split("_")[-1]
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        tensor_1 = inputs
+        for l in model_1.model.layers[1:-1]:
+            config = l.get_config()
+            config["name"] += "_" + model_id_1
+            new_layer = l.from_config(config)
+            tensor_1 = new_layer(tensor_1)
+        tensor_2 = inputs
+        for l in model_2.model.layers[1:-1]:
+            config = l.get_config()
+            config["name"] += "_" + model_id_2
+            new_layer = l.from_config(config)
+            tensor_2 = new_layer(tensor_2)
+        tensor = keras.layers.Concatenate()([tensor_1, tensor_2])
+        tensor = keras.layers.Dense(self.n_outputs)(tensor)
+        new_model = keras.Model(inputs=inputs, outputs=tensor)
+        self.compile_model(new_model)
+        index_1 = 0
+        index_2 = 0
+        for l in new_model.layers[1:-2]:
+            model_id = l.name.split("_")[-1]
+            if model_id == model_id_1:
+                index_1 += 1
+                from_layer = model_1.model.layers[index_1]
+            elif model_id == model_id_2:
+                index_2 += 1
+                from_layer = model_2.model.layers[index_2]
+            else:
+                raise Exception(f"{model_id} not in [{model_id_1}, {model_id_2}]")
+            if not l.get_weights():
+                continue
+            weights = from_layer.get_weights()
+            new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
+            l.set_weights(new_weights)
+        return MlModel(new_model)

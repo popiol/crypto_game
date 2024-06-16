@@ -2,6 +2,8 @@ import os
 import random
 import re
 
+import numpy as np
+
 from src.s3_utils import S3Utils
 
 
@@ -38,6 +40,9 @@ class ModelRegistry:
         model_name = re.sub("^" + self.current_prefix + "/", "", key)
         return model_name, self.s3_utils.download_bytes(key)
 
+    def get_metrics(self, model_name: str) -> dict:
+        return self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
+
     def archive_models(self):
         self.archive_old_models()
         self.archive_weak_models()
@@ -61,8 +66,9 @@ class ModelRegistry:
             try:
                 stats = metrics["reward_stats"]
                 print(model_name, "count", stats["count"], "mean", stats["mean"], "std", stats["std"])
-                model_and_score = (model_name, stats["mean"] - stats["std"])
-                if stats["count"] < self.maturity_min_stats_count:
+                score = float(stats["mean"] - stats["std"])
+                model_and_score = (model_name, score)
+                if stats["count"] < self.maturity_min_stats_count or np.isnan(score):
                     to_archive.append(model_and_score)
                 else:
                     models.append(model_and_score)

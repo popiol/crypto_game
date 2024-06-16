@@ -11,10 +11,9 @@ The agents also train their models dynamically based on the recent results.
 The training repeats with the current dataset for 24 hours, 
 after which a new dataset is downloaded and new models are created.
 
-## Parallel processing and evolution
+## Evolution
 
-Each agent runs in a separate process.
-The models they train are stored on S3 and can be used as pre-trained models by other processes.
+The models are stored on S3 and can be used as pre-trained models by next generations.
 The pre-trained models can also be merged together by concatenating their last layers before the output layers.
 
 ```
