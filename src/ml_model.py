@@ -42,10 +42,10 @@ class MlModel:
 
     def get_parent_layer_names(self, index) -> list[str]:
         model_config = self.model.get_config()
-        arg = model_config["layers"][index + 1]["inbound_nodes"][0]["args"][0]
-        if type(arg) == dict:
-            return [arg["config"]["keras_history"][0]]
-        return [x["config"]["keras_history"][0] for x in arg]
+        args = model_config["layers"][index + 1]["inbound_nodes"][0]["args"][0]
+        if type(args) == dict:
+            args = [args]
+        return [x["config"]["keras_history"][0] for x in args]
 
     def get_layers(self) -> list[MlModelLayer]:
         layers = []
