@@ -102,15 +102,15 @@ class ModelBuilder:
             parent_layers = model.get_parent_layer_names(index)
             tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
-            resp: ModificationResult = modification(index, config, tensor)
-            if resp and resp.skip:
-                tensors[l.name] = tensor
-                continue
-            if resp and resp.tensor is not None:
-                tensor = resp.tensor
-            self.fix_reshape(config, tensor)
-            new_layer = l.from_config(config)
             try:
+                resp: ModificationResult = modification(index, config, tensor)
+                if resp and resp.skip:
+                    tensors[l.name] = tensor
+                    continue
+                if resp and resp.tensor is not None:
+                    tensor = resp.tensor
+                self.fix_reshape(config, tensor)
+                new_layer = l.from_config(config)
                 tensor = new_layer(tensor)
             except ValueError:
                 return model

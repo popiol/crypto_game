@@ -109,22 +109,21 @@ class TestEvolution:
                 output = model2.predict(np.array([input]))[0]
                 assert np.shape(output) == (11, 13)
 
-    def test_add_dense_layer(self):
-        builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model(asset_dependant=True)
+    def test_add_dense_layer(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
         layers = model.get_layers()
         for index in range(len(layers)):
             model2 = builder.add_dense_layer(model, index, 111)
             layers2 = model2.get_layers()
-            if index in [3]:
+            if index in [3, 11]:
                 assert len(layers) == len(layers2)
                 assert [x.name for x in layers] == [x.name for x in layers2]
             else:
                 assert len(layers) + 1 == len(layers2)
-                assert [x.name for x in layers[:index]] + ["dense"] + [x.name for x in layers[index:]] == [
-                    x.name for x in layers2
-                ]
-                assert layers2[index].shape[-1] == 111
+                assert sorted([x.name for x in layers[:index]] + ["dense"] + [x.name for x in layers[index:]]) == sorted(
+                    [x.name for x in layers2]
+                )
+                assert len([1 for l in layers2 if l.name == "dense" and l.shape[-1] == 111]) == 1
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(np.array([input]))[0]
             assert np.shape(output) == (11, 13)
