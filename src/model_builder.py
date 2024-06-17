@@ -160,8 +160,8 @@ class ModelBuilder:
         print("add conv layer", before_index)
         assert 0 <= before_index < len(model.model.layers) - 1
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if index == before_index:
+        def modification(index: int, config: dict, tensor: keras.KerasTensor | list):
+            if index == before_index and isinstance(tensor, keras.KerasTensor):
                 if len(tensor.shape) == 3:
                     tensor = keras.layers.Permute((2, 1))(tensor)
                     tensor = keras.layers.Conv1D(tensor.shape[-1], 3)(tensor)
