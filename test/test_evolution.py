@@ -151,9 +151,8 @@ class TestEvolution:
             output = model2.predict(np.array([input]))[0]
             assert np.shape(output) == (11, 13)
 
-    def test_resize_layer(self):
-        builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model(asset_dependant=True)
+    def test_resize_layer(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
         layers = model.get_layers()
         for index in range(len(layers) - 1):
             for size in [50, 150]:
