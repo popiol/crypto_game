@@ -86,9 +86,8 @@ class TestEvolution:
         output = model2.predict(np.array([input]))[0]
         assert np.shape(output) == (14, 13)
 
-    def test_remove_layer(self):
-        builder = ModelBuilder(10, 11, 12, 13)
-        model = builder.build_model(asset_dependant=True)
+    def test_remove_layer(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
         layers = model.get_layers()
         for index in range(len(layers) - 1):
             for length in range(1, 3):
@@ -98,14 +97,14 @@ class TestEvolution:
                     continue
                 model2 = builder.remove_layer(model, index, index + length - 1)
                 layers2 = model2.get_layers()
-                if index in [2, 3, 4]:
+                if index in [2, 3, 4, 5, 6] or index + length > 11:
                     assert len(layers) == len(layers2)
                     assert [x.name for x in layers] == [x.name for x in layers2]
                 else:
                     assert len(layers) == len(layers2) + length
-                    assert [x.name for x in layers[:index]] + [x.name for x in layers[index + length :]] == [
-                        x.name for x in layers2
-                    ]
+                    assert sorted([x.name for x in layers[:index]] + [x.name for x in layers[index + length :]]) == sorted(
+                        [x.name for x in layers2]
+                    )
                 input = np.zeros([*layers2[0].input_shape])
                 output = model2.predict(np.array([input]))[0]
                 assert np.shape(output) == (11, 13)

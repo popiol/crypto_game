@@ -11,7 +11,6 @@ from src.ml_model import MlModel
 class ModificationResult:
     skip: bool = False
     tensor: keras.KerasTensor = None
-    end_index: int = None
 
 
 @dataclass
@@ -77,28 +76,16 @@ class ModelBuilder:
             new_weights.append(w1)
         return new_weights
 
-    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, skip_start: int = None, skip_end: int = None):
-        if skip_start is not None:
-            skip_end = skip_start if skip_end is None else skip_end
-            if skip_end < skip_start:
-                skip_start = None
-                skip_end = None
-        else:
-            assert skip_end is None
-        for index, l in enumerate(to_model.layers[1:]):
+    def copy_weights(self, from_model: keras.Model, to_model: keras.Model):
+        for l in to_model.layers[1:]:
             if not l.get_weights():
                 continue
-            if skip_start is not None:
-                if len(from_model.layers) < len(to_model.layers):
-                    if skip_start <= index <= skip_end:
-                        continue
-                    elif index > skip_end:
-                        index -= skip_end - skip_start + 1
-                elif len(from_model.layers) > len(to_model.layers) and index >= skip_start:
-                    index += skip_end - skip_start + 1
-            weights = from_model.layers[index + 1].get_weights()
-            new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
-            l.set_weights(new_weights)
+            for from_l in from_model.layers[1:]:
+                if from_l.name == l.name:
+                    weights = from_l.get_weights()
+                    new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
+                    l.set_weights(new_weights)
+                    break
 
     def fix_reshape(self, config: dict, tensor: keras.KerasTensor):
         if config["name"].split("_")[0] == "reshape":
@@ -108,7 +95,7 @@ class ModelBuilder:
             output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
             config["target_shape"] = output_shape
 
-    def modify_model(self, model: MlModel, modification: Callable, start_index: int = None, end_index: int = None) -> MlModel:
+    def modify_model(self, model: MlModel, modification: Callable) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
@@ -117,20 +104,22 @@ class ModelBuilder:
             config = l.get_config()
             resp: ModificationResult = modification(index, config, tensor)
             if resp and resp.skip:
+                tensors[l.name] = tensor
                 continue
             if resp and resp.tensor is not None:
                 tensor = resp.tensor
-            if resp and resp.end_index is not None:
-                end_index = resp.end_index
             self.fix_reshape(config, tensor)
             new_layer = l.from_config(config)
-            tensor = new_layer(tensor)
+            try:
+                tensor = new_layer(tensor)
+            except ValueError:
+                return model
             tensors[l.name] = tensor
         if tensor.shape != (None, self.n_assets, self.n_outputs):
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        self.copy_weights(model.model, new_model, start_index, end_index)
+        self.copy_weights(model.model, new_model)
         return MlModel(new_model)
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
@@ -155,7 +144,7 @@ class ModelBuilder:
             if start_index <= index <= end_index:
                 return ModificationResult(skip=True)
 
-        return self.modify_model(model, modification, start_index, end_index)
+        return self.modify_model(model, modification)
 
     def add_dense_layer(self, model: MlModel, before_index: int, size: int):
         print("add dense layer", before_index, size)
@@ -165,7 +154,7 @@ class ModelBuilder:
             if index == before_index:
                 return ModificationResult(tensor=keras.layers.Dense(size)(tensor))
 
-        return self.modify_model(model, modification, before_index)
+        return self.modify_model(model, modification)
 
     def add_conv_layer(self, model: MlModel, before_index: int):
         print("add conv layer", before_index)
@@ -177,12 +166,12 @@ class ModelBuilder:
                     tensor = keras.layers.Permute((2, 1))(tensor)
                     tensor = keras.layers.Conv1D(tensor.shape[-1], 3)(tensor)
                     tensor = keras.layers.Permute((2, 1))(tensor)
-                    return ModificationResult(tensor=tensor, end_index=before_index + 2)
+                    return ModificationResult(tensor=tensor)
                 if len(tensor.shape) == 4:
                     tensor = keras.layers.Conv2D(tensor.shape[-1], 3)(tensor)
-                    return ModificationResult(tensor=tensor, end_index=before_index)
+                    return ModificationResult(tensor=tensor)
 
-        return self.modify_model(model, modification, before_index, before_index - 1)
+        return self.modify_model(model, modification)
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("resize layer", layer_index, new_size)
