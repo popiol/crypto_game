@@ -187,37 +187,43 @@ class ModelBuilder:
         model_id_1 = model_1.model.name.split("_")[-1]
         model_id_2 = model_2.model.name.split("_")[-1]
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        tensor_1 = inputs
-        for l in model_1.model.layers[1:-1]:
+        tensors = {model_1.model.layers[0].name: inputs}
+        for index, l in enumerate(model_1.model.layers[1:-1]):
+            parent_layers = model_1.get_parent_layer_names(index)
+            tensor_1 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
             config["name"] += "_" + model_id_1
             new_layer = l.from_config(config)
             tensor_1 = new_layer(tensor_1)
-        tensor_2 = inputs
-        for l in model_2.model.layers[1:-1]:
+            tensors[l.name] = tensor_1
+        tensors = {model_2.model.layers[0].name: inputs}
+        for index, l in enumerate(model_2.model.layers[1:-1]):
+            parent_layers = model_2.get_parent_layer_names(index)
+            tensor_2 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
             config["name"] += "_" + model_id_2
             new_layer = l.from_config(config)
             tensor_2 = new_layer(tensor_2)
+            tensors[l.name] = tensor_2
         tensor = keras.layers.Concatenate()([tensor_1, tensor_2])
         tensor = keras.layers.Dense(self.n_outputs)(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        index_1 = 0
-        index_2 = 0
         for l in new_model.layers[1:-2]:
-            model_id = l.name.split("_")[-1]
-            if model_id == model_id_1:
-                index_1 += 1
-                from_layer = model_1.model.layers[index_1]
-            elif model_id == model_id_2:
-                index_2 += 1
-                from_layer = model_2.model.layers[index_2]
-            else:
-                raise Exception(f"{model_id} not in [{model_id_1}, {model_id_2}]")
             if not l.get_weights():
                 continue
-            weights = from_layer.get_weights()
-            new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
-            l.set_weights(new_weights)
+            from_layer = None
+            for l_1 in model_1.model.layers[1:]:
+                if l.name == l_1.name + "_" + model_id_1:
+                    from_layer = l_1
+                    break
+            if from_layer is None:
+                for l_2 in model_2.model.layers[1:]:
+                    if l.name == l_2.name + "_" + model_id_2:
+                        from_layer = l_2
+                        break
+            if from_layer is not None:
+                weights = from_layer.get_weights()
+                new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
+                l.set_weights(new_weights)
         return MlModel(new_model)

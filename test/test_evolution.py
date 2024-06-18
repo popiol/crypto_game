@@ -171,8 +171,9 @@ class TestEvolution:
         model_1 = builder.build_model(asset_dependant=True)
         model_2 = builder.build_model(asset_dependant=False)
         model_3 = builder.merge_models(model_1, model_2)
-        assert len(model_3.get_layers()) == len(model_1.get_layers()) + len(model_2.get_layers())
+        model_4 = builder.merge_models(model_2, model_3)
+        assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers())
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(np.array([input]))[0]
-        output_3 = model_3.predict(np.array([input]))[0]
-        assert np.shape(output_1) == np.shape(output_3)
+        output_4 = model_4.predict(np.array([input]))[0]
+        assert np.shape(output_1) == np.shape(output_4)
