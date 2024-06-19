@@ -12,14 +12,12 @@ class ModelRegistry:
         self,
         remote_path: str,
         maturity_min_hours: int,
-        maturity_min_stats_count: int,
         max_mature_models: int,
         retirement_min_hours: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
         self.maturity_min_hours = maturity_min_hours
-        self.maturity_min_stats_count = maturity_min_stats_count
         self.max_mature_models = max_mature_models
         self.retirement_min_hours = retirement_min_hours
         self.archive_retention_days = archive_retention_days
@@ -39,7 +37,7 @@ class ModelRegistry:
         model_name = key.split("/")[-1]
         return model_name, self.s3_utils.download_bytes(key)
 
-    def model_iterator(self):
+    def iterate_models(self):
         for key in self.s3_utils.list_files(self.current_prefix + "/"):
             model_name = key.split("/")[-1]
             yield model_name, self.s3_utils.download_bytes(key)
@@ -72,10 +70,20 @@ class ModelRegistry:
             metrics = self.s3_utils.download_json(file)
             try:
                 stats = metrics["reward_stats"]
-                print(model_name, "count", stats["count"], "mean", stats["mean"], "std", stats["std"])
-                score = float(stats["mean"] - stats["std"])
+                score = float(metrics["evaluation_score"])
+                print(
+                    model_name,
+                    "score",
+                    round(score, 2),
+                    "count",
+                    stats["count"],
+                    "mean",
+                    round(stats["mean"], 2),
+                    "std",
+                    round(stats["std"], 2),
+                )
                 model_and_score = (model_name, score)
-                if stats["count"] < self.maturity_min_stats_count or np.isnan(score):
+                if np.isnan(score):
                     to_archive.append(model_and_score)
                 else:
                     models.append(model_and_score)
