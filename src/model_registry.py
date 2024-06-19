@@ -61,27 +61,16 @@ class ModelRegistry:
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
 
-    def archive_weak_models(self):
+    def get_weak_models(self) -> list[str]:
         files = self.s3_utils.list_files(self.current_prefix + "/", self.maturity_min_hours)
         models = []
         to_archive = []
         for file in files:
             model_name = file.split("/")[-1]
-            metrics = self.s3_utils.download_json(file)
+            metrics = self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
             try:
                 stats = metrics["reward_stats"]
                 score = float(metrics["evaluation_score"])
-                print(
-                    model_name,
-                    "score",
-                    round(score, 2),
-                    "count",
-                    stats["count"],
-                    "mean",
-                    round(stats["mean"], 2),
-                    "std",
-                    round(stats["std"], 2),
-                )
                 model_and_score = (model_name, score)
                 if np.isnan(score):
                     to_archive.append(model_and_score)
@@ -91,7 +80,11 @@ class ModelRegistry:
                 to_archive.append((model_name, 0))
         if len(models) > self.max_mature_models:
             to_archive.extend(sorted(models, key=lambda x: x[1])[: -self.max_mature_models])
-        for model, _ in to_archive:
+        return [model for model, _ in to_archive]
+
+    def archive_weak_models(self):
+        models = self.get_weak_models()
+        for model in models:
             print("archive", model)
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")

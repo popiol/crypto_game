@@ -42,6 +42,9 @@ class RlRunner:
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()
+        self.model_registry = ModelRegistry(**self.config["model_registry"])
+        self.model_serializer = ModelSerializer()
+        self.trainset = Trainset(**self.config["trainset"])
 
     def initial_run(self):
         self.logger.log("Initial run")
@@ -57,8 +60,6 @@ class RlRunner:
 
     def create_agents(self):
         self.logger.log("Create agents")
-        self.model_registry = ModelRegistry(**self.config["model_registry"])
-        self.model_serializer = ModelSerializer()
         model_builder = ModelBuilder(
             self.data_transformer.memory_length,
             len(self.asset_list),
@@ -68,7 +69,7 @@ class RlRunner:
         evolution_handler = EvolutionHandler(
             self.model_registry, self.model_serializer, model_builder, **self.config["evolution_handler"]
         )
-        self.trainset = Trainset(**self.config["trainset"])
+
         agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
@@ -150,6 +151,7 @@ class RlRunner:
             metrics = Metrics(agent, self.model_registry.get_metrics(model_name))
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
+            self.logger.log(model_name, score)
 
     def run(self):
         self.prepare()

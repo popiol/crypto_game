@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from src.model_builder import ModelBuilder
+from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
 
@@ -26,6 +27,24 @@ class TestSimulation:
         ).build_model(asset_dependant=False)
         iterate_models.return_value = [("test", ModelSerializer().serialize(model))]
         rl_runner.run()
-        assert S3Utils.call_count == 1
+        assert S3Utils.call_count == 2
         assert set(["a", "evaluation_score"]).issubset(set(set_metrics.call_args.args[1]))
         assert log_simulation_results.call_count == 1
+
+    def test_evaluate(self):
+        rl_runner = RlRunner()
+        rl_runner.load_config("config/config.yml")
+        rl_runner.prepare()
+        rl_runner.initial_run()
+        rl_runner.evaluate_models()
+
+    def test_get_weak_models(self):
+        rl_runner = RlRunner()
+        rl_runner.load_config("config/config.yml")
+        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        model_registry.max_mature_models = 1
+        models = model_registry.get_weak_models()
+        assert len(models) > 0
+        model_registry.max_mature_models = len(models)
+        models = model_registry.get_weak_models()
+        assert len(models) == 1
