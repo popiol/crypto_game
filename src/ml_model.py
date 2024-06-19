@@ -64,6 +64,9 @@ class MlModel:
             input_shapes[l.name] = l.compute_output_shape(input_shape)
         return layers
 
+    def get_n_params(self):
+        return np.sum([np.prod(v.shape) for v in self.model.trainable_weights])
+
     def __str__(self):
         s = io.StringIO()
         self.model.summary(print_fn=lambda x: s.write(x + "\n"))

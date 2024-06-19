@@ -18,6 +18,7 @@ class EvolutionHandler:
     shrink_prob: float
     extend_prob: float
     resize_by: int
+    max_n_params: int
 
     def create_model(self) -> MlModel:
         method = random.randint(0, 2)
@@ -50,10 +51,10 @@ class EvolutionHandler:
             return self.create_new_model()
         model_1 = self.model_serializer.deserialize(serialized_model_1)
         model_name_2, serialized_model_2 = self.model_registry.get_random_model()
-        if model_name_1 == model_name_2:
+        model_2 = self.model_serializer.deserialize(serialized_model_2)
+        if model_name_1 == model_name_2 or model_1.get_n_params() + model_2.get_n_params() > self.max_n_params:
             print("Existing model loaded:", model_name_1)
             return model_1
-        model_2 = self.model_serializer.deserialize(serialized_model_2)
         print("Merging models:", model_name_1, "and", model_name_2)
         return self.model_builder.merge_models(model_1, model_2)
 
