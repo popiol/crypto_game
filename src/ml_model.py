@@ -27,7 +27,7 @@ class MlModel:
         return self.model.evaluate(x, y)
 
     def predict(self, x: np.array) -> np.array:
-        return self.model.predict(x, verbose=0)
+        return self.model.predict(np.array([x]), verbose=0)[0]
 
     def copy(self) -> MlModel:
         clone = keras.models.clone_model(self.model)

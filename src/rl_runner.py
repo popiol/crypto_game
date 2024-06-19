@@ -9,15 +9,18 @@ from datetime import datetime, timedelta
 import numpy as np
 import yaml
 
+from src.agent import Agent
 from src.agent_builder import AgentBuilder
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer, QuotesSnapshot
 from src.evolution_handler import EvolutionHandler
 from src.logger import Logger
+from src.metrics import Metrics
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.portfolio_manager import PortfolioManager
+from src.training_strategy import TrainingStrategy
 from src.trainset import Trainset
 
 
@@ -71,14 +74,26 @@ class RlRunner:
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
         self.logger.log_agents(self.agents)
 
+    def run_agent(
+        self,
+        agent: Agent,
+        portfolio_manager: PortfolioManager,
+        timestamp: datetime,
+        quotes: QuotesSnapshot,
+        input: np.array,
+        eval_mode: bool = False,
+    ):
+        closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
+        if not eval_mode:
+            agent.train(closed_transactions)
+        orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
+        portfolio_manager.place_orders(timestamp, orders)
+        self.logger.log_transactions(agent.agent_name, closed_transactions)
+
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, input: np.array):
         self.trainset.store_input(timestamp, input)
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
-            agent.train(closed_transactions)
-            orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
-            portfolio_manager.place_orders(timestamp, orders)
-            self.logger.log_transactions(agent.agent_name, closed_transactions)
+            self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
 
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
@@ -88,7 +103,7 @@ class RlRunner:
         for agent in self.agents:
             self.logger.log("Save model", agent.model_name)
             serialized_model = self.model_serializer.serialize(agent.training_strategy.model)
-            metrics = {"reward_stats": agent.training_strategy.stats, "model_id": agent.model_id}
+            metrics = Metrics(agent).get_metrics()
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def reset_simulation(self):
@@ -114,14 +129,35 @@ class RlRunner:
             self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break
-        self.save_models()
-        self.model_registry.archive_models()
+
+    def evaluate_models(self):
+        self.logger.log("Evaluate models")
+        for model_name, serialized_model in self.model_registry.iterate_models():
+            model = self.model_serializer.deserialize(serialized_model)
+            agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
+            portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
+            quotes = QuotesSnapshot()
+            for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+                quotes.update(raw_quotes)
+                features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+                features = self.data_transformer.scale_features(features, self.stats)
+                if features is None:
+                    continue
+                self.data_transformer.add_to_memory(features)
+                self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
+            score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
+            metrics = Metrics(agent, self.model_registry.get_metrics(model_name))
+            metrics.set_evaluation_score(score)
+            self.model_registry.set_metrics(model_name, metrics.get_metrics())
 
     def run(self):
         self.prepare()
         self.initial_run()
         self.create_agents()
         self.main_loop()
+        self.save_models()
+        self.evaluate_models()
+        self.model_registry.archive_models()
 
 
 def main(argv):

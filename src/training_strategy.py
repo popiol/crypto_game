@@ -16,7 +16,7 @@ class TrainingStrategy:
         pass
 
     def predict(self, input: np.array) -> np.array:
-        raise NotImplementedError()
+        return self.model.predict(input)
 
     def train(self, input: np.array, output: np.array, reward: float):
         raise NotImplementedError()
@@ -37,7 +37,7 @@ class LearnOnMistakes(TrainingStrategy):
         self.clone.add_noise(0.1)
 
     def predict(self, input: np.array) -> np.array:
-        return self.clone.predict(np.array([input]))[0]
+        return self.clone.predict(input)
 
     def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)
@@ -54,7 +54,7 @@ class LearnOnSuccess(TrainingStrategy):
         self.clone.add_noise(0.7)
 
     def predict(self, input: np.array) -> np.array:
-        return self.clone.predict(np.array([input]))[0]
+        return self.clone.predict(input)
 
     def train(self, input: np.array, output: np.array, reward: float):
         self.add_to_stats(reward)

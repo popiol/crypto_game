@@ -83,7 +83,7 @@ class TestEvolution:
         assert layers2[0].input_shape == (10, 14, 12)
         assert len(layers) == len(layers2)
         input = np.zeros([*layers2[0].input_shape])
-        output = model2.predict(np.array([input]))[0]
+        output = model2.predict(input)
         assert np.shape(output) == (14, 13)
 
     def test_remove_layer(self, builder: ModelBuilder, complex_model: MlModel):
@@ -106,7 +106,7 @@ class TestEvolution:
                         [x.name for x in layers2]
                     )
                 input = np.zeros([*layers2[0].input_shape])
-                output = model2.predict(np.array([input]))[0]
+                output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
 
     def test_add_dense_layer(self, builder: ModelBuilder, complex_model: MlModel):
@@ -125,7 +125,7 @@ class TestEvolution:
                 )
                 assert len([1 for l in layers2 if l.name == "dense" and l.shape[-1] == 111]) == 1
             input = np.zeros([*layers2[0].input_shape])
-            output = model2.predict(np.array([input]))[0]
+            output = model2.predict(input)
             assert np.shape(output) == (11, 13)
 
     def test_add_conv_layer(self, builder: ModelBuilder, complex_model: MlModel):
@@ -148,7 +148,7 @@ class TestEvolution:
                     [x.name for x in layers2]
                 )
             input = np.zeros([*layers2[0].input_shape])
-            output = model2.predict(np.array([input]))[0]
+            output = model2.predict(input)
             assert np.shape(output) == (11, 13)
 
     def test_resize_layer(self, builder: ModelBuilder, complex_model: MlModel):
@@ -163,7 +163,7 @@ class TestEvolution:
                 if layers[index].name == "dense" and index not in [2]:
                     assert layers2[index].shape[-1] == size
                 input = np.zeros([*layers2[0].input_shape])
-                output = model2.predict(np.array([input]))[0]
+                output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
 
     def test_merge_models(self):
@@ -174,6 +174,6 @@ class TestEvolution:
         model_4 = builder.merge_models(model_2, model_3)
         assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers())
         input = np.zeros([*model_1.get_layers()[0].input_shape])
-        output_1 = model_1.predict(np.array([input]))[0]
-        output_4 = model_4.predict(np.array([input]))[0]
+        output_1 = model_1.predict(input)
+        output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)

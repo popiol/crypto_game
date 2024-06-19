@@ -1,6 +1,5 @@
 import os
 import random
-import re
 
 import numpy as np
 
@@ -37,11 +36,19 @@ class ModelRegistry:
         if not keys:
             return None, None
         key = random.choice(keys)
-        model_name = re.sub("^" + self.current_prefix + "/", "", key)
+        model_name = key.split("/")[-1]
         return model_name, self.s3_utils.download_bytes(key)
+
+    def model_iterator(self):
+        for key in self.s3_utils.list_files(self.current_prefix + "/"):
+            model_name = key.split("/")[-1]
+            yield model_name, self.s3_utils.download_bytes(key)
 
     def get_metrics(self, model_name: str) -> dict:
         return self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
+
+    def set_metrics(self, model_name: str, metrics: dict) -> dict:
+        self.s3_utils.upload_json(f"{self.metrics_prefix}/{model_name}", metrics)
 
     def archive_models(self):
         self.archive_old_models()
@@ -49,7 +56,7 @@ class ModelRegistry:
         self.clean_archive()
 
     def archive_old_models(self):
-        files = self.s3_utils.list_files(self.metrics_prefix + "/", self.retirement_min_hours)
+        files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_hours)
         for file in files:
             model = file.split("/")[-1]
             print("archive", model)
@@ -57,7 +64,7 @@ class ModelRegistry:
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
 
     def archive_weak_models(self):
-        files = self.s3_utils.list_files(self.metrics_prefix + "/", self.maturity_min_hours)
+        files = self.s3_utils.list_files(self.current_prefix + "/", self.maturity_min_hours)
         models = []
         to_archive = []
         for file in files:
