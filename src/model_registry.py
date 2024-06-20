@@ -37,6 +37,9 @@ class ModelRegistry:
         model_name = key.split("/")[-1]
         return model_name, self.s3_utils.download_bytes(key)
 
+    def get_model(self, model_name: str) -> bytes:
+        return self.s3_utils.download_bytes(f"{self.current_prefix}/{model_name}")
+
     def iterate_models(self):
         for key in self.s3_utils.list_files(self.current_prefix + "/"):
             model_name = key.split("/")[-1]

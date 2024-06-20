@@ -71,7 +71,7 @@ class PortfolioManager:
         cost = order.price * order.volume
         if cost > self.portfolio.cash * 1.1:
             return True
-        cost = min(cost, self.portfolio.cash)
+        cost = min(cost, self.portfolio.cash * 0.99999)
         if cost < self.min_transaction:
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
