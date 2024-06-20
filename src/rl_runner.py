@@ -48,7 +48,7 @@ class RlRunner:
 
     def initial_run(self):
         self.logger.log("Initial run")
-        for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
             quotes = QuotesSnapshot(raw_quotes)
             features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             if not self.stats:
@@ -119,7 +119,7 @@ class RlRunner:
             self.logger.log("Start simulation", simulation_index)
             quotes = QuotesSnapshot()
             self.reset_simulation()
-            for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+            for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
                 quotes.update(raw_quotes)
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
@@ -139,7 +139,7 @@ class RlRunner:
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             quotes = QuotesSnapshot()
-            for timestamp, raw_quotes in self.data_registry.quotes_iterator():
+            for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
                 quotes.update(raw_quotes)
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)

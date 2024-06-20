@@ -59,10 +59,16 @@ class DataRegistry:
         for year in sorted(glob.glob(prefix + "/*")):
             for month in sorted(glob.glob(year + "/*")):
                 for day in sorted(glob.glob(month + "/*")):
-                    for file in sorted(glob.glob(day + "/*.json")):
+                    for file in sorted(glob.glob(day + "/??????????????.json")):
                         timestamp = datetime.strptime(file.split("/")[-1].split(".")[0], "%Y%m%d%H%M%S")
                         with open(file) as f:
-                            yield timestamp, json.load(f)
+                            quotes = json.load(f)
+                        bidask_file = file.replace(".json", "_bidask.json")
+                        bidask = None
+                        if os.path.exists(bidask_file):
+                            with open(bidask_file) as f:
+                                bidask = json.load(bidask_file)
+                        yield timestamp, quotes, bidask
 
     def get_asset_list(self) -> list[str]:
         assets = []
