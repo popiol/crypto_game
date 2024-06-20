@@ -184,6 +184,8 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
+        model_1 = self.adjust_n_assets(model_1)
+        model_2 = self.adjust_n_assets(model_2)
         model_id_1 = model_1.model.name.split("_")[-1]
         model_id_2 = model_2.model.name.split("_")[-1]
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
