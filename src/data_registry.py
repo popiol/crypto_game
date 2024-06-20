@@ -67,7 +67,7 @@ class DataRegistry:
                         bidask = None
                         if os.path.exists(bidask_file):
                             with open(bidask_file) as f:
-                                bidask = json.load(bidask_file)
+                                bidask = json.load(f)
                         yield timestamp, quotes, bidask
 
     def get_asset_list(self) -> list[str]:

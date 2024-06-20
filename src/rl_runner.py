@@ -57,19 +57,18 @@ class RlRunner:
             self.stats = {key: val.tolist() for key, val in self.data_transformer.stats.items()}
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
-
-    def create_agents(self):
-        self.logger.log("Create agents")
-        model_builder = ModelBuilder(
+        self.model_builder = ModelBuilder(
             self.data_transformer.memory_length,
             len(self.asset_list),
             self.data_transformer.n_features,
             self.data_transformer.n_outputs,
         )
-        evolution_handler = EvolutionHandler(
-            self.model_registry, self.model_serializer, model_builder, **self.config["evolution_handler"]
-        )
 
+    def create_agents(self):
+        self.logger.log("Create agents")
+        evolution_handler = EvolutionHandler(
+            self.model_registry, self.model_serializer, self.model_builder, **self.config["evolution_handler"]
+        )
         agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
@@ -136,6 +135,7 @@ class RlRunner:
         self.logger.log("Evaluate models")
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
+            model = self.model_builder.adjust_n_assets(model)
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             quotes = QuotesSnapshot()
