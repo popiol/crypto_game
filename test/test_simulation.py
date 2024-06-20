@@ -51,8 +51,8 @@ class TestSimulation:
 
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
-    def test_existing_model(self, iterate_models, set_metrics):
-        model_name = "Charlotte_20240620_6c619"
+    def test_existing_model_evaluate(self, iterate_models, set_metrics):
+        model_name = "Evelyn_20240620_f9db3"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = ModelRegistry(**rl_runner.config["model_registry"])

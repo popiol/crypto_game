@@ -15,6 +15,12 @@ class QuotesSnapshot:
         "l": ["low_today", "low_24h"],
         "h": ["high_today", "high_24h"],
         "o": ["opening_price"],
+        "bid1": ["bid_price_1", "bid_volume_1"],
+        "ask1": ["ask_price_1", "ask_volume_1"],
+        "bid2": ["bid_price_2", "bid_volume_2"],
+        "ask2": ["ask_price_2", "ask_volume_2"],
+        "bid3": ["bid_price_3", "bid_volume_3"],
+        "ask3": ["ask_price_3", "ask_volume_3"],
     }
 
     def __init__(self, quotes: dict = None):
@@ -23,6 +29,10 @@ class QuotesSnapshot:
     def update(self, quotes: dict):
         quotes = {key: val for key, val in quotes.items() if float(val["c"][0]) > 0}
         self.quotes = {**self.quotes, **quotes}
+
+    def update_bid_ask(self, bidask: dict):
+        for asset in bidask:
+            self.quotes[asset]["bid"] = bidask[asset]["bids"]
 
     def closing_price(self, asset: str) -> float:
         return float(self.quotes[asset]["c"][0])

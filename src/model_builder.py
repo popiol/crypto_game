@@ -127,12 +127,12 @@ class ModelBuilder:
         assert self.n_assets >= n_assets
         if self.n_assets == n_assets:
             return model
-        layer_names = []
 
         def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            layer_names.append(config["name"].split("_")[0])
-            if layer_names[-3:] == ["permute", "dense", "dense"] and config["units"] == n_assets:
+            if config["name"].startswith("dense") and config["units"] == n_assets:
                 config["units"] = self.n_assets
+            elif config["name"].startswith("conv1d") and config["filters"] == n_assets:
+                config["filters"] = self.n_assets
 
         return self.modify_model(model, modification)
 
