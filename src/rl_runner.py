@@ -42,14 +42,22 @@ class RlRunner:
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()
+        if self.stats and len(self.stats["mean"]) != self.data_transformer.n_features:
+            self.stats = None
         self.model_registry = ModelRegistry(**self.config["model_registry"])
         self.model_serializer = ModelSerializer()
         self.trainset = Trainset(**self.config["trainset"])
 
+    def quotes_iterator(self):
+        quotes = QuotesSnapshot()
+        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
+            quotes.update(raw_quotes)
+            quotes.update_bid_ask(bidask)
+            yield timestamp, quotes
+
     def initial_run(self):
         self.logger.log("Initial run")
-        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
-            quotes = QuotesSnapshot(raw_quotes)
+        for timestamp, quotes in self.quotes_iterator():
             features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             if not self.stats:
                 self.data_transformer.add_to_stats(features)
@@ -116,10 +124,8 @@ class RlRunner:
     def main_loop(self):
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
-            quotes = QuotesSnapshot()
             self.reset_simulation()
-            for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
-                quotes.update(raw_quotes)
+            for timestamp, quotes in self.quotes_iterator():
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:
@@ -127,7 +133,7 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes, self.data_transformer.memory)
             self.train_on_open_positions()
-            self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
+            # self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break
 
@@ -138,9 +144,7 @@ class RlRunner:
             model = self.model_builder.adjust_n_assets(model)
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
-            quotes = QuotesSnapshot()
-            for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
-                quotes.update(raw_quotes)
+            for timestamp, quotes in self.quotes_iterator():
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:

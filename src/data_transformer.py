@@ -32,7 +32,17 @@ class QuotesSnapshot:
 
     def update_bid_ask(self, bidask: dict):
         for asset in bidask:
-            self.quotes[asset]["bid"] = bidask[asset]["bids"]
+            prev_bid = [self.quotes[asset]["c"], 0]
+            prev_ask = [self.quotes[asset]["c"], 0]
+            for index in range(3):
+                self.quotes[asset][f"bid{index+1}"] = (
+                    bidask[asset]["bids"][index] if len(bidask[asset]["bids"]) > index else prev_bid
+                )
+                self.quotes[asset][f"ask{index+1}"] = (
+                    bidask[asset]["asks"][index] if len(bidask[asset]["asks"]) > index else prev_ask
+                )
+                prev_bid = self.quotes[asset][f"bid{index+1}"]
+                prev_ask = self.quotes[asset][f"ask{index+1}"]
 
     def closing_price(self, asset: str) -> float:
         return float(self.quotes[asset]["c"][0])
@@ -82,19 +92,23 @@ class InputFeatures(ModelFeatures):
     high_today: float = None
     high_24h: float = None
     opening_price: float = None
+    bid_price_1: float = None
+    bid_volume_1: float = None
+    ask_price_1: float = None
+    ask_volume_1: float = None
+    bid_price_2: float = None
+    bid_volume_2: float = None
+    ask_price_2: float = None
+    ask_volume_2: float = None
+    bid_price_3: float = None
+    bid_volume_3: float = None
+    ask_price_3: float = None
+    ask_volume_3: float = None
 
     @classmethod
     def is_price(cls, feature_index: int) -> bool:
-        fields(cls)[feature_index].name in [
-            "ask_price",
-            "bid_price",
-            "closing_price",
-            "low_today",
-            "low_24h",
-            "high_today",
-            "high_24h",
-            "opening_price",
-        ]
+        name = fields(cls)[feature_index].name
+        return "price" in name or name in ["low_today", "low_24h", "high_today", "high_24h"]
 
 
 @dataclass

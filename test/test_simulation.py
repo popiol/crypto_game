@@ -11,9 +11,8 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.get_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
-    @patch("src.rl_runner.Logger.log_simulation_results")
     @patch("src.model_registry.S3Utils")
-    def test_simulation_one_iteration(self, S3Utils, log_simulation_results, iterate_models, get_metrics, set_metrics):
+    def test_simulation_one_iteration(self, S3Utils, iterate_models, get_metrics, set_metrics):
         get_metrics.return_value = {"a": 1}
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
@@ -29,7 +28,6 @@ class TestSimulation:
         rl_runner.run()
         assert S3Utils.call_count == 2
         assert set(["a", "evaluation_score"]).issubset(set(set_metrics.call_args.args[1]))
-        assert log_simulation_results.call_count == 1
 
     def test_evaluate(self):
         rl_runner = RlRunner()
