@@ -25,7 +25,7 @@ class Agent:
         self.trainset = trainset
         self.training_strategy = training_strategy
         self.model_id = uuid.uuid4().hex[:5]
-        model_dt = datetime.now().strftime("%Y%m%d")
+        model_dt = datetime.now().strftime("%Y%m%d%H%M%S")
         self.model_name = f"{agent_name}_{model_dt}_{self.model_id}"
 
     def reset(self):

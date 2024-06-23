@@ -15,12 +15,8 @@ class QuotesSnapshot:
         "l": ["low_today", "low_24h"],
         "h": ["high_today", "high_24h"],
         "o": ["opening_price"],
-        "bid1": ["bid_price_1", "bid_volume_1"],
-        "ask1": ["ask_price_1", "ask_volume_1"],
         "bid2": ["bid_price_2", "bid_volume_2"],
         "ask2": ["ask_price_2", "ask_volume_2"],
-        "bid3": ["bid_price_3", "bid_volume_3"],
-        "ask3": ["ask_price_3", "ask_volume_3"],
     }
 
     def __init__(self, quotes: dict = None):
@@ -31,10 +27,14 @@ class QuotesSnapshot:
         self.quotes = {**self.quotes, **quotes}
 
     def update_bid_ask(self, bidask: dict):
+        if bidask is None:
+            return
         for asset in bidask:
-            prev_bid = [self.quotes[asset]["c"], 0]
-            prev_ask = [self.quotes[asset]["c"], 0]
-            for index in range(3):
+            if asset not in self.quotes:
+                continue
+            prev_bid = self.quotes[asset]["b"]
+            prev_ask = self.quotes[asset]["a"]
+            for index in range(1, 2):
                 self.quotes[asset][f"bid{index+1}"] = (
                     bidask[asset]["bids"][index] if len(bidask[asset]["bids"]) > index else prev_bid
                 )
@@ -64,7 +64,7 @@ class ModelFeatures:
         setattr(self, name, value)
 
     def to_vector(self) -> np.array:
-        return np.array([getattr(self, f.name) for f in fields(self)])
+        return np.array([getattr(self, f.name) or 0.0 for f in fields(self)])
 
     @classmethod
     def count(cls) -> int:
@@ -92,18 +92,10 @@ class InputFeatures(ModelFeatures):
     high_today: float = None
     high_24h: float = None
     opening_price: float = None
-    bid_price_1: float = None
-    bid_volume_1: float = None
-    ask_price_1: float = None
-    ask_volume_1: float = None
     bid_price_2: float = None
     bid_volume_2: float = None
     ask_price_2: float = None
     ask_volume_2: float = None
-    bid_price_3: float = None
-    bid_volume_3: float = None
-    ask_price_3: float = None
-    ask_volume_3: float = None
 
     @classmethod
     def is_price(cls, feature_index: int) -> bool:
@@ -187,7 +179,7 @@ class DataTransformer:
                 features[:, feature_index] = (features[:, feature_index] + mean + std) / (
                     self.last_features[:, feature_index] + mean + std
                 ) - 1
-        np.nan_to_num(features, copy=False)
+        np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)
         self.last_features = raw_features
         return features
 
