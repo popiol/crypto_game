@@ -28,7 +28,7 @@ class EvolutionHandler:
             model = self.load_existing_model()
         elif method == 2:
             model = self.merge_existing_models()
-        model = self.model_builder.adjust_n_assets(model)
+        model = self.model_builder.adjust_dimensions(model)
         model = self.mutate(model)
         return model
 

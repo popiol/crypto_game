@@ -141,7 +141,7 @@ class RlRunner:
         self.logger.log("Evaluate models")
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
-            model = self.model_builder.adjust_n_assets(model)
+            model = self.model_builder.adjust_dimensions(model)
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             for timestamp, quotes in self.quotes_iterator():

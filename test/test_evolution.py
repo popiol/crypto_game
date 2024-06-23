@@ -86,6 +86,19 @@ class TestEvolution:
         output = model2.predict(input)
         assert np.shape(output) == (14, 13)
 
+    def test_adjust_n_features(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
+        layers = model.get_layers()
+        builder.n_features = 14
+        model2 = builder.adjust_n_features(model)
+        layers2 = model2.get_layers()
+        assert layers[0].input_shape == (10, 11, 12)
+        assert layers2[0].input_shape == (10, 11, 14)
+        assert len(layers) == len(layers2)
+        input = np.zeros([*layers2[0].input_shape])
+        output = model2.predict(input)
+        assert np.shape(output) == (11, 13)
+
     def test_remove_layer(self, builder: ModelBuilder, complex_model: MlModel):
         model = complex_model
         layers = model.get_layers()

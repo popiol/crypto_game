@@ -122,6 +122,11 @@ class ModelBuilder:
         self.copy_weights(model.model, new_model)
         return MlModel(new_model)
 
+    def adjust_dimensions(self, model: MlModel) -> MlModel:
+        model = self.adjust_n_assets(model)
+        model = self.adjust_n_features(model)
+        return model
+
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
@@ -133,6 +138,20 @@ class ModelBuilder:
                 config["units"] = self.n_assets
             elif config["name"].startswith("conv1d") and config["filters"] == n_assets:
                 config["filters"] = self.n_assets
+
+        return self.modify_model(model, modification)
+
+    def adjust_n_features(self, model: MlModel) -> MlModel:
+        n_features = model.model.layers[0].batch_shape[3]
+        assert self.n_features >= n_features
+        if self.n_features == n_features:
+            return model
+
+        def modification(index: int, config: dict, tensor: keras.KerasTensor):
+            if config["name"].startswith("dense") and config["units"] == n_features:
+                config["units"] = self.n_features
+            elif config["name"].startswith("conv1d") and config["filters"] == n_features:
+                config["filters"] = self.n_features
 
         return self.modify_model(model, modification)
 
@@ -184,8 +203,8 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
-        model_1 = self.adjust_n_assets(model_1)
-        model_2 = self.adjust_n_assets(model_2)
+        model_1 = self.adjust_dimensions(model_1)
+        model_2 = self.adjust_dimensions(model_2)
         model_id_1 = model_1.model.name.split("_")[-1]
         model_id_2 = model_2.model.name.split("_")[-1]
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
