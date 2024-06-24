@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -68,13 +69,19 @@ class PortfolioManager:
             return False
         if quotes.closing_price(order.asset) >= order.price:
             return False
+        assert order.price > 0
+        assert order.volume > 0
         cost = order.price * order.volume
         if cost > self.portfolio.cash * 1.1:
             return True
-        cost = min(cost, self.portfolio.cash * 0.99999)
+        cost = min(cost, self.portfolio.cash)
         if cost < self.min_transaction:
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
+        precision = math.pow(10, math.floor(math.log10(order.volume)) - 3)
+        order.volume = math.floor(order.volume / precision) * precision
+        cost = order.price * order.volume * (1 + self.transaction_fee)
+        assert cost <= self.portfolio.cash
         self.portfolio.cash -= cost
         if asset_index is None:
             self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, cost, order.place_dt))
@@ -102,6 +109,8 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
+        assert order.price > 0
+        assert order.volume > 0
         profit = order.price * order.volume * (1 - self.transaction_fee)
         self.portfolio.cash += profit
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
@@ -131,6 +140,11 @@ class PortfolioManager:
             if self.sell_asset(order, quotes, asset_index, closed_transactions):
                 continue
             new_orders.append(order)
-        self.portfolio.update_value(quotes)
+        try:
+            self.portfolio.update_value(quotes)
+        except AssertionError:
+            print("Assertion error")
+            print(self.portfolio)
+            raise
         self.orders = new_orders
         return closed_transactions

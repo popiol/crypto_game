@@ -40,7 +40,7 @@ class Portfolio:
             assert p.volume > 0
             p.value = p.volume * quotes.closing_price(p.asset)
             assert p.value > 0
-        assert self.cash > 0
+        assert self.cash >= 0
         self.value = sum(p.value for p in self.positions) + self.cash
 
 

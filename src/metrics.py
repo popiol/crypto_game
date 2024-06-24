@@ -11,8 +11,4 @@ class Metrics:
         self.metrics["evaluation_score"] = score
 
     def get_metrics(self):
-        if "model_id" not in self.metrics:
-            self.metrics["model_id"] = self.agent.model_id
-        if "reward_stats" not in self.metrics:
-            self.metrics["reward_stats"] = self.agent.training_strategy.stats
-        return self.metrics
+        return {"model_id": self.agent.model_id, "reward_stats": self.agent.training_strategy.stats, **self.metrics}
