@@ -11,6 +11,7 @@ from src.keras import keras
 @dataclass
 class MlModelLayer:
     name: str
+    layer_type: str
     shape: tuple
     input_shape: tuple
 
@@ -56,7 +57,8 @@ class MlModel:
             input_shape_without_batch = input_shape[1:] if type(input_shape) == tuple else [x[1:] for x in input_shape]
             layers.append(
                 MlModelLayer(
-                    name=l.name.split("_")[0],
+                    name=l.name,
+                    layer_type=l.name.split("_")[0],
                     shape=tuple(l.weights[0].shape) if l.weights else None,
                     input_shape=input_shape_without_batch,
                 )

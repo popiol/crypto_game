@@ -202,6 +202,10 @@ class ModelBuilder:
 
         return self.modify_model(model, modification)
 
+    def fix_layer_name(self, name: str) -> str:
+        x = name.split("_")
+        return "_".join(x[:1] + x[max(1, len(x) - 30) :])
+
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
         model_2 = self.adjust_dimensions(model_2)
@@ -213,7 +217,7 @@ class ModelBuilder:
             parent_layers = model_1.get_parent_layer_names(index)
             tensor_1 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
-            config["name"] += "_" + model_id_1
+            config["name"] = self.fix_layer_name(config["name"] + "_" + model_id_1)
             new_layer = l.from_config(config)
             tensor_1 = new_layer(tensor_1)
             tensors[l.name] = tensor_1
@@ -222,7 +226,7 @@ class ModelBuilder:
             parent_layers = model_2.get_parent_layer_names(index)
             tensor_2 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
-            config["name"] += "_" + model_id_2
+            config["name"] = self.fix_layer_name(config["name"] + "_" + model_id_2)
             new_layer = l.from_config(config)
             tensor_2 = new_layer(tensor_2)
             tensors[l.name] = tensor_2

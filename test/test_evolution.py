@@ -112,12 +112,12 @@ class TestEvolution:
                 layers2 = model2.get_layers()
                 if index in [2, 3, 4, 5, 6] or index + length > 11:
                     assert len(layers) == len(layers2)
-                    assert [x.name for x in layers] == [x.name for x in layers2]
+                    assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
                 else:
                     assert len(layers) == len(layers2) + length
-                    assert sorted([x.name for x in layers[:index]] + [x.name for x in layers[index + length :]]) == sorted(
-                        [x.name for x in layers2]
-                    )
+                    assert sorted(
+                        [x.layer_type for x in layers[:index]] + [x.layer_type for x in layers[index + length :]]
+                    ) == sorted([x.layer_type for x in layers2])
                 input = np.zeros([*layers2[0].input_shape])
                 output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
@@ -130,13 +130,13 @@ class TestEvolution:
             layers2 = model2.get_layers()
             if index in [3, 11]:
                 assert len(layers) == len(layers2)
-                assert [x.name for x in layers] == [x.name for x in layers2]
+                assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
             else:
                 assert len(layers) + 1 == len(layers2)
-                assert sorted([x.name for x in layers[:index]] + ["dense"] + [x.name for x in layers[index:]]) == sorted(
-                    [x.name for x in layers2]
-                )
-                assert len([1 for l in layers2 if l.name == "dense" and l.shape[-1] == 111]) == 1
+                assert sorted(
+                    [x.layer_type for x in layers[:index]] + ["dense"] + [x.layer_type for x in layers[index:]]
+                ) == sorted([x.layer_type for x in layers2])
+                assert len([1 for l in layers2 if l.layer_type == "dense" and l.shape[-1] == 111]) == 1
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(input)
             assert np.shape(output) == (11, 13)
@@ -150,15 +150,17 @@ class TestEvolution:
             layers2 = model2.get_layers()
             if index in [5, 6, 7, 12]:
                 assert len(layers) == len(layers2)
-                assert [x.name for x in layers] == [x.name for x in layers2]
+                assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
             else:
                 assert len(layers) + 1 == len(layers2) or len(layers) + 3 == len(layers2)
                 assert sorted(
-                    [x.name for x in layers[:index]] + ["permute", "conv1d", "permute"] + [x.name for x in layers[index:]]
-                ) == sorted([x.name for x in layers2]) or sorted(
-                    [x.name for x in layers[:index]] + ["conv2d"] + [x.name for x in layers[index:]]
+                    [x.layer_type for x in layers[:index]]
+                    + ["permute", "conv1d", "permute"]
+                    + [x.layer_type for x in layers[index:]]
+                ) == sorted([x.layer_type for x in layers2]) or sorted(
+                    [x.layer_type for x in layers[:index]] + ["conv2d"] + [x.layer_type for x in layers[index:]]
                 ) == sorted(
-                    [x.name for x in layers2]
+                    [x.layer_type for x in layers2]
                 )
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(input)
@@ -172,8 +174,8 @@ class TestEvolution:
                 model2 = builder.resize_layer(model, index, size)
                 layers2 = model2.get_layers()
                 assert len(layers) == len(layers2)
-                assert [x.name for x in layers] == [x.name for x in layers2]
-                if layers[index].name == "dense" and index not in [2]:
+                assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
+                if layers[index].layer_type == "dense" and index not in [2]:
                     assert layers2[index].shape[-1] == size
                 input = np.zeros([*layers2[0].input_shape])
                 output = model2.predict(input)
