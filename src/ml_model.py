@@ -73,3 +73,11 @@ class MlModel:
         s = io.StringIO()
         self.model.summary(print_fn=lambda x: s.write(x + "\n"))
         return s.getvalue()
+
+    @property
+    def name(self):
+        return self.model.name
+
+    @name.setter
+    def name(self, x):
+        self.model.name = x

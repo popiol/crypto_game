@@ -24,7 +24,8 @@ class Agent:
         self.data_transformer = data_transformer
         self.trainset = trainset
         self.training_strategy = training_strategy
-        self.model_id = uuid.uuid4().hex[:5]
+        self.model_id_len = 5
+        self.model_id = uuid.uuid4().hex[: self.model_id_len]
         model_dt = datetime.now().strftime("%Y%m%d%H%M%S")
         self.model_name = f"{agent_name}_{model_dt}_{self.model_id}"
 

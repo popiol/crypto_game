@@ -1,18 +1,29 @@
 from src.agent import Agent
+from src.data_transformer import QuotesSnapshot
 
 
 class Metrics:
 
-    def __init__(self, agent: Agent, metrics: dict = None):
+    def __init__(self, agent: Agent, metrics: dict = None, quotes: QuotesSnapshot = None):
         self.agent = agent
         self.model = agent.training_strategy.model
         self.metrics = metrics or {}
+        self.quotes = quotes
 
     def set_evaluation_score(self, score: float):
         self.metrics["evaluation_score"] = score
 
     def get_n_ancestors(self) -> int:
-        return len([1 for x in self.model.get_layers()[0].name.split("_")[1:] if len(x) >= 4])
+        return len(
+            set.union(
+                *[set([x for x in l.name.split("_")[1:] if len(x) == self.agent.model_id_len]) for l in self.model.get_layers()]
+            )
+        )
+
+    def get_bitcoin_quote(self):
+        if self.quotes is None:
+            return None
+        return (self.quotes.closing_price("TBTCUSD") + self.quotes.closing_price("WBTCUSD")) / 2
 
     def get_metrics(self):
         return {
@@ -20,4 +31,5 @@ class Metrics:
             "reward_stats": self.agent.training_strategy.stats,
             **self.metrics,
             "n_ancestors": self.get_n_ancestors(),
+            "BTCUSD": self.get_bitcoin_quote(),
         }

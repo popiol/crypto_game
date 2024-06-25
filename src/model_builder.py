@@ -204,13 +204,13 @@ class ModelBuilder:
 
     def fix_layer_name(self, name: str) -> str:
         x = name.split("_")
-        return "_".join(x[:1] + x[max(1, len(x) - 30) :])
+        return "_".join(x[:2] + x[max(2, len(x) - 30) :])
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
         model_2 = self.adjust_dimensions(model_2)
-        model_id_1 = model_1.model.name.split("_")[-1]
-        model_id_2 = model_2.model.name.split("_")[-1]
+        model_id_1 = model_1.name.split("_")[-1]
+        model_id_2 = model_2.name.split("_")[-1]
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         tensors = {model_1.model.layers[0].name: inputs}
         for index, l in enumerate(model_1.model.layers[1:-1]):

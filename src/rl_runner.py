@@ -152,7 +152,7 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
-            metrics = Metrics(agent, self.model_registry.get_metrics(model_name))
+            metrics = Metrics(agent, self.model_registry.get_metrics(model_name), quotes)
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
             self.logger.log(model_name, score)
