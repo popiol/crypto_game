@@ -74,3 +74,6 @@ class TestMetrics:
 
     def test_n_params(self, simple_model: MlModel, metrics: Metrics):
         assert metrics.get_n_params() == simple_model.get_n_params()
+
+    def test_n_layers(self, simple_model: MlModel, metrics: Metrics):
+        assert metrics.get_n_layers() == len(simple_model.get_layers())

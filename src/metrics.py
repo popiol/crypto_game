@@ -33,6 +33,9 @@ class Metrics:
     def get_n_params(self):
         return self.model.get_n_params()
 
+    def get_n_layers(self):
+        return len(self.model.get_layers())
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -42,4 +45,5 @@ class Metrics:
             "BTCUSD": self.get_bitcoin_quote(),
             "BTCUSD_change": self.get_bitcoin_change(),
             "n_params": self.get_n_params(),
+            "n_layers": self.get_n_layers(),
         }
