@@ -52,24 +52,24 @@ class TestMetrics:
         metrics = Metrics(agent, metrics.get_metrics(), quotes=quotes)
         assert np.isclose(metrics.get_bitcoin_change(), 1.3 / 1.2 - 1)
 
-    def test_get_n_ancestors(self, simple_model, complex_model):
+    def test_get_n_merge_ancestors(self, simple_model, complex_model):
         agent = self.create_agent(simple_model)
         metrics = Metrics(agent)
-        assert metrics.get_n_ancestors() == 0
+        assert metrics.get_n_merge_ancestors() == 0
         agent = self.create_agent(complex_model)
         metrics = Metrics(agent)
-        assert metrics.get_n_ancestors() == 2
+        assert metrics.get_n_merge_ancestors() == 2
 
     def test_get_metrics(self, agent, quotes):
-        metrics = Metrics(agent, {"model_id": "abc123", "a": 1, "n_ancestors": -1, "BTCUSD": -1}, quotes)
+        metrics = Metrics(agent, {"model_id": "abc123", "a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}, quotes)
         metrics2 = metrics.get_metrics()
         assert "model_id" in metrics2
         assert "reward_stats" in metrics2
-        assert "n_ancestors" in metrics2
+        assert "n_merge_ancestors" in metrics2
         assert "BTCUSD" in metrics2
         assert "a" in metrics2
         assert metrics2["model_id"] == "abc123"
-        assert metrics2["n_ancestors"] >= 0
+        assert metrics2["n_merge_ancestors"] >= 0
         assert metrics2["BTCUSD"] >= 0
 
     def test_n_params(self, simple_model: MlModel, metrics: Metrics):
@@ -77,3 +77,6 @@ class TestMetrics:
 
     def test_n_layers(self, simple_model: MlModel, metrics: Metrics):
         assert metrics.get_n_layers() == len(simple_model.get_layers())
+
+    def test_n_layers_per_type(self, simple_model: MlModel, metrics: Metrics):
+        assert metrics.get_n_layers_per_type() == {"permute": 1, "reshape": 1, "unit": 1, "dense": 2}
