@@ -25,6 +25,11 @@ class Metrics:
             return None
         return (self.quotes.closing_price("TBTCUSD") + self.quotes.closing_price("WBTCUSD")) / 2
 
+    def get_bitcoin_change(self):
+        if "BTCUSD" not in self.metrics:
+            return None
+        return self.get_bitcoin_quote() / self.metrics["BTCUSD"] - 1
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -32,4 +37,5 @@ class Metrics:
             **self.metrics,
             "n_ancestors": self.get_n_ancestors(),
             "BTCUSD": self.get_bitcoin_quote(),
+            "BTCUSD_change": self.get_bitcoin_change(),
         }

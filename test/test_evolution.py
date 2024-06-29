@@ -3,6 +3,8 @@ import pytest
 
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
+from src.model_registry import ModelRegistry
+from src.model_serializer import ModelSerializer
 
 
 class TestEvolution:
@@ -181,8 +183,7 @@ class TestEvolution:
                 output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
 
-    def test_merge_models(self):
-        builder = ModelBuilder(10, 11, 12, 13)
+    def test_merge_models(self, builder: ModelBuilder):
         model_1 = builder.build_model(asset_dependant=True)
         model_2 = builder.build_model(asset_dependant=False)
         model_3 = builder.merge_models(model_1, model_2)
@@ -192,3 +193,14 @@ class TestEvolution:
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
+
+    def test_merge_existing_models(self):
+        builder = ModelBuilder(10, 309, 23, 4)
+        model_name_1 = "Olivia_20240628193521_ea9d7"
+        model_name_2 = "Charlotte_20240628193521_d2a50"
+        model_registry = ModelRegistry("s3://popiol-crypto-models", 1, 10, 10, 10)
+        model_serializer = ModelSerializer()
+        model_1 = model_serializer.deserialize(model_registry.get_model(model_name_1))
+        model_2 = model_serializer.deserialize(model_registry.get_model(model_name_2))
+        model_3 = builder.merge_models(model_1, model_2)
+        print(model_3)

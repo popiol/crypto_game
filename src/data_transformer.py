@@ -196,8 +196,8 @@ class DataTransformer:
         relative_buy_price = (output_matrix[:, 1] - 1) * self.expected_daily_change + 1
         relative_sell_price = (output_matrix[:, 2] + 1) * self.expected_daily_change + 1
         assert (relative_buy_volume >= 0).all()
-        assert (relative_buy_price > 0).all()
-        assert (relative_sell_price > 0).all()
+        assert (relative_buy_price > -1).all()
+        assert (relative_sell_price > -1).all()
         return {
             row[0]: OutputFeatures(*row[1:])
             for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price)

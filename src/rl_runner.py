@@ -144,7 +144,10 @@ class RlRunner:
             model = self.model_builder.adjust_dimensions(model)
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
+            initial_quotes = None
             for timestamp, quotes in self.quotes_iterator():
+                if initial_quotes is None and "TBTCUSD" in quotes.quotes and "WBTCUSD" in quotes.quotes:
+                    initial_quotes = quotes
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:
@@ -152,7 +155,8 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
-            metrics = Metrics(agent, self.model_registry.get_metrics(model_name), quotes)
+            metrics = Metrics(agent, self.model_registry.get_metrics(model_name), initial_quotes)
+            metrics = Metrics(agent, metrics.get_metrics(), quotes)
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
             self.logger.log(model_name, score)
