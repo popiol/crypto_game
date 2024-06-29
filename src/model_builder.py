@@ -21,10 +21,10 @@ class ModelBuilder:
     n_features: int
     n_outputs: int
 
-    def build_model(self, asset_dependant=False) -> MlModel:
+    def build_model(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        if asset_dependant:
+        if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
             l = keras.layers.Dense(100)(l)
             l = keras.layers.Dense(self.n_assets)(l)

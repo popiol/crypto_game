@@ -36,8 +36,8 @@ class TestEvolution:
 
     @pytest.fixture
     def complex_model(self, builder):
-        model_1 = builder.build_model(asset_dependant=True)
-        model_2 = builder.build_model(asset_dependant=False)
+        model_1 = builder.build_model(asset_dependent=True)
+        model_2 = builder.build_model(asset_dependent=False)
         return builder.merge_models(model_1, model_2)
 
     def test_adjust_weights_shape(self, builder: ModelBuilder, complex_model: MlModel):
@@ -184,8 +184,8 @@ class TestEvolution:
                 assert np.shape(output) == (11, 13)
 
     def test_merge_models(self, builder: ModelBuilder):
-        model_1 = builder.build_model(asset_dependant=True)
-        model_2 = builder.build_model(asset_dependant=False)
+        model_1 = builder.build_model(asset_dependent=True)
+        model_2 = builder.build_model(asset_dependent=False)
         model_3 = builder.merge_models(model_1, model_2)
         model_4 = builder.merge_models(model_2, model_3)
         assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers())

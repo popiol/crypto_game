@@ -26,9 +26,9 @@ class AgentBuilder:
     def create_agents(self) -> list[Agent]:
         agents = []
         for name in self.get_names():
-            model = self.evolution_handler.create_model()
+            model, metrics = self.evolution_handler.create_model()
             training_strategy = StrategyPicker().pick(model)
-            agent = Agent(name, self.data_transformer, self.trainset, training_strategy)
+            agent = Agent(name, self.data_transformer, self.trainset, training_strategy, metrics)
             model.name = agent.model_name
             agents.append(agent)
         return agents

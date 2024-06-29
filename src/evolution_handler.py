@@ -20,32 +20,35 @@ class EvolutionHandler:
     resize_by: int
     max_n_params: int
 
-    def create_model(self) -> MlModel:
+    def create_model(self) -> tuple[MlModel, dict]:
         method = random.randint(0, 2)
         if method == 0:
-            model = self.create_new_model()
+            model, metrics = self.create_new_model()
         elif method == 1:
-            model = self.load_existing_model()
+            model, metrics = self.load_existing_model()
         elif method == 2:
-            model = self.merge_existing_models()
+            model, metrics = self.merge_existing_models()
         model = self.model_builder.adjust_dimensions(model)
-        model = self.mutate(model)
-        return model
+        model, metrics = self.mutate(model, metrics)
+        return model, metrics
 
-    def create_new_model(self) -> MlModel:
-        asset_dependant = bool(random.randint(0, 1))
-        print("create model, asset_dependant:", asset_dependant)
-        return self.model_builder.build_model(asset_dependant)
+    def create_new_model(self) -> tuple[MlModel, dict]:
+        asset_dependent = bool(random.randint(0, 1))
+        print("create model, asset_dependent:", asset_dependent)
+        metrics = {"n_asset_dependent": int(asset_dependent), "n_asset_independent": int(not asset_dependent)}
+        return self.model_builder.build_model(asset_dependent), metrics
 
-    def load_existing_model(self) -> MlModel:
+    def load_existing_model(self) -> tuple[MlModel, dict]:
         model_name, serialized_model = self.model_registry.get_random_model()
         if model_name is None:
             return self.create_new_model()
         model = self.model_serializer.deserialize(serialized_model)
+        metrics = self.model_registry.get_metrics(model_name)
+        metrics["parents"] = {model_name: metrics.get("parents")}
         print("Existing model loaded:", model_name)
-        return model
+        return model, metrics
 
-    def merge_existing_models(self) -> MlModel:
+    def merge_existing_models(self) -> tuple[MlModel, dict]:
         model_name_1, serialized_model_1 = self.model_registry.get_random_model()
         if model_name_1 is None:
             return self.create_new_model()
@@ -55,10 +58,16 @@ class EvolutionHandler:
         if model_name_1 == model_name_2 or model_1.get_n_params() + model_2.get_n_params() > self.max_n_params:
             print("Existing model loaded:", model_name_1)
             return model_1
+        metrics_1 = self.model_registry.get_metrics(model_name_1)
+        metrics_2 = self.model_registry.get_metrics(model_name_2)
+        metrics = {"parents": {model_name_1: metrics_1.get("parents"), model_name_2: metrics_2.get("parents")}}
+        for metric_name in metrics_1:
+            if type(metrics_1[metric_name]) == int and metric_name in metrics_2:
+                metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
         print("Merging models:", model_name_1, "and", model_name_2)
-        return self.model_builder.merge_models(model_1, model_2)
+        return self.model_builder.merge_models(model_1, model_2), metrics
 
-    def mutate(self, model: MlModel) -> MlModel:
+    def mutate(self, model: MlModel, metrics: dict) -> tuple[MlModel, dict]:
         skip = 0
         n_layers = len(model.get_layers())
         n_layers_diff = 0
@@ -73,19 +82,24 @@ class EvolutionHandler:
                 model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
                 skip = offset
+                metrics["remove_layer"] = metrics.get("remove_layer", 0) + 1
                 continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
             if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
+                metrics["shrink_layer"] = metrics.get("shrink_layer", 0) + 1
             elif random.random() < self.extend_prob and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
+                metrics["extend_layer"] = metrics.get("extend_layer", 0) + 1
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())
                 if choice == 0:
                     size = max(10, round(random.gauss(100, 30)))
                     model = self.model_builder.add_dense_layer(model, index, size)
+                    metrics["add_dense_layer"] = metrics.get("add_dense_layer", 0) + 1
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
+                    metrics["add_conv_layer"] = metrics.get("add_conv_layer", 0) + 1
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
-        return model
+        return model, metrics

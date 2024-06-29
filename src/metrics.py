@@ -4,11 +4,11 @@ from src.data_transformer import QuotesSnapshot
 
 class Metrics:
 
-    def __init__(self, agent: Agent, metrics: dict = None, quotes: QuotesSnapshot = None):
+    def __init__(self, agent: Agent, quotes: QuotesSnapshot = None):
         self.agent = agent
-        self.model = agent.training_strategy.model
-        self.metrics = metrics or {}
         self.quotes = quotes
+        self.model = agent.training_strategy.model
+        self.metrics = agent.metrics
 
     def set_evaluation_score(self, score: float):
         self.metrics["evaluation_score"] = score
@@ -42,6 +42,14 @@ class Metrics:
             counts[l.layer_type] = counts.get(l.layer_type, 0) + 1
         return counts
 
+    def get_n_ancestors(self):
+        parents = self.metrics
+        n_ancestors = -1
+        while parents is not None:
+            n_ancestors += 1
+            parents = parents.get("parents")
+        return n_ancestors
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -53,4 +61,5 @@ class Metrics:
             "n_params": self.get_n_params(),
             "n_layers": self.get_n_layers(),
             "n_layers_per_type": self.get_n_layers_per_type(),
+            "n_ancestors": self.get_n_ancestors(),
         }

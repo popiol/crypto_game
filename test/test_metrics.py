@@ -23,9 +23,9 @@ class TestMetrics:
 
     @pytest.fixture
     def complex_model(self, builder: ModelBuilder):
-        model_1 = builder.build_model(asset_dependant=True)
+        model_1 = builder.build_model(asset_dependent=True)
         model_1.name = "agent_2024_23456"
-        model_2 = builder.build_model(asset_dependant=False)
+        model_2 = builder.build_model(asset_dependent=False)
         model_2.name = "agent_2024_34567"
         return builder.merge_models(model_1, model_2)
 
@@ -34,22 +34,23 @@ class TestMetrics:
         return QuotesSnapshot({"TBTCUSD": {"c": [1.1]}, "WBTCUSD": {"c": [1.3]}})
 
     def create_agent(self, model):
-        return Agent("test", None, None, TrainingStrategy(model))
+        return Agent("test", None, None, TrainingStrategy(model), {})
 
     @pytest.fixture
     def agent(self, simple_model):
-        return Agent("test", None, None, TrainingStrategy(simple_model))
+        return self.create_agent(simple_model)
 
     @pytest.fixture
     def metrics(self, agent: Agent, quotes: QuotesSnapshot):
-        return Metrics(agent, quotes=quotes)
+        return Metrics(agent, quotes)
 
     def test_get_bitcoin_quote(self, metrics: Metrics):
         assert np.isclose(metrics.get_bitcoin_quote(), 1.2)
 
     def test_get_bitcoin_change(self, agent: Agent, metrics: Metrics):
         quotes = QuotesSnapshot({"TBTCUSD": {"c": [1.2]}, "WBTCUSD": {"c": [1.4]}})
-        metrics = Metrics(agent, metrics.get_metrics(), quotes=quotes)
+        agent.metrics = metrics.get_metrics()
+        metrics = Metrics(agent, quotes=quotes)
         assert np.isclose(metrics.get_bitcoin_change(), 1.3 / 1.2 - 1)
 
     def test_get_n_merge_ancestors(self, simple_model, complex_model):
@@ -61,7 +62,8 @@ class TestMetrics:
         assert metrics.get_n_merge_ancestors() == 2
 
     def test_get_metrics(self, agent, quotes):
-        metrics = Metrics(agent, {"model_id": "abc123", "a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}, quotes)
+        agent.metrics = {"model_id": "abc123", "a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}
+        metrics = Metrics(agent, quotes)
         metrics2 = metrics.get_metrics()
         assert "model_id" in metrics2
         assert "reward_stats" in metrics2

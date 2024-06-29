@@ -18,12 +18,18 @@ from src.trainset import Trainset
 class Agent:
 
     def __init__(
-        self, agent_name: str, data_transformer: DataTransformer, trainset: Trainset, training_strategy: TrainingStrategy
+        self,
+        agent_name: str,
+        data_transformer: DataTransformer,
+        trainset: Trainset,
+        training_strategy: TrainingStrategy,
+        metrics: dict,
     ):
         self.agent_name = agent_name
         self.data_transformer = data_transformer
         self.trainset = trainset
         self.training_strategy = training_strategy
+        self.metrics = metrics
         self.model_id_len = 5
         self.model_id = uuid.uuid4().hex[: self.model_id_len]
         model_dt = datetime.now().strftime("%Y%m%d%H%M%S")

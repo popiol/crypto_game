@@ -23,7 +23,7 @@ class TestSimulation:
             len(rl_runner.asset_list),
             rl_runner.data_transformer.n_features,
             rl_runner.data_transformer.n_outputs,
-        ).build_model(asset_dependant=False)
+        ).build_model(asset_dependent=False)
         iterate_models.return_value = [("test", ModelSerializer().serialize(model))]
         rl_runner.run()
         assert S3Utils.call_count == 2

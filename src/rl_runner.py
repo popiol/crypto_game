@@ -142,7 +142,8 @@ class RlRunner:
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
             model = self.model_builder.adjust_dimensions(model)
-            agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model))
+            metrics = self.model_registry.get_metrics(model_name)
+            agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             initial_quotes = None
             for timestamp, quotes in self.quotes_iterator():
@@ -155,8 +156,9 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
-            metrics = Metrics(agent, self.model_registry.get_metrics(model_name), initial_quotes)
-            metrics = Metrics(agent, metrics.get_metrics(), quotes)
+            metrics = Metrics(agent, initial_quotes)
+            agent.metrics = metrics.get_metrics()
+            metrics = Metrics(agent, quotes)
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
             self.logger.log(model_name, score)
