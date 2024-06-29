@@ -61,6 +61,14 @@ class TestMetrics:
         metrics = Metrics(agent)
         assert metrics.get_n_merge_ancestors() == 2
 
+    def test_get_n_ancestors(self, simple_model):
+        agent = self.create_agent(simple_model)
+        metrics = Metrics(agent)
+        assert metrics.get_n_ancestors() == 0
+        agent.metrics = {"parents": {"asd": None}}
+        metrics = Metrics(agent)
+        assert metrics.get_n_ancestors() == 1
+
     def test_get_metrics(self, agent, quotes):
         agent.metrics = {"model_id": "abc123", "a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}
         metrics = Metrics(agent, quotes)
