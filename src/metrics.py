@@ -30,6 +30,9 @@ class Metrics:
             return None
         return self.get_bitcoin_quote() / self.metrics["BTCUSD"] - 1
 
+    def get_n_params(self):
+        return self.model.get_n_params()
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -38,4 +41,5 @@ class Metrics:
             "n_ancestors": self.get_n_ancestors(),
             "BTCUSD": self.get_bitcoin_quote(),
             "BTCUSD_change": self.get_bitcoin_change(),
+            "n_params": self.get_n_params(),
         }

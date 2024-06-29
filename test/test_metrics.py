@@ -4,6 +4,7 @@ import pytest
 from src.agent import Agent
 from src.data_transformer import QuotesSnapshot
 from src.metrics import Metrics
+from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
 from src.training_strategy import TrainingStrategy
 
@@ -70,3 +71,6 @@ class TestMetrics:
         assert metrics2["model_id"] == "abc123"
         assert metrics2["n_ancestors"] >= 0
         assert metrics2["BTCUSD"] >= 0
+
+    def test_n_params(self, simple_model: MlModel, metrics: Metrics):
+        assert metrics.get_n_params() == simple_model.get_n_params()
