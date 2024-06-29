@@ -90,3 +90,13 @@ class TestMetrics:
 
     def test_n_layers_per_type(self, simple_model: MlModel, metrics: Metrics):
         assert metrics.get_n_layers_per_type() == {"permute": 1, "reshape": 1, "unit": 1, "dense": 2}
+
+    def test_get_n_trainings(self, agent: Agent):
+        agent.metrics["reward_stats"] = {"count": 1}
+        metrics = Metrics(agent)
+        assert metrics.get_n_trainings() == 1
+
+    def test_get_trained_ratio(self, agent: Agent):
+        agent.metrics["reward_stats"] = {"count": 1}
+        metrics = Metrics(agent)
+        assert np.isclose(metrics.get_trained_ratio(), 1 / agent.training_strategy.model.get_n_params())

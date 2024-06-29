@@ -50,6 +50,15 @@ class Metrics:
             parents = parents.get("parents")
         return n_ancestors
 
+    def get_n_trainings(self):
+        reward_stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
+        if not reward_stats:
+            return None
+        return reward_stats["count"]
+
+    def get_trained_ratio(self):
+        return self.get_n_trainings() / self.get_n_params()
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -62,4 +71,6 @@ class Metrics:
             "n_layers": self.get_n_layers(),
             "n_layers_per_type": self.get_n_layers_per_type(),
             "n_ancestors": self.get_n_ancestors(),
+            "n_trainings": self.get_n_trainings(),
+            "trained_ratio": self.get_trained_ratio(),
         }
