@@ -39,11 +39,17 @@ class TestMetrics:
     def agent(self, simple_model):
         return Agent("test", None, None, TrainingStrategy(simple_model))
 
-    def metrics(self, agent, quotes):
+    @pytest.fixture
+    def metrics(self, agent: Agent, quotes: QuotesSnapshot):
         return Metrics(agent, quotes=quotes)
 
-    def test_get_bitcoin_quote(self, metrics):
+    def test_get_bitcoin_quote(self, metrics: Metrics):
         assert np.isclose(metrics.get_bitcoin_quote(), 1.2)
+
+    def test_get_bitcoin_change(self, agent: Agent, metrics: Metrics):
+        quotes = QuotesSnapshot({"TBTCUSD": {"c": [1.2]}, "WBTCUSD": {"c": [1.4]}})
+        metrics = Metrics(agent, metrics.get_metrics(), quotes=quotes)
+        assert np.isclose(metrics.get_bitcoin_change(), 1.3 / 1.2 - 1)
 
     def test_get_n_ancestors(self, simple_model, complex_model):
         agent = self.create_agent(simple_model)
