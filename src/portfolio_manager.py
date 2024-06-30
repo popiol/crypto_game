@@ -1,4 +1,5 @@
 import math
+import warnings
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -9,6 +10,8 @@ from src.portfolio import (
     PortfolioOrderType,
     PortfolioPosition,
 )
+
+warnings.filterwarnings("error")
 
 
 class PortfolioManager:
@@ -25,9 +28,14 @@ class PortfolioManager:
         self.orders: list[PortfolioOrder] = []
 
     def adjust_buy_volume(self, orders: list[PortfolioOrder]):
-        cost = sum(o.volume * o.price for o in self.orders if o.order_type == PortfolioOrderType.buy)
-        if cost > self.portfolio.cash:
-            c = self.portfolio.cash / cost
+        try:
+            cost_new = sum(o.volume * o.price for o in orders if o.order_type == PortfolioOrderType.buy)
+            cost_all = sum(o.volume * o.price for o in self.orders + orders if o.order_type == PortfolioOrderType.buy)
+        except RuntimeWarning:
+            print("orders", orders + self.orders)
+            return
+        if cost_all > self.portfolio.cash:
+            c = (self.portfolio.cash - cost_all + cost_new) / cost_new
             for order in orders:
                 if order.order_type == PortfolioOrderType.buy:
                     order.volume *= c
@@ -42,7 +50,7 @@ class PortfolioManager:
             asset_index = self.find_position(order.asset)
             if asset_index is None:
                 return False
-            if (order.volume - self.portfolio.positions[asset_index].volume) * order.price < self.min_transaction:
+            if (self.portfolio.positions[asset_index].volume - order.volume) * order.price < self.min_transaction:
                 order.volume = self.portfolio.positions[asset_index].volume
         return True
 
