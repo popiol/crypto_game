@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -95,9 +96,20 @@ class ModelBuilder:
             output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
             config["target_shape"] = output_shape
 
+    def fix_name(self, config: dict, layer_names: list[str]):
+        while config["name"] in layer_names:
+            parts = config["name"].split("_")
+            if len(parts[-1]) <= 3 and re.match("^[0-9]+$", parts[-1]):
+                parts[-1] = str(int(parts[-1]) + 1)
+            else:
+                parts[-1] = parts[-1] + "_1"
+            config["name"] = "_".join(parts)
+        layer_names.append(config["name"])
+
     def modify_model(self, model: MlModel, modification: Callable) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         tensors = {inputs.name: inputs}
+        layer_names = []
         for index, l in enumerate(model.model.layers[1:]):
             parent_layers = model.get_parent_layer_names(index)
             tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
@@ -110,6 +122,7 @@ class ModelBuilder:
                 if resp and resp.tensor is not None:
                     tensor = resp.tensor
                 self.fix_reshape(config, tensor)
+                self.fix_name(config, layer_names)
                 new_layer = l.from_config(config)
                 tensor = new_layer(tensor)
             except ValueError:
