@@ -147,8 +147,8 @@ class RlRunner:
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             initial_quotes = None
             for timestamp, quotes in self.quotes_iterator():
-                if initial_quotes is None and "TBTCUSD" in quotes.quotes and "WBTCUSD" in quotes.quotes:
-                    initial_quotes = quotes
+                if initial_quotes is None and quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
+                    initial_quotes = quotes.copy()
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
                 if features is None:

@@ -58,6 +58,12 @@ class QuotesSnapshot:
                 value = float(value)
                 yield feature_name, value
 
+    def has_asset(self, asset: str) -> bool:
+        return asset in self.quotes
+
+    def copy(self):
+        return QuotesSnapshot(self.quotes)
+
 
 class ModelFeatures:
     def set_feature(self, name: str, value: float):
