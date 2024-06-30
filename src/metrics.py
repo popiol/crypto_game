@@ -26,9 +26,11 @@ class Metrics:
         return (self.quotes.closing_price("TBTCUSD") + self.quotes.closing_price("WBTCUSD")) / 2
 
     def get_bitcoin_change(self) -> float:
-        if "BTCUSD" not in self.metrics:
+        price_1 = self.metrics.get("BTCUSD")
+        price_2 = self.get_bitcoin_quote()
+        if price_1 is None or price_2 is None:
             return None
-        return self.get_bitcoin_quote() / self.metrics["BTCUSD"] - 1
+        return price_2 / price_1 - 1
 
     def get_n_params(self) -> int:
         return int(self.model.get_n_params())

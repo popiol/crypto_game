@@ -52,7 +52,8 @@ class Agent:
                 volume=position.volume,
                 price=quotes.closing_price(position.asset) * output[position.asset].relative_sell_price,
             )
-            orders.append(sell_order)
+            if sell_order.price > 0 and sell_order.volume > 0:
+                orders.append(sell_order)
         scores = [features.score if asset in quotes.quotes else np.nan for asset, features in output.items()]
         best_asset_index = np.nanargmax(scores)
         best_asset = asset_list[best_asset_index]
