@@ -201,9 +201,6 @@ class DataTransformer:
         relative_buy_volume = np.clip(output_matrix[:, 0] / np.max(output_matrix[:, 0]), 0, 1)
         relative_buy_price = np.clip((output_matrix[:, 1] - 1) * self.expected_daily_change + 1, 0, 2)
         relative_sell_price = np.clip(output_matrix[:, 2] * self.expected_daily_change + 1, 0, 2)
-        assert (relative_buy_volume >= 0).all()
-        assert (relative_buy_price >= 0).all()
-        assert (relative_sell_price >= 0).all()
         return {
             row[0]: OutputFeatures(*row[1:])
             for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price)

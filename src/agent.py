@@ -54,18 +54,26 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
-        scores = [features.score if asset in quotes.quotes else np.nan for asset, features in output.items()]
-        best_asset_index = np.nanargmax(scores)
-        best_asset = asset_list[best_asset_index]
-        cost = portfolio.cash * output[best_asset].relative_buy_volume
-        buy_price = quotes.closing_price(best_asset) * output[best_asset].relative_buy_price
-        buy_order = PortfolioOrder(
-            order_type=PortfolioOrderType.buy,
-            asset=best_asset,
-            volume=cost / buy_price,
-            price=buy_price,
-        )
-        orders.append(buy_order)
+        scores = [
+            (
+                features.score
+                if asset in quotes.quotes and features.relative_buy_price > 0.9 and features.relative_buy_volume > 0
+                else np.nan
+            )
+            for asset, features in output.items()
+        ]
+        if not np.isnan(scores).all():
+            best_asset_index = np.nanargmax(scores)
+            best_asset = asset_list[best_asset_index]
+            cost = portfolio.cash * output[best_asset].relative_buy_volume
+            buy_price = quotes.closing_price(best_asset) * output[best_asset].relative_buy_price
+            buy_order = PortfolioOrder(
+                order_type=PortfolioOrderType.buy,
+                asset=best_asset,
+                volume=cost / buy_price,
+                price=buy_price,
+            )
+            orders.append(buy_order)
         return orders
 
     def train(self, closed_transactions: list[ClosedTransaction]):
