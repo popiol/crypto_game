@@ -53,7 +53,7 @@ class Metrics:
     def get_n_trainings(self):
         reward_stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
         if not reward_stats:
-            return None
+            return 0
         return reward_stats["count"]
 
     def get_trained_ratio(self):

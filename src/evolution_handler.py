@@ -38,15 +38,21 @@ class EvolutionHandler:
         metrics = {"n_asset_dependent": int(asset_dependent), "n_asset_independent": int(not asset_dependent)}
         return self.model_builder.build_model(asset_dependent), metrics
 
-    def load_existing_model(self) -> tuple[MlModel, dict]:
-        model_name, serialized_model = self.model_registry.get_random_model()
-        if model_name is None:
-            return self.create_new_model()
-        model = self.model_serializer.deserialize(serialized_model)
+    def load_spicific_model(self, model_name: str, model: MlModel = None, serialized_model: bytes = None) -> tuple[MlModel, dict]:
+        if model is None:
+            if serialized_model is None:
+                serialized_model = self.model_registry.get_model(model_name)
+            model = self.model_serializer.deserialize(serialized_model)
         metrics = self.model_registry.get_metrics(model_name)
         metrics["parents"] = {model_name: metrics.get("parents")}
         print("Existing model loaded:", model_name)
         return model, metrics
+
+    def load_existing_model(self) -> tuple[MlModel, dict]:
+        model_name, serialized_model = self.model_registry.get_random_model()
+        if model_name is None:
+            return self.create_new_model()
+        return self.load_spicific_model(model_name, serialized_model=serialized_model)
 
     def merge_existing_models(self) -> tuple[MlModel, dict]:
         model_name_1, serialized_model_1 = self.model_registry.get_random_model()
@@ -56,8 +62,7 @@ class EvolutionHandler:
         model_name_2, serialized_model_2 = self.model_registry.get_random_model()
         model_2 = self.model_serializer.deserialize(serialized_model_2)
         if model_name_1 == model_name_2 or model_1.get_n_params() + model_2.get_n_params() > self.max_n_params:
-            print("Existing model loaded:", model_name_1)
-            return model_1
+            return self.load_spicific_model(model_name_1, model_1)
         metrics_1 = self.model_registry.get_metrics(model_name_1)
         metrics_2 = self.model_registry.get_metrics(model_name_2)
         metrics = {"parents": {model_name_1: metrics_1.get("parents"), model_name_2: metrics_2.get("parents")}}
