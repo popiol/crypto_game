@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 import pytest
 
@@ -6,6 +8,7 @@ from src.data_transformer import QuotesSnapshot
 from src.metrics import Metrics
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
+from src.portfolio import ClosedTransaction
 from src.training_strategy import TrainingStrategy
 
 
@@ -100,3 +103,10 @@ class TestMetrics:
         agent.metrics["reward_stats"] = {"count": 1}
         metrics = Metrics(agent)
         assert np.isclose(metrics.get_trained_ratio(), 1 / agent.training_strategy.model.get_n_params())
+
+    def test_get_n_transactions(self, agent: Agent):
+        metrics = Metrics(
+            agent,
+            transactions=[ClosedTransaction("ASD", 1.1, 1.2, 1.3, datetime.now(), datetime.now(), 1.4, 1.5)],
+        )
+        assert metrics.get_n_transactions() == 1

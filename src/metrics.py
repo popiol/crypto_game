@@ -1,12 +1,14 @@
 from src.agent import Agent
 from src.data_transformer import QuotesSnapshot
+from src.portfolio import ClosedTransaction
 
 
 class Metrics:
 
-    def __init__(self, agent: Agent, quotes: QuotesSnapshot = None):
+    def __init__(self, agent: Agent, quotes: QuotesSnapshot = None, transactions: list[ClosedTransaction] = None):
         self.agent = agent
         self.quotes = quotes
+        self.transactions = transactions
         self.model = agent.training_strategy.model
         self.metrics = agent.metrics
 
@@ -61,6 +63,11 @@ class Metrics:
     def get_trained_ratio(self) -> float:
         return self.get_n_trainings() / self.get_n_params()
 
+    def get_n_transactions(self) -> int:
+        if self.transactions is None:
+            return None
+        return len(self.transactions)
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -69,6 +76,7 @@ class Metrics:
             "n_merge_ancestors": self.get_n_merge_ancestors(),
             "BTCUSD": self.get_bitcoin_quote(),
             "BTCUSD_change": self.get_bitcoin_change(),
+            "n_transactions": self.get_n_transactions(),
             "n_params": self.get_n_params(),
             "n_layers": self.get_n_layers(),
             "n_layers_per_type": self.get_n_layers_per_type(),

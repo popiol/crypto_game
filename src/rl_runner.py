@@ -96,8 +96,7 @@ class RlRunner:
             agent.train(closed_transactions)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
-        if not eval_mode:
-            self.logger.log_transactions(agent.agent_name, closed_transactions)
+        self.logger.log_transactions(agent.agent_name, closed_transactions)
 
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, input: np.array):
         self.trainset.store_input(timestamp, input)
@@ -144,6 +143,7 @@ class RlRunner:
             model = self.model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
             agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
+            self.logger.transactions = {}
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             initial_quotes = None
             for timestamp, quotes in self.quotes_iterator():
@@ -158,7 +158,7 @@ class RlRunner:
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
             metrics = Metrics(agent, initial_quotes)
             agent.metrics = metrics.get_metrics()
-            metrics = Metrics(agent, quotes)
+            metrics = Metrics(agent, quotes, self.logger.transactions[agent.agent_name])
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
             self.logger.log(model_name, score)
