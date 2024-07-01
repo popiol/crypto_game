@@ -52,7 +52,7 @@ class TestMetrics:
 
     def test_get_bitcoin_change(self, agent: Agent, metrics: Metrics):
         quotes = QuotesSnapshot({"TBTCUSD": {"c": [1.2]}, "WBTCUSD": {"c": [1.4]}})
-        agent.metrics = metrics.get_metrics()
+        agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
         metrics = Metrics(agent, quotes=quotes)
         assert np.isclose(metrics.get_bitcoin_change(), 1.3 / 1.2 - 1)
 
@@ -98,6 +98,9 @@ class TestMetrics:
         agent.metrics["reward_stats"] = {"count": 1}
         metrics = Metrics(agent)
         assert metrics.get_n_trainings() == 1
+        agent.metrics = metrics.get_metrics()
+        metrics = Metrics(agent)
+        assert metrics.get_n_trainings() == 2
 
     def test_get_trained_ratio(self, agent: Agent):
         agent.metrics["reward_stats"] = {"count": 1}

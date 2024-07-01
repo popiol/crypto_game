@@ -1,5 +1,4 @@
 import math
-import warnings
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -10,8 +9,6 @@ from src.portfolio import (
     PortfolioOrderType,
     PortfolioPosition,
 )
-
-warnings.filterwarnings("error")
 
 
 class PortfolioManager:

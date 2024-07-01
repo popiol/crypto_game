@@ -76,6 +76,14 @@ class ModelFeatures:
     def count(cls) -> int:
         return len(fields(cls))
 
+    @classmethod
+    def feature_index(cls, name: str) -> int:
+        return fields(cls).index(name)
+
+    @classmethod
+    def index_to_name(cls, index: int) -> str:
+        return fields(cls)[index]
+
 
 @dataclass
 class InputFeatures(ModelFeatures):
@@ -102,6 +110,7 @@ class InputFeatures(ModelFeatures):
     bid_volume_2: float = None
     ask_price_2: float = None
     ask_volume_2: float = None
+    # is_in_portfolio: float = 0.0
 
     @classmethod
     def is_price(cls, feature_index: int) -> bool:
@@ -157,6 +166,12 @@ class DataTransformer:
             feature_matrix[index, :] = features
         return feature_matrix
 
+    def set_portfolio_features(self, features: np.array, asset_list: list[str], portfolio: list[str]):
+        for asset in portfolio:
+            asset_index = asset_list.index(asset)
+            feature_index = InputFeatures.feature_index("is_in_portfolio")
+            features[asset_index, feature_index] = 1.0
+
     def add_to_stats(self, features: np.array) -> dict:
         n_assets = len(features)
         n_features = self.n_features
@@ -175,10 +190,12 @@ class DataTransformer:
         if self.last_features is None:
             self.last_features = features
             return None
-        raw_features = features
+        raw_features = features.copy()
         for feature_index in range(len(features[0])):
             if InputFeatures.is_price(feature_index):
                 features[:, feature_index] = features[:, feature_index] / self.last_features[:, feature_index] - 1
+            elif InputFeatures.index_to_name(feature_index) == "is_in_portfolio":
+                pass
             else:
                 mean = stats["mean"][feature_index]
                 std = stats["std"][feature_index]

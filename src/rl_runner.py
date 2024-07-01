@@ -127,6 +127,9 @@ class RlRunner:
             for timestamp, quotes in self.quotes_iterator():
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
+                # self.data_transformer.set_portfolio_features(
+                #     features, self.asset_list, [p.asset for p in portfolio_manager.portfolio.positions]
+                # )
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
@@ -157,7 +160,7 @@ class RlRunner:
                 self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
             metrics = Metrics(agent, initial_quotes)
-            agent.metrics = metrics.get_metrics()
+            agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
             metrics = Metrics(agent, quotes, self.logger.transactions[agent.agent_name])
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())

@@ -55,10 +55,9 @@ class Metrics:
         return n_ancestors
 
     def get_n_trainings(self) -> int:
-        reward_stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
-        if not reward_stats:
-            return 0
-        return reward_stats["count"]
+        n_trainings = self.metrics.get("n_trainings", 0)
+        reward_stats_count = self.metrics.get("reward_stats", self.agent.training_strategy.stats).get("count", 0)
+        return n_trainings + reward_stats_count
 
     def get_trained_ratio(self) -> float:
         return self.get_n_trainings() / self.get_n_params()
