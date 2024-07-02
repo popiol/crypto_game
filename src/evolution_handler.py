@@ -67,7 +67,7 @@ class EvolutionHandler:
         metrics_2 = self.model_registry.get_metrics(model_name_2)
         metrics = {"parents": {model_name_1: metrics_1.get("parents"), model_name_2: metrics_2.get("parents")}}
         for metric_name in metrics_1:
-            if type(metrics_1[metric_name]) == int and metric_name in metrics_2:
+            if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
                 metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
         print("Merging models:", model_name_1, "and", model_name_2)
         return self.model_builder.merge_models(model_1, model_2), metrics
