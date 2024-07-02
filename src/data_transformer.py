@@ -110,7 +110,7 @@ class InputFeatures(ModelFeatures):
     bid_volume_2: float = None
     ask_price_2: float = None
     ask_volume_2: float = None
-    # is_in_portfolio: float = 0.0
+    is_in_portfolio: float = 0.0
 
     @classmethod
     def is_price(cls, feature_index: int) -> bool:
@@ -133,6 +133,7 @@ class DataTransformer:
         self.expected_daily_change = expected_daily_change
         self.stats = None
         self.stats_source_size = 0
+        self.per_agent_memory = {}
         self.reset()
 
     def reset(self):
@@ -165,12 +166,6 @@ class DataTransformer:
         for index, features in sparse_features:
             feature_matrix[index, :] = features
         return feature_matrix
-
-    def set_portfolio_features(self, features: np.array, asset_list: list[str], portfolio: list[str]):
-        for asset in portfolio:
-            asset_index = asset_list.index(asset)
-            feature_index = InputFeatures.feature_index("is_in_portfolio")
-            features[asset_index, feature_index] = 1.0
 
     def add_to_stats(self, features: np.array) -> dict:
         n_assets = len(features)
@@ -212,6 +207,29 @@ class DataTransformer:
         for index in range(self.memory_length - 1):
             self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
         self.memory = np.concatenate((self.memory[:-1], np.expand_dims(features, 0)))
+
+    def add_portfolio_to_memory(self, agent: str, portfolio: list[str], asset_list: list[str]):
+        if self.per_agent_memory.get(agent) is None:
+            self.per_agent_memory[agent] = np.zeros((self.memory_length, len(asset_list), 1))
+        for index in range(self.memory_length - 1):
+            self.per_agent_memory[agent][index] = (
+                self.per_agent_memory[agent][index] * 0.1 + self.per_agent_memory[agent][index + 1] * 0.9
+            )
+        for asset in portfolio:
+            asset_index = asset_list.index(asset)
+            self.per_agent_memory[agent][-1, asset_index, 0] = 1.0
+
+    def get_shared_memory(self) -> np.array:
+        return self.memory[:, :, :-1]
+
+    def get_agent_memory(self, agent: str) -> np.array:
+        return self.per_agent_memory[agent]
+
+    def join_memory(self, shared_memory: np.array, agent_memory: np.array) -> np.array:
+        return np.concatenate([shared_memory, agent_memory], axis=-1)
+
+    def get_memory(self, agent: str) -> np.array:
+        return self.join_memory(self.get_shared_memory(), self.get_agent_memory(agent))
 
     def transform_output(self, output_matrix: np.array, asset_list: list[str]) -> dict[str, OutputFeatures]:
         score = output_matrix[:, 0]

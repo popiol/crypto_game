@@ -76,10 +76,15 @@ class Agent:
             orders.append(buy_order)
         return orders
 
+    def get_input_output(self, timestamp: datetime) -> tuple[np.array, np.array]:
+        shared_input, agent_input, output = self.trainset.get_by_timestamp(timestamp, self.agent_name)
+        input = self.data_transformer.join_memory(shared_input, agent_input)
+        return input, output
+
     def train(self, closed_transactions: list[ClosedTransaction]):
         for transaction in closed_transactions:
-            buy_input, buy_output = self.trainset.get_by_timestamp(transaction.place_buy_dt, self.agent_name)
-            sell_input, sell_output = self.trainset.get_by_timestamp(transaction.place_sell_dt, self.agent_name)
+            buy_input, buy_output = self.get_input_output(transaction.place_buy_dt)
+            sell_input, sell_output = self.get_input_output(transaction.place_sell_dt)
             input = np.array([buy_input, sell_input])
             output = np.array([buy_output, sell_output])
             reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
@@ -87,7 +92,7 @@ class Agent:
 
     def train_on_open_positions(self, positions: list[PortfolioPosition]):
         for position in positions:
-            buy_input, buy_output = self.trainset.get_by_timestamp(position.place_dt, self.agent_name)
+            buy_input, buy_output = self.get_input_output(position.place_dt)
             input = np.array([buy_input])
             output = np.array([buy_output])
             reward = position.value - position.buy_price * position.volume

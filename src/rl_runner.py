@@ -98,9 +98,14 @@ class RlRunner:
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.agent_name, closed_transactions)
 
-    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, input: np.array):
-        self.trainset.store_input(timestamp, input)
+    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot):
+        self.trainset.store_shared_input(timestamp, self.data_transformer.get_shared_memory())
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            self.data_transformer.add_portfolio_to_memory(
+                agent.agent_name, [p.asset for p in portfolio_manager.portfolio.positions], self.asset_list
+            )
+            input = self.data_transformer.get_memory(agent.agent_name)
+            self.trainset.store_agent_input(timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name)
             self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
 
     def train_on_open_positions(self):
@@ -127,13 +132,10 @@ class RlRunner:
             for timestamp, quotes in self.quotes_iterator():
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
                 features = self.data_transformer.scale_features(features, self.stats)
-                # self.data_transformer.set_portfolio_features(
-                #     features, self.asset_list, [p.asset for p in portfolio_manager.portfolio.positions]
-                # )
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
-                self.run_agents(timestamp, quotes, self.data_transformer.memory)
+                self.run_agents(timestamp, quotes)
             self.train_on_open_positions()
             # self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
