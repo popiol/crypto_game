@@ -31,8 +31,8 @@ class Logger:
         self.transactions = {agent.agent_name: [] for agent in agents}
 
     def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):
+        self.transactions[agent] = self.transactions.get(agent, [])
         for transaction in transactions:
-            self.transactions[agent] = self.transactions.get(agent, [])
             self.transactions[agent].append(transaction)
 
     def display_transaction(self, transaction: ClosedTransaction):

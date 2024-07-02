@@ -161,7 +161,7 @@ class RlRunner:
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
             metrics = Metrics(agent, initial_quotes)
             agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
-            metrics = Metrics(agent, quotes, self.logger.transactions[agent.agent_name])
+            metrics = Metrics(agent, quotes, self.logger.transactions.get(agent.agent_name))
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
             self.logger.log(model_name, score)
