@@ -9,7 +9,15 @@ from src.ml_model import MlModel
 
 
 @dataclass
-class ModificationResult:
+class ModificationInput:
+    index: int
+    config: dict
+    tensor: keras.KerasTensor
+    layer_names: list[str]
+
+
+@dataclass
+class ModificationOutput:
     skip: bool = False
     tensor: keras.KerasTensor = None
 
@@ -96,15 +104,19 @@ class ModelBuilder:
             output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
             config["target_shape"] = output_shape
 
-    def fix_name(self, config: dict, layer_names: list[str]):
-        while config["name"] in layer_names:
-            parts = config["name"].split("_")
-            if len(parts[-1]) <= 3 and re.match("^[0-9]+$", parts[-1]):
-                parts[-1] = str(int(parts[-1]) + 1)
-            else:
-                parts[-1] = parts[-1] + "_1"
-            config["name"] = "_".join(parts)
-        layer_names.append(config["name"])
+    def fix_layer_name(self, layer_name: str, layer_names: list[str] = None) -> str:
+        parts = layer_name.split("_")
+        layer_name = "_".join(parts[:1] + parts[max(1, len(parts) - 30) :])
+        if layer_names is not None:
+            while layer_name in layer_names:
+                parts = layer_name.split("_")
+                if len(parts[-1]) <= 3 and re.match("^[0-9]+$", parts[-1]):
+                    parts[-1] = str(int(parts[-1]) + 1)
+                else:
+                    parts[-1] = parts[-1] + "_1"
+                layer_name = "_".join(parts)
+            layer_names.append(layer_name)
+        return layer_name
 
     def modify_model(self, model: MlModel, modification: Callable) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
@@ -115,14 +127,14 @@ class ModelBuilder:
             tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
             try:
-                resp: ModificationResult = modification(index, config, tensor)
+                resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names))
                 if resp and resp.skip:
                     tensors[l.name] = tensor
                     continue
                 if resp and resp.tensor is not None:
                     tensor = resp.tensor
                 self.fix_reshape(config, tensor)
-                self.fix_name(config, layer_names)
+                config["name"] = self.fix_layer_name(config["name"], layer_names)
                 new_layer = l.from_config(config)
                 tensor = new_layer(tensor)
             except ValueError:
@@ -146,11 +158,11 @@ class ModelBuilder:
         if self.n_assets == n_assets:
             return model
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if config["name"].startswith("dense") and config["units"] == n_assets:
-                config["units"] = self.n_assets
-            elif config["name"].startswith("conv1d") and config["filters"] == n_assets:
-                config["filters"] = self.n_assets
+        def modification(input: ModificationInput):
+            if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
+                input.config["units"] = self.n_assets
+            elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_assets:
+                input.config["filters"] = self.n_assets
 
         return self.modify_model(model, modification)
 
@@ -160,11 +172,11 @@ class ModelBuilder:
         if self.n_features == n_features:
             return model
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if config["name"].startswith("dense") and config["units"] == n_features:
-                config["units"] = self.n_features
-            elif config["name"].startswith("conv1d") and config["filters"] == n_features:
-                config["filters"] = self.n_features
+        def modification(input: ModificationInput):
+            if input.config["name"].startswith("dense") and input.config["units"] == n_features:
+                input.config["units"] = self.n_features
+            elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_features:
+                input.config["filters"] = self.n_features
 
         return self.modify_model(model, modification)
 
@@ -172,9 +184,9 @@ class ModelBuilder:
         print("remove layers", start_index, end_index)
         assert 0 <= start_index <= end_index < len(model.model.layers) - 2
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if start_index <= index <= end_index:
-                return ModificationResult(skip=True)
+        def modification(input: ModificationInput):
+            if start_index <= input.index <= end_index:
+                return ModificationOutput(skip=True)
 
         return self.modify_model(model, modification)
 
@@ -182,9 +194,10 @@ class ModelBuilder:
         print("add dense layer", before_index, size)
         assert 0 <= before_index < len(model.model.layers) - 1
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if index == before_index:
-                return ModificationResult(tensor=keras.layers.Dense(size)(tensor))
+        def modification(input: ModificationInput):
+            if input.index == before_index:
+                layer_name = self.fix_layer_name("dense", input.layer_names)
+                return ModificationOutput(tensor=keras.layers.Dense(size, name=layer_name)(input.tensor))
 
         return self.modify_model(model, modification)
 
@@ -192,16 +205,20 @@ class ModelBuilder:
         print("add conv layer", before_index)
         assert 0 <= before_index < len(model.model.layers) - 1
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor | list):
-            if index == before_index and isinstance(tensor, keras.KerasTensor):
+        def modification(input: ModificationInput):
+            if input.index == before_index and isinstance(tensor, keras.KerasTensor):
                 if len(tensor.shape) == 3:
-                    tensor = keras.layers.Permute((2, 1))(tensor)
-                    tensor = keras.layers.Conv1D(tensor.shape[-1], 3)(tensor)
-                    tensor = keras.layers.Permute((2, 1))(tensor)
-                    return ModificationResult(tensor=tensor)
+                    layer_name = self.fix_layer_name("permute", input.layer_names)
+                    tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
+                    layer_name = self.fix_layer_name("conv1d", input.layer_names)
+                    tensor = keras.layers.Conv1D(tensor.shape[-1], 3, name=layer_name)(tensor)
+                    layer_name = self.fix_layer_name("permute", input.layer_names)
+                    tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
+                    return ModificationOutput(tensor=tensor)
                 if len(tensor.shape) == 4:
-                    tensor = keras.layers.Conv2D(tensor.shape[-1], 3)(tensor)
-                    return ModificationResult(tensor=tensor)
+                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
+                    tensor = keras.layers.Conv2D(tensor.shape[-1], 3, name=layer_name)(tensor)
+                    return ModificationOutput(tensor=tensor)
 
         return self.modify_model(model, modification)
 
@@ -209,15 +226,11 @@ class ModelBuilder:
         print("resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2
 
-        def modification(index: int, config: dict, tensor: keras.KerasTensor):
-            if index == layer_index and config["name"].split("_")[0] == "dense":
-                config["units"] = new_size
+        def modification(input: ModificationInput):
+            if input.index == layer_index and input.config["name"].split("_")[0] == "dense":
+                input.config["units"] = new_size
 
         return self.modify_model(model, modification)
-
-    def fix_layer_name(self, name: str) -> str:
-        x = name.split("_")
-        return "_".join(x[:2] + x[max(2, len(x) - 30) :])
 
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
