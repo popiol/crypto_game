@@ -15,10 +15,7 @@ class Trainset:
     def clean(self):
         if os.path.exists(self.local_path):
             for file in glob.iglob(self.local_path + "/*.pickle"):
-                if os.path.isfile(file):
-                    os.remove(file)
-                else:
-                    raise Exception(f"Unexpected directory {file}")
+                os.remove(file)
         else:
             os.makedirs(self.local_path)
 

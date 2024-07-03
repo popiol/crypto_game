@@ -195,7 +195,7 @@ class ModelBuilder:
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
-            if input.index == before_index:
+            if input.index == before_index and isinstance(input.tensor, keras.KerasTensor):
                 layer_name = self.fix_layer_name("dense", input.layer_names)
                 return ModificationOutput(tensor=keras.layers.Dense(size, name=layer_name)(input.tensor))
 
@@ -206,18 +206,18 @@ class ModelBuilder:
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
-            if input.index == before_index and isinstance(tensor, keras.KerasTensor):
-                if len(tensor.shape) == 3:
+            if input.index == before_index and isinstance(input.tensor, keras.KerasTensor):
+                if len(input.tensor.shape) == 3:
                     layer_name = self.fix_layer_name("permute", input.layer_names)
-                    tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
+                    tensor = keras.layers.Permute((2, 1), name=layer_name)(input.tensor)
                     layer_name = self.fix_layer_name("conv1d", input.layer_names)
                     tensor = keras.layers.Conv1D(tensor.shape[-1], 3, name=layer_name)(tensor)
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
                     return ModificationOutput(tensor=tensor)
-                if len(tensor.shape) == 4:
+                if len(input.tensor.shape) == 4:
                     layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(tensor.shape[-1], 3, name=layer_name)(tensor)
+                    tensor = keras.layers.Conv2D(input.tensor.shape[-1], 3, name=layer_name)(input.tensor)
                     return ModificationOutput(tensor=tensor)
 
         return self.modify_model(model, modification)

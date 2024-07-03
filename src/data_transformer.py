@@ -117,6 +117,10 @@ class InputFeatures(ModelFeatures):
         name = fields(cls)[feature_index].name
         return "price" in name or name in ["low_today", "low_24h", "high_today", "high_24h"]
 
+    @classmethod
+    def agent_features(cls) -> list[str]:
+        return ["is_in_portfolio"]
+
 
 @dataclass
 class OutputFeatures(ModelFeatures):
@@ -134,6 +138,8 @@ class DataTransformer:
         self.stats = None
         self.stats_source_size = 0
         self.per_agent_memory = {}
+        self.input_stats = {}
+        self.output_stats = {}
         self.reset()
 
     def reset(self):
@@ -218,6 +224,8 @@ class DataTransformer:
         for asset in portfolio:
             asset_index = asset_list.index(asset)
             self.per_agent_memory[agent][-1, asset_index, 0] = 1.0
+        # for index, name in enumerate(InputFeatures.agent_features):
+        #     self.input_stats[name] = self.input_stats.get(name, {"mean": 0, "mean_squared": 0, "std": 0, "count": 0})
 
     def get_shared_memory(self) -> np.array:
         return self.memory[:, :, :-1]
