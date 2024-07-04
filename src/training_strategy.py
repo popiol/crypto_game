@@ -3,31 +3,31 @@ import random
 import numpy as np
 
 from src.ml_model import MlModel
+from src.stats import Stats
 
 
 class TrainingStrategy:
 
     def __init__(self, model: MlModel):
         self.model = model
-        self.stats: dict = None
+        self._stats = Stats()
         self.reset()
 
     def reset(self):
         pass
 
-    def predict(self, input: np.array) -> np.array:
+    def predict(self, input: np.ndarray) -> np.ndarray:
         return self.model.predict(input)
 
-    def train(self, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         raise NotImplementedError()
 
     def add_to_stats(self, reward: float):
-        if self.stats is None:
-            self.stats = {"mean": 0, "mean_squared": 0, "std": 0, "count": 0}
-        self.stats["mean"] = (self.stats["mean"] * self.stats["count"] + reward) / (self.stats["count"] + 1)
-        self.stats["mean_squared"] = (self.stats["mean_squared"] * self.stats["count"] + reward**2) / (self.stats["count"] + 1)
-        self.stats["std"] = (self.stats["mean_squared"] - self.stats["mean"] ** 2) ** 0.5
-        self.stats["count"] += 1
+        self._stats.add_to_stats(reward)
+
+    @property
+    def stats(self):
+        return self._stats.asdict()
 
 
 class LearnOnMistakes(TrainingStrategy):
@@ -36,10 +36,10 @@ class LearnOnMistakes(TrainingStrategy):
         self.clone = self.model.copy()
         self.clone.add_noise(0.1)
 
-    def predict(self, input: np.array) -> np.array:
+    def predict(self, input: np.ndarray) -> np.ndarray:
         return self.clone.predict(input)
 
-    def train(self, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
         if reward < 0:
             output = np.round(1 - output)
@@ -53,10 +53,10 @@ class LearnOnSuccess(TrainingStrategy):
         self.clone = self.model.copy()
         self.clone.add_noise(0.7)
 
-    def predict(self, input: np.array) -> np.array:
+    def predict(self, input: np.ndarray) -> np.ndarray:
         return self.clone.predict(input)
 
-    def train(self, input: np.array, output: np.array, reward: float):
+    def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
         if reward > self.stats["mean"] + self.stats["std"]:
             self.model.train(input, output)

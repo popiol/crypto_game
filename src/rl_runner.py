@@ -88,7 +88,7 @@ class RlRunner:
         portfolio_manager: PortfolioManager,
         timestamp: datetime,
         quotes: QuotesSnapshot,
-        input: np.array,
+        input: np.ndarray,
         eval_mode: bool = False,
     ):
         closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)

@@ -52,7 +52,7 @@ class ModelBuilder:
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
 
     @staticmethod
-    def adjust_array_shape(array: np.array, dim: int, size: int) -> np.array:
+    def adjust_array_shape(array: np.ndarray, dim: int, size: int) -> np.ndarray:
         assert size > 0
         old_shape = np.shape(array)
         assert 0 <= dim < len(old_shape)
@@ -69,7 +69,7 @@ class ModelBuilder:
             array = np.concatenate((array, np.random.normal(0, array.std(), add_shape)), axis=dim)
         return array
 
-    def adjust_weights_shape(self, weights: list[np.array], target_shape: tuple[int]) -> list[np.array]:
+    def adjust_weights_shape(self, weights: list[np.ndarray], target_shape: tuple[int]) -> list[np.ndarray]:
         new_weights = []
         if not weights:
             return new_weights

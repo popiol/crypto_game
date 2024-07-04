@@ -21,13 +21,13 @@ class MlModel:
     def __init__(self, model: keras.Model):
         self.model = model
 
-    def train(self, x: np.array, y: np.array, n_epochs: int = 1):
+    def train(self, x: np.ndarray, y: np.ndarray, n_epochs: int = 1):
         self.model.fit(x, y, epochs=n_epochs, verbose=0)
 
-    def test(self, x: np.array, y: np.array):
+    def test(self, x: np.ndarray, y: np.ndarray):
         return self.model.evaluate(x, y)
 
-    def predict(self, x: np.array) -> np.array:
+    def predict(self, x: np.ndarray) -> np.ndarray:
         return self.model.predict(np.array([x]), verbose=0)[0]
 
     def copy(self) -> MlModel:

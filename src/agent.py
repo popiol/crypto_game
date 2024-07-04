@@ -39,7 +39,7 @@ class Agent:
         self.training_strategy.reset()
 
     def make_decision(
-        self, timestamp: datetime, input: np.array, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
+        self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ) -> list[PortfolioOrder]:
         output_matrix = self.training_strategy.predict(input)
         self.trainset.store_output(timestamp, output_matrix, self.agent_name)
@@ -76,7 +76,7 @@ class Agent:
             orders.append(buy_order)
         return orders
 
-    def get_input_output(self, timestamp: datetime) -> tuple[np.array, np.array]:
+    def get_input_output(self, timestamp: datetime) -> tuple[np.ndarray, np.ndarray]:
         shared_input, agent_input, output = self.trainset.get_by_timestamp(timestamp, self.agent_name)
         input = self.data_transformer.join_memory(shared_input, agent_input)
         return input, output

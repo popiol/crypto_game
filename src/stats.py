@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 
@@ -8,7 +6,7 @@ class Stats:
     def __init__(self):
         self._stats = None
 
-    def add_to_stats(self, values: Union[float, np.array]):
+    def add_to_stats(self, values: float | np.ndarray):
         if np.ndim(values) == 0:
             batch_size = 1
             n_vars = 1

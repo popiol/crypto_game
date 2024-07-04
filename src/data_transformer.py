@@ -2,6 +2,8 @@ from dataclasses import dataclass, fields
 
 import numpy as np
 
+from src.stats import Stats
+
 
 class QuotesSnapshot:
 
@@ -69,7 +71,7 @@ class ModelFeatures:
     def set_feature(self, name: str, value: float):
         setattr(self, name, value)
 
-    def to_vector(self) -> np.array:
+    def to_vector(self) -> np.ndarray:
         return np.array([getattr(self, f.name) or 0.0 for f in fields(self)])
 
     @classmethod
@@ -135,8 +137,7 @@ class DataTransformer:
     def __init__(self, memory_length: int, expected_daily_change: float):
         self.memory_length = memory_length
         self.expected_daily_change = expected_daily_change
-        self.stats = None
-        self.stats_source_size = 0
+        self._stats = Stats()
         self.per_agent_memory = {}
         self.input_stats = {}
         self.output_stats = {}
@@ -154,7 +155,7 @@ class DataTransformer:
     def n_outputs(self):
         return OutputFeatures.count()
 
-    def quotes_to_features(self, quotes: QuotesSnapshot, asset_list: list[str]) -> np.array:
+    def quotes_to_features(self, quotes: QuotesSnapshot, asset_list: list[str]) -> np.ndarray:
         """Returns matrix of shape (n_assets, n_features)"""
         sparse_features = []
         for asset_name, asset_features in quotes.items():
@@ -173,21 +174,14 @@ class DataTransformer:
             feature_matrix[index, :] = features
         return feature_matrix
 
-    def add_to_stats(self, features: np.array) -> dict:
-        n_assets = len(features)
-        n_features = self.n_features
-        if self.stats is None:
-            self.stats = {"mean": np.zeros(n_features), "mean_squared": np.zeros(n_features), "std": np.zeros(n_features)}
-        self.stats["mean"] = (self.stats["mean"] * self.stats_source_size + features.mean(axis=0) * n_assets) / (
-            self.stats_source_size + n_assets
-        )
-        self.stats["mean_squared"] = (
-            self.stats["mean_squared"] * self.stats_source_size + np.power(features, 2).mean(axis=0) * n_assets
-        ) / (self.stats_source_size + n_assets)
-        self.stats["std"] = np.power(self.stats["mean_squared"] - np.power(self.stats["mean"], 2), 0.5)
-        self.stats_source_size += n_assets
+    def add_to_stats(self, features: np.ndarray) -> dict:
+        self._stats.add_to_stats(features)
 
-    def scale_features(self, features: np.array, stats: list[dict]):
+    @property
+    def stats(self):
+        return self._stats.asdict()
+
+    def scale_features(self, features: np.ndarray, stats: list[dict]):
         if self.last_features is None:
             self.last_features = features
             return None
@@ -207,7 +201,7 @@ class DataTransformer:
         self.last_features = raw_features
         return features
 
-    def add_to_memory(self, features: np.array):
+    def add_to_memory(self, features: np.ndarray):
         if self.memory is None:
             self.memory = np.zeros((self.memory_length, *np.shape(features)))
         for index in range(self.memory_length - 1):
@@ -227,19 +221,19 @@ class DataTransformer:
         # for index, name in enumerate(InputFeatures.agent_features):
         #     self.input_stats[name] = self.input_stats.get(name, {"mean": 0, "mean_squared": 0, "std": 0, "count": 0})
 
-    def get_shared_memory(self) -> np.array:
+    def get_shared_memory(self) -> np.ndarray:
         return self.memory[:, :, :-1]
 
-    def get_agent_memory(self, agent: str) -> np.array:
+    def get_agent_memory(self, agent: str) -> np.ndarray:
         return self.per_agent_memory[agent]
 
-    def join_memory(self, shared_memory: np.array, agent_memory: np.array) -> np.array:
+    def join_memory(self, shared_memory: np.ndarray, agent_memory: np.ndarray) -> np.ndarray:
         return np.concatenate([shared_memory, agent_memory], axis=-1)
 
-    def get_memory(self, agent: str) -> np.array:
+    def get_memory(self, agent: str) -> np.ndarray:
         return self.join_memory(self.get_shared_memory(), self.get_agent_memory(agent))
 
-    def transform_output(self, output_matrix: np.array, asset_list: list[str]) -> dict[str, OutputFeatures]:
+    def transform_output(self, output_matrix: np.ndarray, asset_list: list[str]) -> dict[str, OutputFeatures]:
         score = output_matrix[:, 0]
         relative_buy_volume = np.clip(output_matrix[:, 0] / np.max(output_matrix[:, 0]), 0, 1)
         relative_buy_price = np.clip((output_matrix[:, 1] - 1) * self.expected_daily_change + 1, 0, 2)
