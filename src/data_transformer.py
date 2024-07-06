@@ -200,9 +200,9 @@ class DataTransformer:
             else:
                 mean = stats["mean"][feature_index]
                 std = stats["std"][feature_index]
-                features[:, feature_index] = (features[:, feature_index] + mean + std) / (
-                    self.last_features[:, feature_index] + mean + std
-                ) - 1
+                features[:, feature_index] = (
+                    (features[:, feature_index] + mean + std) / (self.last_features[:, feature_index] + mean + std) / 10
+                )
         np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)
         self.last_features = raw_features
         return features

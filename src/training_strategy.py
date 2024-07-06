@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 
 from src.ml_model import MlModel
@@ -34,7 +32,7 @@ class LearnOnMistakes(TrainingStrategy):
 
     def reset(self):
         self.clone = self.model.copy()
-        self.clone.add_noise(0.1)
+        self.clone.add_noise(0.3)
 
     def predict(self, input: np.ndarray) -> np.ndarray:
         return self.clone.predict(input)
@@ -51,7 +49,7 @@ class LearnOnSuccess(TrainingStrategy):
 
     def reset(self):
         self.clone = self.model.copy()
-        self.clone.add_noise(0.7)
+        self.clone.add_noise(0.4)
 
     def predict(self, input: np.ndarray) -> np.ndarray:
         return self.clone.predict(input)

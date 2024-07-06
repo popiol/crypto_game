@@ -28,7 +28,6 @@ class TestSimulation:
         rl_runner.run()
         assert S3Utils.call_count == 2
         metrics = set_metrics.call_args.args[1]
-        print(metrics)
         assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
     def test_evaluate(self):
