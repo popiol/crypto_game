@@ -137,7 +137,7 @@ class ModelBuilder:
                 config["name"] = self.fix_layer_name(config["name"], layer_names)
                 new_layer = l.from_config(config)
                 tensor = new_layer(tensor)
-            except ValueError:
+            except (ValueError, TypeError):
                 return model
             tensors[l.name] = tensor
         if tensor.shape != (None, self.n_assets, self.n_outputs):
