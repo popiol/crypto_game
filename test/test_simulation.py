@@ -27,7 +27,9 @@ class TestSimulation:
         iterate_models.return_value = [("test", ModelSerializer().serialize(model))]
         rl_runner.run()
         assert S3Utils.call_count == 2
-        assert set(["a", "evaluation_score"]).issubset(set(set_metrics.call_args.args[1]))
+        metrics = set_metrics.call_args.args[1]
+        print(metrics)
+        assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
     def test_evaluate(self):
         rl_runner = RlRunner()

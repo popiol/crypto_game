@@ -79,12 +79,12 @@ class ModelFeatures:
         return len(fields(cls))
 
     @classmethod
-    def feature_index(cls, name: str) -> int:
-        return fields(cls).index(name)
+    def index_to_name(cls, index: int) -> str:
+        return fields(cls)[index].name
 
     @classmethod
-    def index_to_name(cls, index: int) -> str:
-        return fields(cls)[index]
+    def get_features(cls) -> list[str]:
+        return [f.name for f in fields(cls)]
 
 
 @dataclass
@@ -123,6 +123,11 @@ class InputFeatures(ModelFeatures):
     def agent_features(cls) -> list[str]:
         return ["is_in_portfolio"]
 
+    @classmethod
+    def shared_features(cls) -> list[str]:
+        agent_features = cls.agent_features()
+        return [name for name in cls.get_features() if name not in agent_features]
+
 
 @dataclass
 class OutputFeatures(ModelFeatures):
@@ -139,8 +144,9 @@ class DataTransformer:
         self.expected_daily_change = expected_daily_change
         self._stats = Stats()
         self.per_agent_memory = {}
-        self.input_stats = {}
-        self.output_stats = {}
+        self.shared_input_stats = Stats()
+        self.agent_input_stats = Stats()
+        self.output_stats = Stats()
         self.reset()
 
     def reset(self):
@@ -207,6 +213,7 @@ class DataTransformer:
         for index in range(self.memory_length - 1):
             self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
         self.memory = np.concatenate((self.memory[:-1], np.expand_dims(features, 0)))
+        self.shared_input_stats.add_to_stats(np.swapaxes(self.memory, 0, 1))
 
     def add_portfolio_to_memory(self, agent: str, portfolio: list[str], asset_list: list[str]):
         if self.per_agent_memory.get(agent) is None:
@@ -218,8 +225,7 @@ class DataTransformer:
         for asset in portfolio:
             asset_index = asset_list.index(asset)
             self.per_agent_memory[agent][-1, asset_index, 0] = 1.0
-        # for index, name in enumerate(InputFeatures.agent_features):
-        #     self.input_stats[name] = self.input_stats.get(name, {"mean": 0, "mean_squared": 0, "std": 0, "count": 0})
+        self.agent_input_stats.add_to_stats(np.swapaxes(self.per_agent_memory[agent], 0, 1))
 
     def get_shared_memory(self) -> np.ndarray:
         return self.memory[:, :, :-1]
@@ -238,7 +244,37 @@ class DataTransformer:
         relative_buy_volume = np.clip(output_matrix[:, 0] / np.max(output_matrix[:, 0]), 0, 1)
         relative_buy_price = np.clip((output_matrix[:, 1] - 1) * self.expected_daily_change + 1, 0, 2)
         relative_sell_price = np.clip(output_matrix[:, 2] * self.expected_daily_change + 1, 0, 2)
+        self.output_stats.add_to_stats(output_matrix)
         return {
             row[0]: OutputFeatures(*row[1:])
             for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price)
+        }
+
+    def get_shared_input_stats(self):
+        return {
+            name: {
+                key: values[:, index].tolist()
+                for key, values in self.shared_input_stats.asdict().items()
+                if type(values) == np.ndarray
+            }
+            for index, name in enumerate(InputFeatures.shared_features())
+        }
+
+    def get_agent_input_stats(self):
+        return {
+            name: {
+                key: values[:, index].tolist()
+                for key, values in self.agent_input_stats.asdict().items()
+                if type(values) == np.ndarray
+            }
+            for index, name in enumerate(InputFeatures.agent_features())
+        }
+
+    def get_output_stats(self):
+        features = [name for name in OutputFeatures.get_features() if name != "relative_buy_volume"]
+        return {
+            name: {
+                key: values[index].tolist() for key, values in self.output_stats.asdict().items() if type(values) == np.ndarray
+            }
+            for index, name in enumerate(features)
         }

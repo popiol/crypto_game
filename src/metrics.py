@@ -83,4 +83,7 @@ class Metrics:
             "n_ancestors": self.get_n_ancestors(),
             "n_trainings": self.get_n_trainings(),
             "trained_ratio": self.get_trained_ratio(),
+            "shared_input_stats": self.agent.data_transformer.get_shared_input_stats(),
+            "agent_input_stats": self.agent.data_transformer.get_agent_input_stats(),
+            "output_stats": self.agent.data_transformer.get_output_stats(),
         }
