@@ -44,7 +44,8 @@ class Stats:
 
     def squeeze(self, x) -> float | np.ndarray:
         squeezed = np.array(x).item() if np.size(x) == 1 else np.squeeze(x)
-        squeezed = np.reshape(squeezed, self.orig_shape)
+        if self.orig_shape:
+            squeezed = np.reshape(squeezed, self.orig_shape)
         return squeezed
 
     @property

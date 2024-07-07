@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
@@ -18,15 +17,13 @@ class TestSimulation:
         rl_runner.load_config("config/config.yml")
         rl_runner.training_time_hours = -1
         rl_runner.prepare()
-        model = ModelBuilder(
-            rl_runner.data_transformer.memory_length,
-            len(rl_runner.asset_list),
-            rl_runner.data_transformer.n_features,
-            rl_runner.data_transformer.n_outputs,
-        ).build_model(asset_dependent=False)
-        iterate_models.return_value = [("test", ModelSerializer().serialize(model))]
-        rl_runner.run()
-        assert S3Utils.call_count == 2
+        rl_runner.initial_run()
+        rl_runner.create_agents()
+        rl_runner.main_loop()
+        rl_runner.save_models()
+        iterate_models.return_value = [("test", ModelSerializer().serialize(rl_runner.agents[0].training_strategy.model))]
+        rl_runner.evaluate_models()
+        assert S3Utils.call_count == 1
         metrics = set_metrics.call_args.args[1]
         assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
