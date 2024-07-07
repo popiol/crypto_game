@@ -222,6 +222,7 @@ class DataTransformer:
             self.per_agent_memory[agent][index] = (
                 self.per_agent_memory[agent][index] * 0.1 + self.per_agent_memory[agent][index + 1] * 0.9
             )
+        self.per_agent_memory[agent][-1, :, 0] = 0.0
         for asset in portfolio:
             asset_index = asset_list.index(asset)
             self.per_agent_memory[agent][-1, asset_index, 0] = 1.0
@@ -253,9 +254,10 @@ class DataTransformer:
     def get_shared_input_stats(self):
         return {
             name: {
-                key: values[:, index].tolist()
+                key: values[:, index].tolist() if key != "samples" else values.tolist()
                 for key, values in self.shared_input_stats.asdict().items()
                 if type(values) == np.ndarray
+                if key != "samples" or index == 0
             }
             for index, name in enumerate(InputFeatures.shared_features())
         }
@@ -263,9 +265,10 @@ class DataTransformer:
     def get_agent_input_stats(self):
         return {
             name: {
-                key: values[:, index].tolist()
+                key: values[:, index].tolist() if key != "samples" else values.tolist()
                 for key, values in self.agent_input_stats.asdict().items()
                 if type(values) == np.ndarray
+                if key != "samples" or index == 0
             }
             for index, name in enumerate(InputFeatures.agent_features())
         }
@@ -274,7 +277,10 @@ class DataTransformer:
         features = [name for name in OutputFeatures.get_features() if name != "relative_buy_volume"]
         return {
             name: {
-                key: values[index].tolist() for key, values in self.output_stats.asdict().items() if type(values) == np.ndarray
+                key: values[index].tolist() if key != "samples" else values.tolist()
+                for key, values in self.output_stats.asdict().items()
+                if type(values) == np.ndarray
+                if key != "samples" or index == 0
             }
             for index, name in enumerate(features)
         }

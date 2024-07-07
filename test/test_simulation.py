@@ -16,6 +16,7 @@ class TestSimulation:
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         rl_runner.training_time_hours = -1
+        rl_runner.config["agent_builder"]["n_agents"] = 1
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.create_agents()

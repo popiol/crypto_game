@@ -57,6 +57,8 @@ class Stats:
                         continue
                 elif (sample[-1] - sample[0]) * (samples[0][-1] - samples[0][0]) >= 0:
                     continue
+            if (sample == 0).all():
+                continue
             self.sample_shape = np.shape(sample)
             samples.append(sample)
             break
