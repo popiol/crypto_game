@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 
 from src.ml_model import MlModel
