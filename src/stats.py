@@ -30,6 +30,7 @@ class Stats:
                 "min": np.full(n_vars, np.nan),
                 "max": np.full(n_vars, np.nan),
                 "count": 0,
+                "samples": [],
             }
         self.stats["mean"] = (self.stats["mean"] * self.stats["count"] + values.mean(axis=0) * batch_size) / (
             self.stats["count"] + batch_size
@@ -41,11 +42,30 @@ class Stats:
         self.stats["min"] = np.nanmin([self.stats["min"], np.nanmin(values, axis=0)], axis=0)
         self.stats["max"] = np.nanmax([self.stats["max"], np.nanmax(values, axis=0)], axis=0)
         self.stats["count"] += batch_size
+        self.add_sample(self.stats["samples"], values)
 
-    def squeeze(self, x) -> float | np.ndarray:
+    def add_sample(self, samples: list[np.ndarray], values: np.ndarray):
+        if len(samples) > 1:
+            return
+        for sample in values:
+            while np.ndim(sample) > 1:
+                sample = np.take(sample, 0, axis=-1)
+            sample = np.squeeze(sample)
+            if len(samples) == 1:
+                if np.ndim(sample) == 0 or len(sample) == 1:
+                    if sample * samples[0] >= 0:
+                        continue
+                elif (sample[-1] - sample[0]) * (samples[0][-1] - samples[0][0]) >= 0:
+                    continue
+            self.sample_shape = np.shape(sample)
+            samples.append(sample)
+            break
+
+    def squeeze(self, x, shape=None) -> float | np.ndarray:
+        shape = self.orig_shape if shape is None else shape
         squeezed = np.array(x).item() if np.size(x) == 1 else np.squeeze(x)
-        if self.orig_shape:
-            squeezed = np.reshape(squeezed, self.orig_shape)
+        if shape:
+            squeezed = np.reshape(squeezed, shape)
         return squeezed
 
     @property
@@ -68,6 +88,10 @@ class Stats:
     def count(self) -> int:
         return self.stats["count"]
 
+    @property
+    def samples(self):
+        return np.array([self.squeeze(x, self.sample_shape) for x in self.stats["samples"]])
+
     def asdict(self):
         if self.stats is None:
             return None
@@ -77,4 +101,5 @@ class Stats:
             "min": self.min,
             "max": self.max,
             "count": self.count,
+            "samples": self.samples,
         }
