@@ -15,7 +15,7 @@ class TestStats:
         assert np.isclose(stats.std, 1.41421356)
         assert stats.min == -2
         assert stats.max == 2
-        assert (stats.samples == [-2, 1]).all()
+        assert stats.samples is None
 
     def test_stats_multi_features(self):
         stats = Stats()
@@ -27,7 +27,7 @@ class TestStats:
         assert np.allclose(stats.std, [1.8547237, 1.0198039])
         assert (stats.min == [1, 2]).all()
         assert (stats.max == [6, 5]).all()
-        assert (stats.samples == [[1, 2], [5, 4]]).all()
+        assert stats.samples is None
 
     def test_stats_batched(self):
         stats = Stats()
@@ -39,7 +39,7 @@ class TestStats:
         assert np.allclose(stats.std, 1.5)
         assert stats.min == 1
         assert stats.max == 6
-        assert stats.samples == [1]
+        assert stats.samples is None
 
     def test_3d(self):
         stats = Stats()

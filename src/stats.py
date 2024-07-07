@@ -45,7 +45,7 @@ class Stats:
         self.add_sample(self.stats["samples"], values)
 
     def add_sample(self, samples: list[np.ndarray], values: np.ndarray):
-        if len(samples) > 1:
+        if len(samples) > 1 or np.ndim(values) < 3:
             return
         for sample in values:
             while np.ndim(sample) > 1:
@@ -92,6 +92,8 @@ class Stats:
 
     @property
     def samples(self):
+        if not self.stats["samples"]:
+            return None
         return np.array([self.squeeze(x, self.sample_shape) for x in self.stats["samples"]])
 
     def asdict(self):
