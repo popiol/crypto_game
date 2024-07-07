@@ -36,5 +36,6 @@ evolution_handler:
   add_layer_prob: 0.02
   shrink_prob: 0.02
   extend_prob: 0.02
+  relu_prob: 0.02
   resize_by: 10
   max_n_params: 1000000

@@ -14,6 +14,7 @@ class MlModelLayer:
     layer_type: str
     shape: tuple
     input_shape: tuple
+    activation: str
 
 
 class MlModel:
@@ -51,6 +52,7 @@ class MlModel:
     def get_layers(self) -> list[MlModelLayer]:
         layers = []
         input_shapes = {self.model.layers[0].name: self.model.layers[0].batch_shape}
+        format_activation = lambda x: None if x == "linear" else x
         for index, l in enumerate(self.model.layers[1:]):
             parent_layers = self.get_parent_layer_names(index)
             input_shape = input_shapes[parent_layers[0]] if len(parent_layers) == 1 else [input_shapes[x] for x in parent_layers]
@@ -61,6 +63,7 @@ class MlModel:
                     layer_type=l.name.split("_")[0],
                     shape=tuple(l.weights[0].shape) if l.weights else None,
                     input_shape=input_shape_without_batch,
+                    activation=format_activation(l.activation.__name__) if l.weights else None,
                 )
             )
             input_shapes[l.name] = l.compute_output_shape(input_shape)

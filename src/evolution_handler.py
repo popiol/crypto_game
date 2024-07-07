@@ -17,6 +17,7 @@ class EvolutionHandler:
     add_layer_prob: float
     shrink_prob: float
     extend_prob: float
+    relu_prob: float
     resize_by: int
     max_n_params: int
 
@@ -96,6 +97,8 @@ class EvolutionHandler:
             elif random.random() < self.extend_prob and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
                 metrics["extend_layer"] = metrics.get("extend_layer", 0) + 1
+            if random.random() < self.relu_prob and layer.shape:
+                model = self.model_builder.add_relu(model, index)
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())

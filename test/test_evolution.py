@@ -183,6 +183,23 @@ class TestEvolution:
                 output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
 
+    def test_add_relu(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
+        model = builder.add_conv_layer(model, 0)
+        layers = model.get_layers()
+        input = np.zeros([*layers[0].input_shape])
+        output = model.predict(input)
+        for index in range(len(layers) - 1):
+            model2 = builder.add_relu(model, index)
+            layers2 = model2.get_layers()
+            assert layers[index].activation is None
+            if layers[index].layer_type in ["dense", "conv1d", "conv2d"]:
+                assert layers2[index].activation == "relu"
+            else:
+                assert layers2[index].activation is None
+            output2 = model2.predict(input)
+            assert np.shape(output2) == np.shape(output)
+
     def test_merge_models(self, builder: ModelBuilder):
         model_1 = builder.build_model(asset_dependent=True)
         model_2 = builder.build_model(asset_dependent=False)

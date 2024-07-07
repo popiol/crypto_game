@@ -181,7 +181,7 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
-        print("remove layers", start_index, end_index)
+        print("Remove layers", start_index, end_index)
         assert 0 <= start_index <= end_index < len(model.model.layers) - 2
 
         def modification(input: ModificationInput):
@@ -191,7 +191,7 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def add_dense_layer(self, model: MlModel, before_index: int, size: int):
-        print("add dense layer", before_index, size)
+        print("Add dense layer", before_index, size)
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
@@ -202,7 +202,7 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def add_conv_layer(self, model: MlModel, before_index: int):
-        print("add conv layer", before_index)
+        print("Add conv layer", before_index)
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
@@ -223,12 +223,22 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
-        print("resize layer", layer_index, new_size)
+        print("Resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2
 
         def modification(input: ModificationInput):
             if input.index == layer_index and input.config["name"].split("_")[0] == "dense":
                 input.config["units"] = new_size
+
+        return self.modify_model(model, modification)
+
+    def add_relu(self, model: MlModel, layer_index: int):
+        print("Add relu", layer_index)
+        assert 0 <= layer_index < len(model.model.layers) - 2
+
+        def modification(input: ModificationInput):
+            if input.index == layer_index:
+                input.config["activation"] = "relu"
 
         return self.modify_model(model, modification)
 
