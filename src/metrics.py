@@ -68,6 +68,19 @@ class Metrics:
             return None
         return len(self.transactions)
 
+    def get_training_strategy(self):
+        strategy = self.agent.training_strategy.__class__.__name__
+        return self.metrics.get("training_strategy") if strategy == "TrainingStrategy" else strategy
+
+    def get_shared_input_stats(self):
+        return self.agent.data_transformer.get_shared_input_stats() or self.metrics.get("shared_input_stats")
+
+    def get_agent_input_stats(self):
+        return self.agent.data_transformer.get_agent_input_stats() or self.metrics.get("agent_input_stats")
+
+    def get_output_stats(self):
+        return self.agent.data_transformer.get_output_stats() or self.metrics.get("output_stats")
+
     def get_metrics(self):
         return {
             "model_id": self.agent.model_id,
@@ -83,7 +96,8 @@ class Metrics:
             "n_ancestors": self.get_n_ancestors(),
             "n_trainings": self.get_n_trainings(),
             "trained_ratio": self.get_trained_ratio(),
-            "shared_input_stats": self.agent.data_transformer.get_shared_input_stats(),
-            "agent_input_stats": self.agent.data_transformer.get_agent_input_stats(),
-            "output_stats": self.agent.data_transformer.get_output_stats(),
+            "training_strategy": self.get_training_strategy(),
+            "shared_input_stats": self.get_shared_input_stats(),
+            "agent_input_stats": self.get_agent_input_stats(),
+            "output_stats": self.get_output_stats(),
         }

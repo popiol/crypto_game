@@ -252,6 +252,8 @@ class DataTransformer:
         }
 
     def get_shared_input_stats(self):
+        if self.shared_input_stats.stats is None:
+            return None
         return {
             name: {
                 key: values[:, index].tolist() if key != "samples" else values.tolist()
@@ -263,6 +265,8 @@ class DataTransformer:
         }
 
     def get_agent_input_stats(self):
+        if self.agent_input_stats.stats is None:
+            return None
         return {
             name: {
                 key: values[:, index].tolist() if key != "samples" else values.tolist()
@@ -274,6 +278,8 @@ class DataTransformer:
         }
 
     def get_output_stats(self):
+        if self.output_stats.stats is None:
+            return None
         features = [name for name in OutputFeatures.get_features() if name != "relative_buy_volume"]
         return {
             name: {
