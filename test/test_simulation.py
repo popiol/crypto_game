@@ -16,13 +16,15 @@ class TestSimulation:
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         rl_runner.training_time_hours = -1
-        rl_runner.config["agent_builder"]["n_agents"] = 1
+        # rl_runner.config["agent_builder"]["n_agents"] = 1
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.create_agents()
         rl_runner.main_loop()
         rl_runner.save_models()
-        iterate_models.return_value = [("test", ModelSerializer().serialize(rl_runner.agents[0].training_strategy.model))]
+        iterate_models.return_value = [
+            (agent.model_name, ModelSerializer().serialize(agent.training_strategy.model)) for agent in rl_runner.agents
+        ]
         rl_runner.evaluate_models()
         assert S3Utils.call_count == 1
         metrics = set_metrics.call_args.args[1]
@@ -49,7 +51,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     def test_evaluate_existing_model(self, iterate_models, set_metrics):
-        model_name = "Sophia_20240708071025_66cdc"
+        model_name = "Elijah_20240708144033_4cee7"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = ModelRegistry(**rl_runner.config["model_registry"])

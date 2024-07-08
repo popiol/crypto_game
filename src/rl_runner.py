@@ -98,15 +98,19 @@ class RlRunner:
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.agent_name, closed_transactions)
 
-    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot):
-        self.trainset.store_shared_input(timestamp, self.data_transformer.get_shared_memory())
+    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, eval_mode: bool = False):
+        if not eval_mode:
+            self.trainset.store_shared_input(timestamp, self.data_transformer.get_shared_memory())
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             self.data_transformer.add_portfolio_to_memory(
                 agent.agent_name, [p.asset for p in portfolio_manager.portfolio.positions], self.asset_list
             )
             input = self.data_transformer.get_memory(agent.agent_name)
-            self.trainset.store_agent_input(timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name)
-            self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
+            if not eval_mode:
+                self.trainset.store_agent_input(
+                    timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name
+                )
+            self.run_agent(agent, portfolio_manager, timestamp, quotes, input, eval_mode)
 
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
@@ -143,30 +147,35 @@ class RlRunner:
 
     def evaluate_models(self):
         self.logger.log("Evaluate models")
+        self.logger.transactions = {}
+        self.agents: list[Agent] = []
+        self.portfolio_managers: list[PortfolioManager] = []
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
             model = self.model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
-            agent = Agent("eval", self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
-            self.logger.transactions = {}
+            agent = Agent(model_name.split("_")[0], self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
+            self.agents.append(agent)
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
-            initial_quotes = None
-            for timestamp, quotes in self.quotes_iterator():
-                if initial_quotes is None and quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
-                    initial_quotes = quotes.copy()
-                features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
-                features = self.data_transformer.scale_features(features, self.stats)
-                if features is None:
-                    continue
-                self.data_transformer.add_to_memory(features)
-                self.run_agent(agent, portfolio_manager, timestamp, quotes, self.data_transformer.memory, eval_mode=True)
+            self.portfolio_managers.append(portfolio_manager)
+        initial_quotes = None
+        for timestamp, quotes in self.quotes_iterator():
+            if initial_quotes is None and quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
+                initial_quotes = quotes.copy()
+            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+            features = self.data_transformer.scale_features(features, self.stats)
+            if features is None:
+                continue
+            self.data_transformer.add_to_memory(features)
+            self.run_agents(timestamp, quotes, eval_mode=True)
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
             metrics = Metrics(agent, initial_quotes)
             agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
             metrics = Metrics(agent, quotes, self.logger.transactions.get(agent.agent_name))
             metrics.set_evaluation_score(score)
             self.model_registry.set_metrics(model_name, metrics.get_metrics())
-            self.logger.log(model_name, score)
+            self.logger.log(agent.model_name, score)
 
     def run(self):
         self.prepare()
