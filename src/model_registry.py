@@ -74,15 +74,13 @@ class ModelRegistry:
             try:
                 score = float(metrics["evaluation_score"])
                 model_and_score = (model_name, score)
-                if np.isnan(score):
+                if np.isnan(score) or score == 0:
                     to_archive.append(model_and_score)
                 else:
                     models.append(model_and_score)
             except:
                 to_archive.append((model_name, 0))
         if len(models) > self.max_mature_models:
-            to_archive.extend([(model, score) for model, score in models if score == 0])
-            models = [(model, score) for model, score in models if score != 0]
             to_archive.extend(sorted(models, key=lambda x: x[1])[: -self.max_mature_models])
         return [model for model, _ in to_archive]
 
