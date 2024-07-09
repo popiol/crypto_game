@@ -16,7 +16,7 @@ class TestSimulation:
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         rl_runner.training_time_hours = -1
-        # rl_runner.config["agent_builder"]["n_agents"] = 1
+        rl_runner.config["agent_builder"]["n_agents"] = 1
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.create_agents()
@@ -28,6 +28,7 @@ class TestSimulation:
         rl_runner.evaluate_models()
         assert S3Utils.call_count == 1
         metrics = set_metrics.call_args.args[1]
+        print(metrics)
         assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
     def test_evaluate(self):
@@ -51,7 +52,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     def test_evaluate_existing_model(self, iterate_models, set_metrics):
-        model_name = "Lucas_20240709084611_65088"
+        model_name = "Noah_20240708005535_4f94f"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = ModelRegistry(**rl_runner.config["model_registry"])
@@ -61,3 +62,11 @@ class TestSimulation:
         rl_runner.initial_run()
         rl_runner.evaluate_models()
         print(set_metrics.call_args.args[1])
+
+    @patch("src.model_registry.ModelRegistry.set_metrics")
+    def test_evaluate_all_existing_models(self, set_metrics):
+        rl_runner = RlRunner()
+        rl_runner.load_config("config/config.yml")
+        rl_runner.prepare()
+        rl_runner.initial_run()
+        rl_runner.evaluate_models()

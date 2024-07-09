@@ -72,7 +72,6 @@ class ModelRegistry:
             model_name = file.split("/")[-1]
             metrics = self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
             try:
-                stats = metrics["reward_stats"]
                 score = float(metrics["evaluation_score"])
                 model_and_score = (model_name, score)
                 if np.isnan(score):
@@ -82,6 +81,8 @@ class ModelRegistry:
             except:
                 to_archive.append((model_name, 0))
         if len(models) > self.max_mature_models:
+            to_archive.extend([(model, score) for model, score in models if score == 0])
+            models = [(model, score) for model, score in models if score != 0]
             to_archive.extend(sorted(models, key=lambda x: x[1])[: -self.max_mature_models])
         return [model for model, _ in to_archive]
 
