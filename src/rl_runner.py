@@ -155,6 +155,7 @@ class RlRunner:
             model = self.model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
             agent = Agent(model_name.split("_")[0], self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
+            agent.model_name = model_name
             self.agents.append(agent)
             portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
             self.portfolio_managers.append(portfolio_manager)
