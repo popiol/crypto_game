@@ -175,7 +175,7 @@ class RlRunner:
             agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
             metrics = Metrics(agent, quotes, self.logger.transactions.get(agent.agent_name))
             metrics.set_evaluation_score(score)
-            self.model_registry.set_metrics(model_name, metrics.get_metrics())
+            self.model_registry.set_metrics(agent.model_name, metrics.get_metrics())
             self.logger.log(agent.model_name, score)
 
     def run(self):

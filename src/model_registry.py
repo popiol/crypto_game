@@ -81,7 +81,8 @@ class ModelRegistry:
             except:
                 to_archive.append((model_name, 0))
         if len(models) > self.max_mature_models:
-            to_archive.extend(sorted(models, key=lambda x: x[1])[: -self.max_mature_models])
+            weak_models = sorted(models, key=lambda x: x[1])[: -self.max_mature_models]
+            to_archive.extend(weak_models)
         return [model for model, _ in to_archive]
 
     def archive_weak_models(self):
