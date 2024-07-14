@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from src.aggregated_metrics import AggregatedMetrics
+from src.custom_metrics import CustomMetrics
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
@@ -70,3 +72,28 @@ class TestSimulation:
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.evaluate_models()
+
+    def test_aggregated_metrics(self):
+        rl_runner = RlRunner()
+        rl_runner.load_config("config/config.yml")
+        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        all_metrics = []
+        for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
+            all_metrics.append(model_registry.s3_utils.download_json(file))
+        aggregated = AggregatedMetrics(all_metrics)
+        metrics = aggregated.get_metrics()
+        print(metrics)
+        assert "datetime" in metrics
+
+    def test_custom_metrics(self):
+        rl_runner = RlRunner()
+        rl_runner.load_config("config/config.yml")
+        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        all_metrics = []
+        for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
+            all_metrics.append(model_registry.s3_utils.download_json(file))
+        custom = CustomMetrics(all_metrics=all_metrics)
+        metrics = custom.get_metrics()
+        print(metrics)
+        assert type(metrics) == dict
+        assert len(metrics) > 0

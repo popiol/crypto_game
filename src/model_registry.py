@@ -1,5 +1,6 @@
 import os
 import random
+import re
 
 import numpy as np
 
@@ -24,6 +25,7 @@ class ModelRegistry:
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
         self.archived_prefix = os.path.join(self.s3_utils.path, "archived")
         self.metrics_prefix = os.path.join(self.s3_utils.path, "metrics")
+        self.aggregated_prefix = os.path.join(self.s3_utils.path, "aggregated_metrics")
 
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
@@ -96,3 +98,7 @@ class ModelRegistry:
         files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)
         for file in files:
             self.s3_utils.delete_file(file)
+
+    def set_aggregated_metrics(self, metrics: dict):
+        file_name = re.sub("[^0-9]", "", metrics["datetime"])[:10] + ".json"
+        self.s3_utils.upload_json(f"{self.aggregated_prefix}/{file_name}", metrics)

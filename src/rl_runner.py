@@ -1,5 +1,4 @@
 import src.check_running_master  # isort: skip
-
 import argparse
 import itertools
 import sys
@@ -11,6 +10,8 @@ import yaml
 
 from src.agent import Agent
 from src.agent_builder import AgentBuilder
+from src.aggregated_metrics import AggregatedMetrics
+from src.custom_metrics import CustomMetrics
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer, QuotesSnapshot
 from src.evolution_handler import EvolutionHandler
@@ -150,6 +151,7 @@ class RlRunner:
         self.logger.transactions = {}
         self.agents: list[Agent] = []
         self.portfolio_managers: list[PortfolioManager] = []
+        self.all_metrics = []
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
             model = self.model_builder.adjust_dimensions(model)
@@ -175,26 +177,43 @@ class RlRunner:
             agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
             metrics = Metrics(agent, quotes, self.logger.transactions.get(agent.agent_name))
             metrics.set_evaluation_score(score)
-            self.model_registry.set_metrics(agent.model_name, metrics.get_metrics())
+            metrics_dict = metrics.get_metrics()
+            self.all_metrics.append(metrics_dict)
+            self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)
 
-    def run(self):
+    def aggregate_metrics(self):
+        aggregated = AggregatedMetrics(self.all_metrics)
+        custom = CustomMetrics(aggregated)
+        return {**aggregated.get_metrics(), **custom.get_metrics()}
+
+    def train(self):
         self.prepare()
         self.initial_run()
         self.create_agents()
         self.main_loop()
         self.save_models()
+
+    def evaluate(self):
+        self.prepare()
+        self.initial_run()
         self.evaluate_models()
         self.model_registry.archive_models()
+        aggregated = self.aggregate_metrics()
+        self.model_registry.set_aggregated_metrics(aggregated)
 
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--config")
+    parser.add_argument("--evaluate", type=int, default=0)
     args, other = parser.parse_known_args(argv)
     rl_runner = RlRunner()
     rl_runner.load_config(args.config)
-    rl_runner.run()
+    if args.evaluate:
+        rl_runner.evaluate()
+    else:
+        rl_runner.train()
 
 
 if __name__ == "__main__":
