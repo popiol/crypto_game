@@ -92,7 +92,8 @@ class TestSimulation:
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))
-        custom = CustomMetrics(all_metrics=all_metrics)
+        aggregated = AggregatedMetrics(all_metrics)
+        custom = CustomMetrics(aggregated.df, aggregated.get_metrics())
         metrics = custom.get_metrics()
         print(metrics)
         assert type(metrics) == dict
