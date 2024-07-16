@@ -22,8 +22,8 @@ class CustomMetrics:
     def get_metrics(self):
         df = self.df
         metrics = {}
-        asset_dependent_score = df[df.n_asset_dependent == 1].evaluation_score.mean()
-        asset_independent_score = df[df.n_asset_independent == 1].evaluation_score.mean()
+        asset_dependent_score = df[df.n_asset_dependent > 0].evaluation_score.mean()
+        asset_independent_score = df[df.n_asset_independent > 0].evaluation_score.mean()
         metrics["asset_dependent_score"] = {0: asset_independent_score, 1: asset_dependent_score}
         for col in [
             "n_merge_ancestors",
