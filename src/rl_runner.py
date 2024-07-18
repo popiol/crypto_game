@@ -35,11 +35,12 @@ class RlRunner:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.training_time_hours: int = self.config["rl_runner"]["training_time_hours"]
 
-    def prepare(self):
+    def prepare(self, sync_data: bool = True):
         self.logger = Logger()
         self.logger.log("Sync data")
         self.data_registry = DataRegistry(**self.config["data_registry"])
-        self.data_registry.sync()
+        if sync_data:
+            self.data_registry.sync()
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()
@@ -196,7 +197,7 @@ class RlRunner:
         self.save_models()
 
     def evaluate(self):
-        self.prepare()
+        self.prepare(sync_data=False)
         self.initial_run()
         self.evaluate_models()
         self.model_registry.archive_models()
