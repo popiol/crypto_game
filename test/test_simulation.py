@@ -51,19 +51,20 @@ class TestSimulation:
         models = model_registry.get_weak_models()
         assert len(models) == 1
 
+    @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
-    def test_evaluate_existing_model(self, iterate_models, set_metrics):
-        model_name = "Noah_20240708005535_4f94f"
+    @patch("src.model_registry.ModelRegistry.archive_models")
+    def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
+        model_name = "Sophia_20240717164625_ea18c"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = ModelRegistry(**rl_runner.config["model_registry"])
         model = model_registry.get_model(model_name)
         iterate_models.return_value = [(model_name, model)]
-        rl_runner.prepare()
-        rl_runner.initial_run()
-        rl_runner.evaluate_models()
-        print(set_metrics.call_args.args[1])
+        rl_runner.evaluate()
+        print("model metrics", set_metrics.call_args.args[1])
+        print("aggregated", set_aggregated_metrics.call_args.args[0])
 
     @patch("src.model_registry.ModelRegistry.set_metrics")
     def test_evaluate_all_existing_models(self, set_metrics):

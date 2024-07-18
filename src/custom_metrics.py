@@ -30,16 +30,16 @@ class CustomMetrics:
             "n_layers",
             "n_ancestors",
             "add_conv_layer",
-            "shrink_layer",
-            "remove_layer",
             "add_dense_layer",
+            "remove_layer",
             "extend_layer",
+            "shrink_layer",
+            "n_conv1d",
             "n_conv2d",
             "n_permute",
             "n_dense",
             "n_reshape",
             "n_unit",
-            "n_conv1d",
             "n_concatenate",
             "trained_ratio",
             "BTCUSD_change",
@@ -47,6 +47,8 @@ class CustomMetrics:
             "n_transactions",
             "n_params",
         ]:
+            if col not in self.aggregated:
+                continue
             min_val = self.aggregated[col]["min"]
             max_val = self.aggregated[col]["max"]
             n_buckets = 10
@@ -54,22 +56,27 @@ class CustomMetrics:
                 n_buckets = round(max_val - min_val)
             if col not in df:
                 df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[2:], 0))
-            if max_val == min_val:
+            if n_buckets == 0:
                 continue
             df["grouping"] = df[col].apply(
-                lambda x: round((x - min_val) / (max_val - min_val) * n_buckets) if not np.isnan(x) else np.nan
+                lambda x: (
+                    round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val
+                    if not np.isnan(x)
+                    else np.nan
+                )
             )
             metrics[col + "_score"] = (
                 df[["grouping", "evaluation_score"]].groupby("grouping")["evaluation_score"].mean().to_dict()
             )
         parents_score = {}
-        for index, (parents, score) in df[["parents", "evaluation_score"]].iterrows():
-            if type(parents) != dict:
-                continue
-            for parent in self.parents_as_list(parents):
-                parents_score[parent] = parents_score.get(parent, [])
-                parents_score[parent].append(score)
-        for key, val in parents_score.items():
-            parents_score[key] = np.nanmean(val)
+        if "parents" in df:
+            for index, (parents, score) in df[["parents", "evaluation_score"]].iterrows():
+                if type(parents) != dict:
+                    continue
+                for parent in self.parents_as_list(parents):
+                    parents_score[parent] = parents_score.get(parent, [])
+                    parents_score[parent].append(score)
+            for key, val in parents_score.items():
+                parents_score[key] = np.nanmean(val)
         metrics["parents_score"] = parents_score
         return metrics

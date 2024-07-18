@@ -186,7 +186,7 @@ class RlRunner:
         aggregated = AggregatedMetrics(self.all_metrics)
         aggregated_dict = aggregated.get_metrics()
         custom = CustomMetrics(aggregated.df, aggregated_dict)
-        return {**aggregated_dict, **custom.get_metrics()}
+        return {**aggregated_dict, "custom": custom.get_metrics()}
 
     def train(self):
         self.prepare()

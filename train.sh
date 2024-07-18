@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for pid in $(pidof -x run.sh); do
+for pid in $(pidof -x train.sh); do
     if [ $pid != $$ ]; then
         echo "Process already running"
         exit 1
