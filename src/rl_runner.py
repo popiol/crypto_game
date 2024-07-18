@@ -207,7 +207,7 @@ class RlRunner:
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--config")
-    parser.add_argument("--evaluate", type=int, default=0)
+    parser.add_argument("--evaluate", action="store_true")
     args, other = parser.parse_known_args(argv)
     rl_runner = RlRunner()
     rl_runner.load_config(args.config)
