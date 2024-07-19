@@ -35,11 +35,11 @@ class RlRunner:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.training_time_hours: int = self.config["rl_runner"]["training_time_hours"]
 
-    def prepare(self, sync_data: bool = True):
+    def prepare(self, eval_mode: bool = False):
         self.logger = Logger()
         self.logger.log("Sync data")
         self.data_registry = DataRegistry(**self.config["data_registry"])
-        if sync_data:
+        if not eval_mode:
             self.data_registry.sync()
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
         self.asset_list = self.data_registry.get_asset_list()
@@ -48,7 +48,8 @@ class RlRunner:
             self.stats = None
         self.model_registry = ModelRegistry(**self.config["model_registry"])
         self.model_serializer = ModelSerializer()
-        self.trainset = Trainset(**self.config["trainset"])
+        if not eval_mode:
+            self.trainset = Trainset(**self.config["trainset"])
 
     def quotes_iterator(self):
         quotes = QuotesSnapshot()
@@ -197,7 +198,7 @@ class RlRunner:
         self.save_models()
 
     def evaluate(self):
-        self.prepare(sync_data=False)
+        self.prepare(eval_mode=True)
         self.initial_run()
         self.evaluate_models()
         self.model_registry.archive_models()
