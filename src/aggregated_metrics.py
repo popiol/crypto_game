@@ -18,7 +18,12 @@ class AggregatedMetrics:
 
     @staticmethod
     def stats(x: list[float]) -> dict:
-        return {"min": np.nanmin(x), "max": np.nanmax(x), "mean": np.nanmean(x), "sum": np.nansum(x)}
+        return {
+            "min": np.nanmin(x).tolist(),
+            "max": np.nanmax(x).tolist(),
+            "mean": np.nanmean(x).tolist(),
+            "sum": np.nansum(x).tolist(),
+        }
 
     def get_metrics(self):
         df = self.df

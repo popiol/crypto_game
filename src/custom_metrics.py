@@ -23,7 +23,9 @@ class CustomMetrics:
         df = self.df
         metrics = {}
         asset_dependent_score = df[df.n_asset_dependent > 0].evaluation_score.mean()
+        asset_dependent_score = 0 if np.isnan(asset_dependent_score) else asset_dependent_score.tolist()
         asset_independent_score = df[df.n_asset_independent > 0].evaluation_score.mean()
+        asset_independent_score = 0 if np.isnan(asset_independent_score) else asset_independent_score.tolist()
         metrics["asset_dependent_score"] = {0: asset_independent_score, 1: asset_dependent_score}
         for col in [
             "n_merge_ancestors",
