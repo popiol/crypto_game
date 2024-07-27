@@ -42,7 +42,8 @@ class Agent:
         self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ) -> list[PortfolioOrder]:
         output_matrix = self.training_strategy.predict(input)
-        self.trainset.store_output(timestamp, output_matrix, self.agent_name)
+        if self.trainset:
+            self.trainset.store_output(timestamp, output_matrix, self.agent_name)
         output = self.data_transformer.transform_output(output_matrix, asset_list)
         orders = []
         for position in portfolio.positions:

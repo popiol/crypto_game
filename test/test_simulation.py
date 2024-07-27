@@ -56,7 +56,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
-        model_name = "Benjamin_20240718210537_a0946"
+        model_name = "Amelia_20240719111533_0da7c"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = ModelRegistry(**rl_runner.config["model_registry"])
@@ -66,13 +66,13 @@ class TestSimulation:
         print("model metrics", set_metrics.call_args.args[1])
         print("aggregated", set_aggregated_metrics.call_args.args[0])
 
+    @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
     @patch("src.model_registry.ModelRegistry.set_metrics")
-    def test_evaluate_all_existing_models(self, set_metrics):
+    @patch("src.model_registry.ModelRegistry.archive_models")
+    def test_evaluate_all_existing_models(self, archive_models, set_metrics, set_aggregated_metrics):
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
-        rl_runner.prepare()
-        rl_runner.initial_run()
-        rl_runner.evaluate_models()
+        rl_runner.evaluate()
 
     def test_aggregated_metrics(self):
         rl_runner = RlRunner()

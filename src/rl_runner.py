@@ -39,7 +39,7 @@ class RlRunner:
         self.logger = Logger()
         self.logger.log("Sync data")
         self.data_registry = DataRegistry(**self.config["data_registry"])
-        if not eval_mode:
+        if not eval_mode:  # TODO remove condition once evaluation is executed on a separate node
             self.data_registry.sync()
         self.data_transformer = DataTransformer(**self.config["data_transformer"])
         self.asset_list = self.data_registry.get_asset_list()
@@ -48,6 +48,7 @@ class RlRunner:
             self.stats = None
         self.model_registry = ModelRegistry(**self.config["model_registry"])
         self.model_serializer = ModelSerializer()
+        self.trainset = None
         if not eval_mode:
             self.trainset = Trainset(**self.config["trainset"])
 
