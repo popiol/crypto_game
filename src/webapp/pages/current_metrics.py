@@ -41,11 +41,13 @@ def show_model(model_name: str):
 
     def print_dict(obj, level: int = 0):
         get_col = lambda level: st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
+        params = ""
         for key, val in obj.items():
             if type(val) == dict:
                 continue
-            col = get_col(level)
-            col.write(key + ": " + json.dumps(val))
+            params += "- " + key + ": " + json.dumps(val) + "\n"
+        col = get_col(level)
+        col.write(params)
         for key, val in obj.items():
             if type(val) != dict:
                 continue
