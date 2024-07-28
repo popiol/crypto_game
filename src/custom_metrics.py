@@ -1,23 +1,14 @@
 import numpy as np
 import pandas as pd
 
+from src.metrics import Metrics
+
 
 class CustomMetrics:
 
     def __init__(self, df: pd.DataFrame, aggregated: dict):
         self.df = df
         self.aggregated = aggregated
-
-    def parents_as_list(self, parents: dict) -> list[str]:
-        parents_list = []
-        stack = [parents]
-        while stack:
-            parents = stack.pop()
-            if parents is None:
-                continue
-            parents_list.extend(parents.keys())
-            stack.extend(parents.values())
-        return parents_list
 
     def get_metrics(self):
         df = self.df
@@ -75,7 +66,7 @@ class CustomMetrics:
             for index, (parents, score) in df[["parents", "evaluation_score"]].iterrows():
                 if type(parents) != dict:
                     continue
-                for parent in self.parents_as_list(parents):
+                for parent in Metrics.parents_as_list(parents):
                     parents_score[parent] = parents_score.get(parent, [])
                     parents_score[parent].append(score)
             for key, val in parents_score.items():

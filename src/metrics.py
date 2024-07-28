@@ -46,13 +46,20 @@ class Metrics:
             counts[l.layer_type] = counts.get(l.layer_type, 0) + 1
         return counts
 
+    @staticmethod
+    def parents_as_list(parents: dict) -> list[str]:
+        parents_list = []
+        stack = [parents]
+        while stack:
+            parents = stack.pop()
+            if parents is None:
+                continue
+            parents_list.extend(parents.keys())
+            stack.extend(parents.values())
+        return parents_list
+
     def get_n_ancestors(self) -> int:
-        parents = self.metrics
-        n_ancestors = -1
-        while parents is not None:
-            n_ancestors += 1
-            parents = parents.get("parents")
-        return n_ancestors
+        return len(self.parents_as_list(self.metrics.get("parents")))
 
     def get_n_trainings(self) -> int:
         n_trainings = self.metrics.get("n_trainings", 0)
