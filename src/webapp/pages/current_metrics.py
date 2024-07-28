@@ -24,7 +24,7 @@ def list_current_models():
     pos2 = log.index("archive") - 1
     lines = log[pos1:pos2].splitlines()
     scores = [line.split()[2:] for line in lines]
-    scores = sorted(scores, key=lambda x: -float(x[1]))
+    scores = sorted(scores, key=lambda x: -float(x[1]))[:10]
     for row in scores:
         row[0] = f"?model_name={row[0]}"
     df = pd.DataFrame(scores, columns=["model", "score"])
