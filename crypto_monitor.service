@@ -1,0 +1,15 @@
+[Unit]
+Description=Cryptogame Monitor
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=popiol
+WorkingDirectory=/home/popiol/deployments/crypto_game/
+ExecStart=python -m streamlit run /home/popiol/deployments/crypto_game/src/webapp/current_metrics.py
+
+[Install]
+WantedBy=multi-user.target
