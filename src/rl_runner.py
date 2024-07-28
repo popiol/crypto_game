@@ -35,6 +35,9 @@ class RlRunner:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.training_time_hours: int = self.config["rl_runner"]["training_time_hours"]
 
+    def get_model_registry(self):
+        return ModelRegistry(**self.config["model_registry"])
+
     def prepare(self, eval_mode: bool = False):
         self.logger = Logger()
         self.logger.log("Sync data")
@@ -46,7 +49,7 @@ class RlRunner:
         self.stats = self.data_registry.get_stats()
         if self.stats and len(self.stats["mean"]) != self.data_transformer.n_features:
             self.stats = None
-        self.model_registry = ModelRegistry(**self.config["model_registry"])
+        self.model_registry = self.get_model_registry()
         self.model_serializer = ModelSerializer()
         self.trainset = None
         if not eval_mode:

@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
-from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
 
@@ -13,7 +12,8 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.get_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.S3Utils")
-    def test_simulation_one_iteration(self, S3Utils, iterate_models, get_metrics, set_metrics):
+    @patch("src.data_registry.DataRegistry.sync")
+    def test_simulation_one_iteration(self, sync, S3Utils, iterate_models, get_metrics, set_metrics):
         get_metrics.return_value = {"a": 1}
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
@@ -43,7 +43,7 @@ class TestSimulation:
     def test_get_weak_models(self):
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
-        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        model_registry = rl_runner.get_model_registry()
         model_registry.max_mature_models = 1
         models = model_registry.get_weak_models()
         assert len(models) > 0
@@ -59,7 +59,7 @@ class TestSimulation:
         model_name = "Amelia_20240719111533_0da7c"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
-        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        model_registry = rl_runner.get_model_registry()
         model = model_registry.get_model(model_name)
         iterate_models.return_value = [(model_name, model)]
         rl_runner.evaluate()
@@ -77,7 +77,7 @@ class TestSimulation:
     def test_aggregated_metrics(self):
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
-        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        model_registry = rl_runner.get_model_registry()
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))
@@ -89,7 +89,7 @@ class TestSimulation:
     def test_custom_metrics(self):
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
-        model_registry = ModelRegistry(**rl_runner.config["model_registry"])
+        model_registry = rl_runner.get_model_registry()
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))

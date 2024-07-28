@@ -192,6 +192,7 @@ class DataTransformer:
             self.last_features = features
             return None
         raw_features = features.copy()
+        sigmoid = lambda x: 1 / (1 + np.exp(-x))
         for feature_index in range(len(features[0])):
             if InputFeatures.is_price(feature_index):
                 features[:, feature_index] = features[:, feature_index] / self.last_features[:, feature_index] - 1
@@ -200,7 +201,7 @@ class DataTransformer:
             else:
                 mean = stats["mean"][feature_index]
                 std = stats["std"][feature_index]
-                features[:, feature_index] = (
+                features[:, feature_index] = sigmoid(
                     (features[:, feature_index] + mean + std) / (self.last_features[:, feature_index] + mean + std) / 10
                 )
         np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)
