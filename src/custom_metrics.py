@@ -18,6 +18,9 @@ class CustomMetrics:
         asset_independent_score = df[df.n_asset_independent > 0].evaluation_score.mean()
         asset_independent_score = 0 if np.isnan(asset_independent_score) else asset_independent_score.tolist()
         metrics["asset_dependent_score"] = {0: asset_independent_score, 1: asset_dependent_score}
+        metrics["training_strategy_score"] = (
+            df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
+        )
         for col in [
             "n_merge_ancestors",
             "n_layers",
