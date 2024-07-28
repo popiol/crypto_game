@@ -194,13 +194,13 @@ class DataTransformer:
         raw_features = features.copy()
         for feature_index in range(len(features[0])):
             if InputFeatures.is_price(feature_index):
-                features[:, feature_index] = features[:, feature_index] / self.last_features[:, feature_index] - 1
+                features[:, feature_index] = np.tanh(features[:, feature_index] / self.last_features[:, feature_index] - 1)
             elif InputFeatures.index_to_name(feature_index) == "is_in_portfolio":
                 pass
             else:
                 mean = stats["mean"][feature_index]
                 std = stats["std"][feature_index]
-                features[:, feature_index] = (
+                features[:, feature_index] = np.tanh(
                     (features[:, feature_index] + mean + std) / (self.last_features[:, feature_index] + mean + std) / 100
                 )
         np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)

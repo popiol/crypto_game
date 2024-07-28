@@ -35,45 +35,33 @@ def list_current_models():
 
 def show_model(model_name: str):
     st.title(model_name)
+    rl_runner = RlRunner()
+    rl_runner.load_config("config/config.yml")
+    model_registry = rl_runner.get_model_registry()
+
+    def print_dict(obj, level: int = 0):
+        get_col = lambda level: st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
+        for key, val in obj.items():
+            if type(val) == dict:
+                continue
+            col = get_col(level)
+            col.write(key + ": " + json.dumps(val))
+        for key, val in obj.items():
+            if type(val) != dict:
+                continue
+            if level == 0:
+                with st.expander(key):
+                    print_dict(val, level + 1)
+            else:
+                col = get_col(level)
+                col.write(key)
+                print_dict(val, level + 1)
+
+    metrics = model_registry.get_metrics(model_name)
+    print_dict(metrics)
 
 
 if model_name:
     show_model(model_name)
 else:
     list_current_models()
-
-
-exit()
-
-rl_runner = RlRunner()
-rl_runner.load_config("config/config.yml")
-model_registry = rl_runner.get_model_registry()
-
-
-def print_dict(obj, level: int = 0):
-    for key, val in obj.items():
-        if type(val) == dict:
-            continue
-        col = st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
-        col.write(key + ": " + json.dumps(val))
-    for key, val in obj.items():
-        if type(val) != dict:
-            continue
-        col = st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
-        col.write(key)
-        print_dict(val, level + 1)
-
-
-metrics_list = []
-
-for model_name, serialized_model in model_registry.iterate_models():
-    metrics = model_registry.get_metrics(model_name)
-    metrics_list.append((model_name, metrics))
-    if len(metrics_list) >= 10:
-        break
-
-metrics_list = sorted(metrics_list, key=lambda x: -x[1].get("evaluation_score", -100))
-
-for model_name, metrics in metrics_list:
-    with st.expander(model_name):
-        print_dict(metrics)
