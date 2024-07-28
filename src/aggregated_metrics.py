@@ -34,9 +34,15 @@ class AggregatedMetrics:
                 aggregated[col] = self.stats(df[col].tolist())
         for n_layers_per_type in df["n_layers_per_type"]:
             for key, val in n_layers_per_type.items():
-                aggregated_key = "n_" + key
+                aggregated_key = "n_layers_" + key
                 aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
                 aggregated[aggregated_key].append(val)
+        if "mutations" in df:
+            for mutations in df["mutations"]:
+                for key, val in mutations.items():
+                    aggregated_key = "n_mutations_" + key
+                    aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
+                    aggregated[aggregated_key].append(val)
         for key, val in aggregated.items():
             if type(val) == list:
                 aggregated[key] = self.stats(aggregated[key])

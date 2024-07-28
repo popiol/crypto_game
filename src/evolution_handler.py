@@ -77,6 +77,8 @@ class EvolutionHandler:
         skip = 0
         n_layers = len(model.get_layers())
         n_layers_diff = 0
+        mutations = metrics.get("mutations", {})
+        metrics["mutations"] = mutations
         for index, layer in enumerate(model.get_layers()[:-1]):
             if skip > 0:
                 skip -= 1
@@ -88,26 +90,27 @@ class EvolutionHandler:
                 model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
                 skip = offset
-                metrics["remove_layer"] = metrics.get("remove_layer", 0) + 1
+                mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
                 continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
             if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
-                metrics["shrink_layer"] = metrics.get("shrink_layer", 0) + 1
+                mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
             elif random.random() < self.extend_prob and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
-                metrics["extend_layer"] = metrics.get("extend_layer", 0) + 1
+                mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
             if random.random() < self.relu_prob and layer.shape:
                 model = self.model_builder.add_relu(model, index)
+                mutations["add_relu"] = mutations.get("add_relu", 0) + 1
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())
                 if choice == 0:
                     size = max(10, round(random.gauss(100, 30)))
                     model = self.model_builder.add_dense_layer(model, index, size)
-                    metrics["add_dense_layer"] = metrics.get("add_dense_layer", 0) + 1
+                    mutations["add_dense_layer"] = mutations.get("add_dense_layer", 0) + 1
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
-                    metrics["add_conv_layer"] = metrics.get("add_conv_layer", 0) + 1
+                    mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
         return model, metrics
