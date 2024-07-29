@@ -6,9 +6,9 @@ import streamlit as st
 
 from src.rl_runner import RlRunner
 
-st.set_page_config(page_title="Current metrics")
-
 model_name = st.query_params.get("model_name")
+title = model_name or "Current metrics"
+st.set_page_config(page_title=title)
 
 
 def list_current_models():
