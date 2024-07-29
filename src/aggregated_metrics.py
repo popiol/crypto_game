@@ -39,10 +39,11 @@ class AggregatedMetrics:
                 aggregated[aggregated_key].append(val)
         if "mutations" in df:
             for mutations in df["mutations"]:
-                for key, val in mutations.items():
-                    aggregated_key = "n_mutations_" + key
-                    aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
-                    aggregated[aggregated_key].append(val)
+                if type(mutations) == dict:
+                    for key, val in mutations.items():
+                        aggregated_key = "n_mutations_" + key
+                        aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
+                        aggregated[aggregated_key].append(val)
         for key, val in aggregated.items():
             if type(val) == list:
                 aggregated[key] = self.stats(aggregated[key])
