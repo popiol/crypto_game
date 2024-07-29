@@ -90,7 +90,6 @@ class Metrics:
 
     def get_metrics(self):
         return {
-            "model_id": self.agent.model_id,
             "reward_stats": self.agent.training_strategy.stats,
             **self.metrics,
             "n_ancestors": self.get_n_ancestors(),

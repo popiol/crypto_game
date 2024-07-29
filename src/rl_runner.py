@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
 import yaml
 
 from src.agent import Agent
@@ -194,6 +195,32 @@ class RlRunner:
         custom = CustomMetrics(aggregated.df, aggregated_dict)
         return {**aggregated_dict, "custom": custom.get_metrics()}
 
+    def get_quick_stats(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            columns=[
+                "model",
+                "score",
+                "n_params",
+                "n_layers",
+                "n_ancestors",
+                "training_strategy",
+                "n_transactions",
+                "trained_ratio",
+            ]
+        )
+        for agent, metrics in zip(self.agents, self.all_metrics):
+            df.loc[len(df)] = [
+                agent.model_name,
+                metrics["evaluation_score"],
+                metrics["n_params"],
+                metrics["n_layers"],
+                metrics["n_ancestors"],
+                metrics["training_strategy"],
+                metrics["n_transactions"],
+                metrics["trained_ratio"],
+            ]
+        return df
+
     def train(self):
         self.prepare()
         self.initial_run()
@@ -208,6 +235,8 @@ class RlRunner:
         self.model_registry.archive_models()
         aggregated = self.aggregate_metrics()
         self.model_registry.set_aggregated_metrics(aggregated)
+        stats = self.get_quick_stats()
+        stats.to_csv("data/quick_stats.csv")
 
 
 def main(argv):

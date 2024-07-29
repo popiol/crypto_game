@@ -12,7 +12,6 @@ class AggregatedMetrics:
     @staticmethod
     def get_metrics_as_dataframe(all_metrics: list[dict]):
         df = pd.concat([pd.DataFrame([m.values()], columns=m.keys()) for m in all_metrics])
-        df = df.drop(columns="model_id")
         df = df.replace({None: np.nan})
         return df
 

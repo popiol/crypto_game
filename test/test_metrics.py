@@ -73,15 +73,13 @@ class TestMetrics:
         assert metrics.get_n_ancestors() == 1
 
     def test_get_metrics(self, agent, quotes):
-        agent.metrics = {"model_id": "abc123", "a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}
+        agent.metrics = {"a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}
         metrics = Metrics(agent, quotes)
         metrics2 = metrics.get_metrics()
-        assert "model_id" in metrics2
         assert "reward_stats" in metrics2
         assert "n_merge_ancestors" in metrics2
         assert "BTCUSD" in metrics2
         assert "a" in metrics2
-        assert metrics2["model_id"] == "abc123"
         assert metrics2["n_merge_ancestors"] >= 0
         assert metrics2["BTCUSD"] >= 0
 
