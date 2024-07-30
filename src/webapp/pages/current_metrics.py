@@ -5,7 +5,7 @@ import streamlit as st
 
 from src.rl_runner import RlRunner
 
-model_name = st.query_params.get("model_name")
+model_name = st.query_params.get("model")
 title = model_name or "Current metrics"
 st.set_page_config(page_title=title, layout="wide")
 
@@ -15,7 +15,7 @@ def list_current_models():
     df = pd.read_csv("data/quick_stats.csv")
     df = df[df.score != 0][:15]
     df = df.sort_values("score", ascending=False)
-    df["model"] = df["model"].apply(lambda x: f"?model_name={x}")
+    df["model"] = df["model"].apply(lambda x: f"?model={x}")
     st.dataframe(
         df,
         hide_index=True,
