@@ -7,7 +7,7 @@ from src.rl_runner import RlRunner
 
 model_name = st.query_params.get("model_name")
 title = model_name or "Current metrics"
-st.set_page_config(page_title=title)
+st.set_page_config(page_title=title, layout="wide")
 
 
 def list_current_models():
