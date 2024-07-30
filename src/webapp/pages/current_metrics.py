@@ -1,4 +1,3 @@
-import glob
 import json
 
 import pandas as pd
@@ -13,32 +12,15 @@ st.set_page_config(page_title=title)
 
 def list_current_models():
     st.title("Current metrics")
-    eval_file_path = "logs/evaluate.log"
-    for attempt in range(2):
-        try:
-            if attempt == 1:
-                eval_file_path = max(glob.glob("logs/archive/evaluate_*.log"))
-            with open(eval_file_path) as f:
-                log = f.read()
-            pos1 = log.index("Evaluate models")
-            pos1 = log.index("\n", pos1) + 1
-            pos2 = log.index("archive") - 1
-            lines = log[pos1:pos2].splitlines()
-            scores = [line.split()[2:] for line in lines]
-            scores = [score for score in scores if float(score[1]) != 0]
-            scores = sorted(scores, key=lambda x: -float(x[1]))[:15]
-            for row in scores:
-                row[0] = f"?model_name={row[0]}"
-            df = pd.DataFrame(scores, columns=["model", "score"])
-            st.dataframe(
-                df,
-                hide_index=True,
-                column_config={"model": st.column_config.LinkColumn(), "score": st.column_config.NumberColumn()},
-            )
-            break
-        except Exception:
-            if attempt == 1:
-                raise
+    df = pd.read_csv("data/quick_stats.csv")
+    df = df[df.score != 0][:15]
+    df = df.sort_values("score", ascending=False)
+    df["model"] = df["model"].apply(lambda x: f"?model_name={x}")
+    st.dataframe(
+        df,
+        hide_index=True,
+        column_config={"model": st.column_config.LinkColumn(), "score": st.column_config.NumberColumn()},
+    )
 
 
 def show_model(model_name: str):

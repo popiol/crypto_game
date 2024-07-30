@@ -236,7 +236,7 @@ class RlRunner:
         aggregated = self.aggregate_metrics()
         self.model_registry.set_aggregated_metrics(aggregated)
         stats = self.get_quick_stats()
-        stats.to_csv("data/quick_stats.csv")
+        stats.to_csv("data/quick_stats.csv", index=False)
 
 
 def main(argv):
