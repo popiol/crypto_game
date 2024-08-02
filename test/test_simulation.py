@@ -56,7 +56,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
-        model_name = "Mia_20240729143034_3ee45"
+        model_name = "Mia_20240802000531_f5396"
         rl_runner = RlRunner()
         rl_runner.load_config("config/config.yml")
         model_registry = rl_runner.get_model_registry()

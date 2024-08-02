@@ -88,6 +88,9 @@ class Metrics:
     def get_output_stats(self):
         return self.agent.data_transformer.get_output_stats() or self.metrics.get("output_stats")
 
+    def get_weight_stats(self):
+        return self.agent.training_strategy.model.get_weight_stats()
+
     def get_metrics(self):
         return {
             "reward_stats": self.agent.training_strategy.stats,
@@ -106,4 +109,5 @@ class Metrics:
             "shared_input_stats": self.get_shared_input_stats(),
             "agent_input_stats": self.get_agent_input_stats(),
             "output_stats": self.get_output_stats(),
+            "weight_stats": self.get_weight_stats(),
         }

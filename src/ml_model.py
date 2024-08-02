@@ -72,6 +72,17 @@ class MlModel:
     def get_n_params(self):
         return np.sum([np.prod(v.shape) for v in self.model.trainable_weights])
 
+    def get_weight_stats(self):
+        all_weights = []
+        for weights in self.model.trainable_weights:
+            all_weights.extend(np.reshape(weights, -1))
+        return {
+            "mean": np.mean(all_weights).tolist(),
+            "std": np.std(all_weights).tolist(),
+            "min": np.min(all_weights).tolist(),
+            "max": np.max(all_weights).tolist(),
+        }
+
     def __str__(self):
         s = io.StringIO()
         self.model.summary(print_fn=lambda x: s.write(x + "\n"))
