@@ -7,54 +7,39 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
-import yaml
 
 from src.agent import Agent
-from src.agent_builder import AgentBuilder
 from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
-from src.data_registry import DataRegistry
-from src.data_transformer import DataTransformer, QuotesSnapshot
-from src.evolution_handler import EvolutionHandler
+from src.data_transformer import QuotesSnapshot
+from src.environment import Environment
 from src.logger import Logger
 from src.metrics import Metrics
-from src.model_builder import ModelBuilder
-from src.model_registry import ModelRegistry
-from src.model_serializer import ModelSerializer
 from src.portfolio_manager import PortfolioManager
 from src.training_strategy import TrainingStrategy
-from src.trainset import Trainset
 
 
 class RlRunner:
 
-    def __init__(self):
+    def __init__(self, environment: Environment):
+        self.environment = environment
         self.start_dt = datetime.now()
 
-    def load_config(self, file_path: str):
-        with open(file_path) as f:
-            self.config = yaml.load(f, Loader=yaml.FullLoader)
-        self.training_time_hours: int = self.config["rl_runner"]["training_time_hours"]
-
-    def get_model_registry(self):
-        return ModelRegistry(**self.config["model_registry"])
-
-    def prepare(self, eval_mode: bool = False):
+    def prepare(self):
         self.logger = Logger()
         self.logger.log("Sync data")
-        self.data_registry = DataRegistry(**self.config["data_registry"])
-        if not eval_mode:  # TODO remove condition once evaluation is executed on a separate node
+        self.data_registry = self.environment.get_data_registry()
+        if not self.environment.eval_mode:
             self.data_registry.sync()
-        self.data_transformer = DataTransformer(**self.config["data_transformer"])
+        self.data_transformer = self.environment.get_data_transformer()
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()
         if self.stats and len(self.stats["mean"]) != self.data_transformer.n_features:
             self.stats = None
-        self.model_registry = self.get_model_registry()
-        self.model_serializer = ModelSerializer()
-        self.trainset = None
-        if not eval_mode:
-            self.trainset = Trainset(**self.config["trainset"])
+        self.model_registry = self.environment.get_model_registry()
+        self.model_serializer = self.environment.get_model_serializer()
+        self.trainset = self.environment.get_trainset()
+        self.training_time_hours = self.environment.get_training_time_hours()
 
     def quotes_iterator(self):
         quotes = QuotesSnapshot()
@@ -73,21 +58,15 @@ class RlRunner:
             self.stats = {key: val.tolist() for key, val in self.data_transformer.stats.items()}
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
-        self.model_builder = ModelBuilder(
-            self.data_transformer.memory_length,
-            len(self.asset_list),
-            self.data_transformer.n_features,
-            self.data_transformer.n_outputs,
-        )
+        self.model_builder = self.environment.get_model_builder(self.data_transformer, len(self.asset_list))
 
     def create_agents(self):
         self.logger.log("Create agents")
-        evolution_handler = EvolutionHandler(
-            self.model_registry, self.model_serializer, self.model_builder, **self.config["evolution_handler"]
+        agent_builder = self.environment.get_agent_builder(
+            self.model_registry, self.model_serializer, self.model_builder, self.data_transformer, self.trainset
         )
-        agent_builder = AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
         self.agents = agent_builder.create_agents()
-        self.portfolio_managers = [PortfolioManager(**self.config["portfolio_manager"]) for _ in self.agents]
+        self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         self.logger.log_agents(self.agents)
 
     def run_agent(
@@ -157,7 +136,6 @@ class RlRunner:
         self.logger.log("Evaluate models")
         self.logger.transactions = {}
         self.agents: list[Agent] = []
-        self.portfolio_managers: list[PortfolioManager] = []
         self.all_metrics = []
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
@@ -166,8 +144,7 @@ class RlRunner:
             agent = Agent(model_name.split("_")[0], self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
             agent.model_name = model_name
             self.agents.append(agent)
-            portfolio_manager = PortfolioManager(**self.config["portfolio_manager"])
-            self.portfolio_managers.append(portfolio_manager)
+        self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         initial_quotes = None
         for timestamp, quotes in self.quotes_iterator():
             if initial_quotes is None and quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
@@ -229,7 +206,8 @@ class RlRunner:
         self.save_models()
 
     def evaluate(self):
-        self.prepare(eval_mode=True)
+        self.environment.eval_mode = True
+        self.prepare()
         self.initial_run()
         self.evaluate_models()
         self.model_registry.archive_models()
@@ -244,8 +222,7 @@ def main(argv):
     parser.add_argument("--config")
     parser.add_argument("--evaluate", action="store_true")
     args, other = parser.parse_known_args(argv)
-    rl_runner = RlRunner()
-    rl_runner.load_config(args.config)
+    rl_runner = RlRunner(Environment(args.config))
     if args.evaluate:
         rl_runner.evaluate()
     else:

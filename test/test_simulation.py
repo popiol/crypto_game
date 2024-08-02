@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
+from src.environment import Environment
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
 
@@ -15,10 +16,10 @@ class TestSimulation:
     @patch("src.data_registry.DataRegistry.sync")
     def test_simulation_one_iteration(self, sync, S3Utils, iterate_models, get_metrics, set_metrics):
         get_metrics.return_value = {"a": 1}
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
-        rl_runner.training_time_hours = -1
-        rl_runner.config["agent_builder"]["n_agents"] = 1
+        environment = Environment("config/config.yml")
+        environment.config["rl_runner"]["training_time_hours"] = -1
+        environment.config["agent_builder"]["n_agents"] = 1
+        rl_runner = RlRunner(environment)
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.create_agents()
@@ -34,17 +35,17 @@ class TestSimulation:
         assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
     def test_evaluate(self):
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
+        environment = Environment("config/config.yml")
+        rl_runner = RlRunner(environment)
         rl_runner.prepare()
         rl_runner.initial_run()
         rl_runner.evaluate_models()
 
     def test_get_weak_models(self):
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
-        model_registry = rl_runner.get_model_registry()
+        environment = Environment("config/config.yml")
+        model_registry = environment.get_model_registry()
         model_registry.max_mature_models = 1
+        model_registry = environment.get_model_registry()
         models = model_registry.get_weak_models()
         assert len(models) > 0
         model_registry.max_mature_models = len(models)
@@ -57,9 +58,9 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
         model_name = "Mia_20240802000531_f5396"
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
-        model_registry = rl_runner.get_model_registry()
+        environment = Environment("config/config.yml")
+        rl_runner = RlRunner(environment)
+        model_registry = environment.get_model_registry()
         model = model_registry.get_model(model_name)
         iterate_models.return_value = [(model_name, model)]
         rl_runner.evaluate()
@@ -70,14 +71,13 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_all_existing_models(self, archive_models, set_metrics, set_aggregated_metrics):
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
+        environment = Environment("config/config.yml")
+        rl_runner = RlRunner(environment)
         rl_runner.evaluate()
 
     def test_aggregated_metrics(self):
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
-        model_registry = rl_runner.get_model_registry()
+        environment = Environment("config/config.yml")
+        model_registry = environment.get_model_registry()
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))
@@ -87,9 +87,8 @@ class TestSimulation:
         assert "datetime" in metrics
 
     def test_custom_metrics(self):
-        rl_runner = RlRunner()
-        rl_runner.load_config("config/config.yml")
-        model_registry = rl_runner.get_model_registry()
+        environment = Environment("config/config.yml")
+        model_registry = environment.get_model_registry()
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))
