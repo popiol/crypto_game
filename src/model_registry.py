@@ -12,12 +12,14 @@ class ModelRegistry:
     def __init__(
         self,
         remote_path: str,
+        aggregated_local_path: str,
         maturity_min_hours: int,
         max_mature_models: int,
         retirement_min_hours: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
+        self.aggregated_local_path = aggregated_local_path
         self.maturity_min_hours = maturity_min_hours
         self.max_mature_models = max_mature_models
         self.retirement_min_hours = retirement_min_hours
@@ -102,3 +104,6 @@ class ModelRegistry:
     def set_aggregated_metrics(self, metrics: dict):
         file_name = re.sub("[^0-9]", "", metrics["datetime"])[:10] + ".json"
         self.s3_utils.upload_json(f"{self.aggregated_prefix}/{file_name}", metrics)
+
+    def download_aggregated_metrics(self):
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.aggregated_prefix}/", self.aggregated_local_path)

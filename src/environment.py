@@ -10,6 +10,7 @@ from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
 from src.portfolio_manager import PortfolioManager
+from src.reports import Reports
 from src.trainset import Trainset
 
 
@@ -55,11 +56,18 @@ class Environment:
         )
 
     @cached_property
-    def agent_builder(self):
-        evolution_handler = EvolutionHandler(
+    def evolution_handler(self):
+        return EvolutionHandler(
             self.model_registry, self.model_serializer, self.model_builder, **self.config["evolution_handler"]
         )
-        return AgentBuilder(evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
+
+    @cached_property
+    def agent_builder(self):
+        return AgentBuilder(self.evolution_handler, self.data_transformer, self.trainset, **self.config["agent_builder"])
 
     def get_portfolio_managers(self, n_managers: int):
         return [PortfolioManager(**self.config["portfolio_manager"]) for _ in range(n_managers)]
+
+    @cached_property
+    def reports(self):
+        return Reports(self.model_registry, **self.config["reports"])

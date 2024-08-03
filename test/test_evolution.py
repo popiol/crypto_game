@@ -211,7 +211,7 @@ class TestEvolution:
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
 
-    def test_merge_existing_models(self):
+    def test_merge_real_models(self):
         builder = ModelBuilder(10, 309, 23, 4)
         model_name_1 = "Olivia_20240628193521_ea9d7"
         model_name_2 = "Charlotte_20240628193521_d2a50"

@@ -6,11 +6,8 @@ import time
 from datetime import datetime, timedelta
 
 import numpy as np
-import pandas as pd
 
 from src.agent import Agent
-from src.aggregated_metrics import AggregatedMetrics
-from src.custom_metrics import CustomMetrics
 from src.data_transformer import QuotesSnapshot
 from src.environment import Environment
 from src.logger import Logger
@@ -165,37 +162,10 @@ class RlRunner:
             self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)
 
-    def aggregate_metrics(self):
-        aggregated = AggregatedMetrics(self.all_metrics)
-        aggregated_dict = aggregated.get_metrics()
-        custom = CustomMetrics(aggregated.df, aggregated_dict)
-        return {**aggregated_dict, "custom": custom.get_metrics()}
-
-    def get_quick_stats(self) -> pd.DataFrame:
-        df = pd.DataFrame(
-            columns=[
-                "model",
-                "score",
-                "n_params",
-                "n_layers",
-                "n_ancestors",
-                "training_strategy",
-                "n_transactions",
-                "trained_ratio",
-            ]
-        )
-        for agent, metrics in zip(self.agents, self.all_metrics):
-            df.loc[len(df)] = [
-                agent.model_name,
-                metrics["evaluation_score"],
-                metrics["BTCUSD_change"],
-                metrics["n_params"],
-                metrics["n_layers"],
-                metrics["n_ancestors"],
-                metrics["training_strategy"],
-                metrics["n_transactions"],
-            ]
-        return df
+    def prepare_reports(self):
+        reports = self.environment.reports
+        model_names = [agent.model_name for agent in self.agents]
+        reports.run(model_names, self.all_metrics)
 
     def train(self):
         self.prepare()
@@ -210,10 +180,7 @@ class RlRunner:
         self.initial_run()
         self.evaluate_models()
         self.model_registry.archive_models()
-        aggregated = self.aggregate_metrics()
-        self.model_registry.set_aggregated_metrics(aggregated)
-        stats = self.get_quick_stats()
-        stats.to_csv("data/quick_stats.csv", index=False)
+        self.prepare_reports()
 
 
 def main(argv):

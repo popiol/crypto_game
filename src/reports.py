@@ -1,0 +1,97 @@
+import glob
+import json
+import os
+import re
+
+import pandas as pd
+
+from src.aggregated_metrics import AggregatedMetrics
+from src.custom_metrics import CustomMetrics
+from src.model_registry import ModelRegistry
+
+
+class Reports:
+
+    def __init__(self, model_registry: ModelRegistry, quick_stats_path: str, change_in_time_path: str, custom_metrics_path: str):
+        self.model_registry = model_registry
+        self.quick_stats_path = quick_stats_path
+        self.change_in_time_path = change_in_time_path
+        self.custom_metrics_path = custom_metrics_path
+
+    def aggregate_metrics(self, all_metrics: list[dict]):
+        if not all_metrics:
+            return {}
+        aggregated = AggregatedMetrics(all_metrics)
+        aggregated_dict = aggregated.get_metrics()
+        custom = CustomMetrics(aggregated.df, aggregated_dict)
+        return {**aggregated_dict, "custom": custom.get_metrics()}
+
+    def get_quick_stats(self, model_names: list[str], all_metrics: list[dict]) -> pd.DataFrame:
+        df = pd.DataFrame(
+            columns=[
+                "model",
+                "score",
+                "market",
+                "n_params",
+                "n_layers",
+                "n_ancestors",
+                "training_strategy",
+                "n_transactions",
+            ]
+        )
+        for model_name, metrics in zip(model_names, all_metrics):
+            df.loc[len(df)] = [
+                model_name,
+                metrics["evaluation_score"],
+                metrics["BTCUSD_change"],
+                metrics["n_params"],
+                metrics["n_layers"],
+                metrics["n_ancestors"],
+                metrics["training_strategy"],
+                metrics["n_transactions"],
+            ]
+        return df
+
+    def copy_custom_metrics(self, files: list[str]):
+        if not files:
+            return
+        with open(max(files)) as f:
+            aggregated = json.load(f)
+        with open(self.custom_metrics_path, "w") as f:
+            json.dump(aggregated["custom"], f)
+
+    def calc_change_in_time(self, files: list[str]):
+        df = pd.DataFrame()
+        if os.path.exists(self.change_in_time_path):
+            df = pd.read_csv(self.change_in_time_path)
+            last_dt = df.datetime.max()
+            last_dt = re.sub("[^0-9]", "", last_dt)[:10]
+            files = [file for file in files if file.split("/")[-1][:10] > last_dt]
+        dfs = [df]
+        for file in sorted(files):
+            with open(file) as f:
+                aggregated = json.load(f)
+            values = {}
+            for key, val in aggregated.items():
+                if key in ["custom"]:
+                    continue
+                if type(val) == dict:
+                    for key2, val2 in val.items():
+                        if key2 == "sum":
+                            continue
+                        values[f"{key}_{key2}"] = [val2]
+                else:
+                    values[key] = [val]
+            dfs.append(pd.DataFrame.from_dict(values))
+        return pd.concat(dfs)
+
+    def run(self, model_names: list[str], all_metrics: list[dict]):
+        aggregated = self.aggregate_metrics(all_metrics)
+        self.model_registry.set_aggregated_metrics(aggregated)
+        stats = self.get_quick_stats(model_names, all_metrics)
+        stats.to_csv(self.quick_stats_path, index=False)
+        self.model_registry.download_aggregated_metrics()
+        files = glob.glob(self.model_registry.aggregated_local_path + "/*.json")
+        self.copy_custom_metrics(files)
+        df = self.calc_change_in_time(files)
+        df.to_csv(self.change_in_time_path, index=False)

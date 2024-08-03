@@ -1,3 +1,4 @@
+import glob
 from unittest.mock import patch
 
 from src.aggregated_metrics import AggregatedMetrics
@@ -97,3 +98,21 @@ class TestSimulation:
         print(metrics)
         assert type(metrics) == dict
         assert len(metrics) > 0
+
+    def test_reports(self):
+        environment = Environment("config/config.yml")
+        reports = environment.reports
+        model_registry = environment.model_registry
+        model_registry.download_aggregated_metrics()
+        files = glob.glob(model_registry.aggregated_local_path + "/*.json")
+        reports.copy_custom_metrics(files)
+        df = reports.calc_change_in_time(files)
+        df.to_csv(reports.change_in_time_path, index=False)
+
+    def test_merge_existing_models(self):
+        environment = Environment("config/config.yml")
+        asset_list = environment.data_registry.get_asset_list()
+        environment.n_assets = len(asset_list)
+        evolution_handler = environment.evolution_handler
+        model, metrics = evolution_handler.merge_existing_models()
+        print(metrics)
