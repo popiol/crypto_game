@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import streamlit as st
 
-from src.rl_runner import RlRunner
+from src.environment import Environment
 
 model_name = st.query_params.get("model")
 title = model_name or "Current metrics"
@@ -25,9 +25,8 @@ def list_current_models():
 
 def show_model(model_name: str):
     st.title(model_name)
-    rl_runner = RlRunner()
-    rl_runner.load_config("config/config.yml")
-    model_registry = rl_runner.get_model_registry()
+    environment = Environment("config/config.yml")
+    model_registry = environment.model_registry
 
     def print_dict(obj, level: int = 0):
         get_col = lambda level: st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st

@@ -28,18 +28,18 @@ class RlRunner:
     def prepare(self):
         self.logger = Logger()
         self.logger.log("Sync data")
-        self.data_registry = self.environment.get_data_registry()
+        self.data_registry = self.environment.data_registry
         if not self.environment.eval_mode:
             self.data_registry.sync()
-        self.data_transformer = self.environment.get_data_transformer()
+        self.data_transformer = self.environment.data_transformer
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()
         if self.stats and len(self.stats["mean"]) != self.data_transformer.n_features:
             self.stats = None
-        self.model_registry = self.environment.get_model_registry()
-        self.model_serializer = self.environment.get_model_serializer()
-        self.trainset = self.environment.get_trainset()
-        self.training_time_hours = self.environment.get_training_time_hours()
+        self.model_registry = self.environment.model_registry
+        self.model_serializer = self.environment.model_serializer
+        self.trainset = self.environment.trainset
+        self.training_time_hours = self.environment.training_time_hours
 
     def quotes_iterator(self):
         quotes = QuotesSnapshot()
@@ -58,13 +58,11 @@ class RlRunner:
             self.stats = {key: val.tolist() for key, val in self.data_transformer.stats.items()}
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
-        self.model_builder = self.environment.get_model_builder(self.data_transformer, len(self.asset_list))
+        self.environment.n_assets = len(self.asset_list)
 
     def create_agents(self):
         self.logger.log("Create agents")
-        agent_builder = self.environment.get_agent_builder(
-            self.model_registry, self.model_serializer, self.model_builder, self.data_transformer, self.trainset
-        )
+        agent_builder = self.environment.agent_builder
         self.agents = agent_builder.create_agents()
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         self.logger.log_agents(self.agents)
@@ -137,9 +135,10 @@ class RlRunner:
         self.logger.transactions = {}
         self.agents: list[Agent] = []
         self.all_metrics = []
+        model_builder = self.environment.model_builder
         for model_name, serialized_model in self.model_registry.iterate_models():
             model = self.model_serializer.deserialize(serialized_model)
-            model = self.model_builder.adjust_dimensions(model)
+            model = model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
             agent = Agent(model_name.split("_")[0], self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
             agent.model_name = model_name
@@ -189,12 +188,12 @@ class RlRunner:
             df.loc[len(df)] = [
                 agent.model_name,
                 metrics["evaluation_score"],
+                metrics["BTCUSD_change"],
                 metrics["n_params"],
                 metrics["n_layers"],
                 metrics["n_ancestors"],
                 metrics["training_strategy"],
                 metrics["n_transactions"],
-                metrics["trained_ratio"],
             ]
         return df
 

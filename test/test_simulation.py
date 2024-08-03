@@ -43,9 +43,8 @@ class TestSimulation:
 
     def test_get_weak_models(self):
         environment = Environment("config/config.yml")
-        model_registry = environment.get_model_registry()
+        model_registry = environment.model_registry
         model_registry.max_mature_models = 1
-        model_registry = environment.get_model_registry()
         models = model_registry.get_weak_models()
         assert len(models) > 0
         model_registry.max_mature_models = len(models)
@@ -60,7 +59,7 @@ class TestSimulation:
         model_name = "Mia_20240802000531_f5396"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
-        model_registry = environment.get_model_registry()
+        model_registry = environment.model_registry
         model = model_registry.get_model(model_name)
         iterate_models.return_value = [(model_name, model)]
         rl_runner.evaluate()
@@ -77,7 +76,7 @@ class TestSimulation:
 
     def test_aggregated_metrics(self):
         environment = Environment("config/config.yml")
-        model_registry = environment.get_model_registry()
+        model_registry = environment.model_registry
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))
@@ -88,7 +87,7 @@ class TestSimulation:
 
     def test_custom_metrics(self):
         environment = Environment("config/config.yml")
-        model_registry = environment.get_model_registry()
+        model_registry = environment.model_registry
         all_metrics = []
         for file in model_registry.s3_utils.list_files(model_registry.metrics_prefix + "/"):
             all_metrics.append(model_registry.s3_utils.download_json(file))

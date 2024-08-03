@@ -2,7 +2,7 @@ import json
 
 import streamlit as st
 
-from src.rl_runner import RlRunner
+from src.environment import Environment
 
 model_name = st.query_params.get("model")
 title = model_name or "Aggregated metrics"
@@ -10,9 +10,8 @@ st.set_page_config(page_title=title, layout="wide")
 
 
 st.title(model_name)
-rl_runner = RlRunner()
-rl_runner.load_config("config/config.yml")
-model_registry = rl_runner.get_model_registry()
+environment = Environment("config/config.yml")
+model_registry = environment.model_registry
 
 
 def print_dict(obj, level: int = 0):
