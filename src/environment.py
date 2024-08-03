@@ -49,10 +49,6 @@ class Environment:
         return Trainset(**self.config["trainset"])
 
     @cached_property
-    def training_time_hours(self) -> int:
-        return self.config["rl_runner"]["training_time_hours"]
-
-    @cached_property
     def model_builder(self):
         return ModelBuilder(
             self.data_transformer.memory_length, self.n_assets, self.data_transformer.n_features, self.data_transformer.n_outputs

@@ -23,6 +23,7 @@ class RlRunner:
 
     def __init__(self, environment: Environment):
         self.environment = environment
+        self.training_time_hours: int = environment.config["rl_runner"]["training_time_hours"]
         self.start_dt = datetime.now()
 
     def prepare(self):
@@ -39,7 +40,6 @@ class RlRunner:
         self.model_registry = self.environment.model_registry
         self.model_serializer = self.environment.model_serializer
         self.trainset = self.environment.trainset
-        self.training_time_hours = self.environment.training_time_hours
 
     def quotes_iterator(self):
         quotes = QuotesSnapshot()
