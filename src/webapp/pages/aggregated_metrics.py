@@ -1,39 +1,28 @@
-import json
+import re
 
+import pandas as pd
 import streamlit as st
 
 from src.environment import Environment
 
-model_name = st.query_params.get("model")
-title = model_name or "Aggregated metrics"
-st.set_page_config(page_title=title, layout="wide")
+st.set_page_config(page_title="Aggregated metrics", layout="wide")
 
+st.title("Aggregated metrics")
 
-st.title(model_name)
 environment = Environment("config/config.yml")
-model_registry = environment.model_registry
+df = pd.read_csv(environment.reports.change_in_time_path)
+df["datetime"] = pd.to_datetime(df["datetime"])
 
+groups = set()
+suffixes = ["_min", "_max", "_mean"]
+head = ["evaluation_score"]
+for col in df.columns:
+    group = re.sub("|".join([s + "$" for s in suffixes]), "", col)
+    if group not in [col, *head]:
+        groups.add(group)
+groups = head + sorted(groups)
 
-def print_dict(obj, level: int = 0):
-    get_col = lambda level: st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
-    params = ""
-    for key, val in obj.items():
-        if type(val) == dict:
-            continue
-        params += "- " + key + ": " + json.dumps(val) + "\n"
-    col = get_col(level)
-    col.write(params)
-    for key, val in obj.items():
-        if type(val) != dict:
-            continue
-        if level == 0:
-            with st.expander(key):
-                print_dict(val, level + 1)
-        else:
-            col = get_col(level)
-            col.write(key)
-            print_dict(val, level + 1)
-
-
-metrics = model_registry.get_metrics(model_name)
-print_dict(metrics)
+for group in groups:
+    st.write("## " + group)
+    cols = [group + s for s in suffixes]
+    st.line_chart(df[["datetime", *cols]], x="datetime", x_label="", y=cols, y_label="", color=["#f55", "#55f", "#5f5"])

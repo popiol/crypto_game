@@ -8,24 +8,20 @@ from src.environment import Environment
 model_name = st.query_params.get("model")
 title = model_name or "Current metrics"
 st.set_page_config(page_title=title, layout="wide")
+environment = Environment("config/config.yml")
 
 
 def list_current_models():
     st.title("Current metrics")
-    df = pd.read_csv("data/quick_stats.csv")
+    df = pd.read_csv(environment.reports.quick_stats_path)
     df = df[df.score != 0][:15]
     df = df.sort_values("score", ascending=False)
     df["model"] = df["model"].apply(lambda x: f"?model={x}")
-    st.dataframe(
-        df,
-        hide_index=True,
-        column_config={"model": st.column_config.LinkColumn(), "score": st.column_config.NumberColumn()},
-    )
+    st.dataframe(df, hide_index=True, column_config={"model": st.column_config.LinkColumn()})
 
 
 def show_model(model_name: str):
     st.title(model_name)
-    environment = Environment("config/config.yml")
     model_registry = environment.model_registry
 
     def print_dict(obj, level: int = 0):
