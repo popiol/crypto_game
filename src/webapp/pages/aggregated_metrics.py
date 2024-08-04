@@ -1,5 +1,6 @@
 import re
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -16,13 +17,25 @@ df["datetime"] = pd.to_datetime(df["datetime"])
 groups = set()
 suffixes = ["_min", "_max", "_mean"]
 head = ["evaluation_score"]
+ignore = ["remove_layer", "shrink_layer", "extend_layer"]
+
 for col in df.columns:
     group = re.sub("|".join([s + "$" for s in suffixes]), "", col)
-    if group not in [col, *head]:
-        groups.add(group)
+    if group == col or group.startswith("add_") or group in ignore or group in head:
+        continue
+    groups.add(group)
+
 groups = head + sorted(groups)
+colors = ["#7f7", "#f77", "#77f"]
 
 for group in groups:
     st.write("## " + group)
     cols = [group + s for s in suffixes]
-    st.line_chart(df[["datetime", *cols]], x="datetime", x_label="", y=cols, y_label="", color=["#f55", "#55f", "#5f5"])
+    chart = alt.Chart(df).mark_line().encode(x=alt.X("datetime", axis=alt.Axis(title=None)), y=col)
+    chart = alt.layer(
+        *[
+            chart.mark_line(color=color, strokeWidth=5).encode(y=alt.Y(col, axis=alt.Axis(title=None)))
+            for col, color in zip(cols, colors)
+        ]
+    )
+    st.altair_chart(chart, use_container_width=True, theme=None)
