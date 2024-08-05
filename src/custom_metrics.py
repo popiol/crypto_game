@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from src.metrics import Metrics
-
 
 class CustomMetrics:
 
@@ -13,11 +11,9 @@ class CustomMetrics:
     def get_metrics(self):
         df = self.df
         metrics = {}
-        asset_dependent_score = df[df.n_asset_dependent > 0].evaluation_score.mean()
-        asset_dependent_score = 0 if np.isnan(asset_dependent_score) else asset_dependent_score.tolist()
-        asset_independent_score = df[df.n_asset_independent > 0].evaluation_score.mean()
-        asset_independent_score = 0 if np.isnan(asset_independent_score) else asset_independent_score.tolist()
-        metrics["asset_dependent_score"] = {0: asset_independent_score, 1: asset_dependent_score}
+        asset_dependent_score = df.n_asset_dependent.sum()
+        asset_independent_score = df.n_asset_independent.sum()
+        metrics["asset_dependency"] = {"independent": asset_independent_score, "dependent": asset_dependent_score}
         metrics["training_strategy_score"] = (
             df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
         )
@@ -48,13 +44,13 @@ class CustomMetrics:
                 continue
             min_val = self.aggregated[col]["min"]
             max_val = self.aggregated[col]["max"]
+            if min_val == max_val:
+                continue
             n_buckets = 10
             if max_val - min_val < 10:
-                n_buckets = round(max_val - min_val)
+                n_buckets = round(max_val - min_val + 1)
             if col not in df:
                 df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[2:], 0))
-            if n_buckets == 0:
-                continue
             df["grouping"] = df[col].apply(
                 lambda x: (
                     round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val
@@ -65,15 +61,4 @@ class CustomMetrics:
             metrics[col + "_score"] = (
                 df[["grouping", "evaluation_score"]].groupby("grouping")["evaluation_score"].mean().to_dict()
             )
-        parents_score = {}
-        if "parents" in df:
-            for index, (parents, score) in df[["parents", "evaluation_score"]].iterrows():
-                if type(parents) != dict:
-                    continue
-                for parent in Metrics.parents_as_list(parents):
-                    parents_score[parent] = parents_score.get(parent, [])
-                    parents_score[parent].append(score)
-            for key, val in parents_score.items():
-                parents_score[key] = np.nanmean(val)
-        metrics["parents_score"] = parents_score
         return metrics

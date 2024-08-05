@@ -100,10 +100,13 @@ class EvolutionHandler:
                 mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
                 continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
-            if random.random() < self.shrink_prob and layer.shape and layer.shape[1] >= 2 * resize_by:
+            shrink_or_extend = random.choices(
+                [0, 1, 2], [self.shrink_prob, self.extend_prob, 1 - self.shrink_prob - self.extend_prob]
+            )[0]
+            if shrink_or_extend == 0 and layer.shape and layer.shape[1] >= 2 * resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
                 mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
-            elif random.random() < self.extend_prob and layer.shape:
+            elif shrink_or_extend == 1 and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
                 mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
             if random.random() < self.relu_prob and layer.shape:
