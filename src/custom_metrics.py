@@ -11,8 +11,8 @@ class CustomMetrics:
     def get_metrics(self):
         df = self.df
         metrics = {}
-        asset_dependent_score = df.n_asset_dependent.sum()
-        asset_independent_score = df.n_asset_independent.sum()
+        asset_dependent_score = df.n_asset_dependent.sum().tolist()
+        asset_independent_score = df.n_asset_independent.sum().tolist()
         metrics["asset_dependency"] = {"independent": asset_independent_score, "dependent": asset_dependent_score}
         metrics["training_strategy_score"] = (
             df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
