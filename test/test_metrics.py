@@ -1,14 +1,12 @@
-from datetime import datetime
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
 from src.agent import Agent
-from src.data_transformer import QuotesSnapshot
 from src.metrics import Metrics
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
-from src.portfolio import ClosedTransaction
 from src.training_strategy import TrainingStrategy
 
 
@@ -32,29 +30,19 @@ class TestMetrics:
         model_2.name = "agent_2024_34567"
         return builder.merge_models(model_1, model_2)
 
-    @pytest.fixture
-    def quotes(self):
-        return QuotesSnapshot({"TBTCUSD": {"c": [1.1]}, "WBTCUSD": {"c": [1.3]}})
-
     def create_agent(self, model):
-        return Agent("test", None, None, TrainingStrategy(model), {})
+        data_transformer = MagicMock()
+        data_transformer.get_shared_input_stats = MagicMock()
+        data_transformer.get_shared_input_stats.return_value = {}
+        return Agent("test", data_transformer, None, TrainingStrategy(model), {})
 
     @pytest.fixture
     def agent(self, simple_model):
         return self.create_agent(simple_model)
 
     @pytest.fixture
-    def metrics(self, agent: Agent, quotes: QuotesSnapshot):
-        return Metrics(agent, quotes)
-
-    def test_get_bitcoin_quote(self, metrics: Metrics):
-        assert np.isclose(metrics.get_bitcoin_quote(), 1.2)
-
-    def test_get_bitcoin_change(self, agent: Agent, metrics: Metrics):
-        quotes = QuotesSnapshot({"TBTCUSD": {"c": [1.2]}, "WBTCUSD": {"c": [1.4]}})
-        agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
-        metrics = Metrics(agent, quotes=quotes)
-        assert np.isclose(metrics.get_bitcoin_change(), 1.3 / 1.2 - 1)
+    def metrics(self, agent: Agent):
+        return Metrics(agent)
 
     def test_get_n_merge_ancestors(self, simple_model, complex_model):
         agent = self.create_agent(simple_model)
@@ -72,16 +60,14 @@ class TestMetrics:
         metrics = Metrics(agent)
         assert metrics.get_n_ancestors() == 1
 
-    def test_get_metrics(self, agent, quotes):
-        agent.metrics = {"a": 1, "n_merge_ancestors": -1, "BTCUSD": -1}
-        metrics = Metrics(agent, quotes)
+    def test_get_metrics(self, agent):
+        agent.metrics = {"a": 1, "n_merge_ancestors": -1}
+        metrics = Metrics(agent)
         metrics2 = metrics.get_metrics()
         assert "reward_stats" in metrics2
         assert "n_merge_ancestors" in metrics2
-        assert "BTCUSD" in metrics2
         assert "a" in metrics2
         assert metrics2["n_merge_ancestors"] >= 0
-        assert metrics2["BTCUSD"] >= 0
 
     def test_n_params(self, simple_model: MlModel, metrics: Metrics):
         assert metrics.get_n_params() == simple_model.get_n_params()
@@ -104,10 +90,3 @@ class TestMetrics:
         agent.metrics["reward_stats"] = {"count": 1}
         metrics = Metrics(agent)
         assert np.isclose(metrics.get_trained_ratio(), 1 / agent.training_strategy.model.get_n_params())
-
-    def test_get_n_transactions(self, agent: Agent):
-        metrics = Metrics(
-            agent,
-            transactions=[ClosedTransaction("ASD", 1.1, 1.2, 1.3, datetime.now(), datetime.now(), 1.4, 1.5)],
-        )
-        assert metrics.get_n_transactions() == 1

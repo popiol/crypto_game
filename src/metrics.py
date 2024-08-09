@@ -15,17 +15,14 @@ class Metrics:
     def set_evaluation_score(self, score: float):
         self.metrics["evaluation_score"] = score
 
-    def get_n_merge_ancestors(self) -> int:
-        return len(
-            set.union(
-                *[set([x for x in l.name.split("_")[1:] if len(x) == self.agent.model_id_len]) for l in self.model.get_layers()]
-            )
-        )
+    def set_bitcoin_quote(self, BTCUSD: float):
+        self.metrics["BTCUSD"] = BTCUSD
 
-    def get_bitcoin_quote(self) -> float:
-        if self.quotes is None:
-            return None
-        return (self.quotes.closing_price("TBTCUSD") + self.quotes.closing_price("WBTCUSD")) / 2
+    def set_bitcoin_change(self, BTCUSD_change: float):
+        self.metrics["BTCUSD_change"] = BTCUSD_change
+
+    def set_n_transactions(self, n_transactions: int):
+        self.metrics["n_transactions"] = n_transactions
 
     def get_bitcoin_change(self) -> float:
         price_1 = self.metrics.get("BTCUSD")
@@ -33,6 +30,13 @@ class Metrics:
         if price_1 is None or price_2 is None:
             return None
         return price_2 / price_1 - 1
+
+    def get_n_merge_ancestors(self) -> int:
+        return len(
+            set.union(
+                *[set([x for x in l.name.split("_")[1:] if len(x) == self.agent.model_id_len]) for l in self.model.get_layers()]
+            )
+        )
 
     def get_n_params(self) -> int:
         return int(self.model.get_n_params())
@@ -67,13 +71,11 @@ class Metrics:
         reward_stats_count = stats["count"] if stats else 0
         return n_trainings + reward_stats_count
 
-    def get_trained_ratio(self) -> float:
-        return self.get_n_trainings() / self.get_n_params()
+    def get_n_mutations(self) -> int:
+        return sum([val for key, val in self.metrics.get("mutations", {}).items()])
 
-    def get_n_transactions(self) -> int:
-        if self.transactions is None:
-            return None
-        return len(self.transactions)
+    def get_trained_ratio(self) -> float:
+        return self.get_n_trainings() / (self.get_n_params() + self.get_n_mutations() * 50000)
 
     def get_training_strategy(self):
         strategy = self.agent.training_strategy.__class__.__name__
@@ -97,9 +99,6 @@ class Metrics:
             **self.metrics,
             "n_ancestors": self.get_n_ancestors(),
             "n_merge_ancestors": self.get_n_merge_ancestors(),
-            "BTCUSD": self.get_bitcoin_quote(),
-            "BTCUSD_change": self.get_bitcoin_change(),
-            "n_transactions": self.get_n_transactions(),
             "n_params": self.get_n_params(),
             "n_layers": self.get_n_layers(),
             "n_layers_per_type": self.get_n_layers_per_type(),

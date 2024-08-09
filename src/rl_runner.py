@@ -141,22 +141,27 @@ class RlRunner:
             agent.model_name = model_name
             self.agents.append(agent)
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
-        initial_quotes = None
+        bitcoin_init = None
+        get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
         for timestamp, quotes in self.quotes_iterator():
-            if initial_quotes is None and quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
-                initial_quotes = quotes.copy()
+            if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
+                bitcoin = get_bitcoin_quote(quotes)
+                if bitcoin_init is None:
+                    bitcoin_init = bitcoin
             features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             features = self.data_transformer.scale_features(features, self.stats)
             if features is None:
                 continue
             self.data_transformer.add_to_memory(features)
             self.run_agents(timestamp, quotes, eval_mode=True)
+        bitcoin_change = bitcoin / bitcoin_init - 1
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
-            metrics = Metrics(agent, initial_quotes)
-            agent.metrics["BTCUSD"] = metrics.get_bitcoin_quote()
-            metrics = Metrics(agent, quotes, self.logger.transactions.get(agent.agent_name))
+            metrics = Metrics(agent)
             metrics.set_evaluation_score(score)
+            metrics.set_bitcoin_quote(bitcoin)
+            metrics.set_bitcoin_change(bitcoin_change)
+            metrics.set_n_transactions(len(self.logger.transactions.get(agent.agent_name, [])))
             metrics_dict = metrics.get_metrics()
             self.all_metrics.append(metrics_dict)
             self.model_registry.set_metrics(agent.model_name, metrics_dict)
