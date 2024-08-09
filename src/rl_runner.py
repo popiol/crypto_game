@@ -38,9 +38,9 @@ class RlRunner:
         self.model_serializer = self.environment.model_serializer
         self.trainset = self.environment.trainset
 
-    def quotes_iterator(self):
+    def quotes_iterator(self, eval_mode: bool = False):
         quotes = QuotesSnapshot()
-        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator():
+        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator(eval_mode):
             quotes.update(raw_quotes)
             quotes.update_bid_ask(bidask)
             yield timestamp, quotes
@@ -143,7 +143,7 @@ class RlRunner:
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
-        for timestamp, quotes in self.quotes_iterator():
+        for timestamp, quotes in self.quotes_iterator(eval_mode=True):
             if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
                 bitcoin = get_bitcoin_quote(quotes)
                 if bitcoin_init is None:
