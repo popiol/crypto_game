@@ -35,6 +35,18 @@ class TestSimulation:
         print(metrics)
         assert set(["a", "evaluation_score"]).issubset(set(metrics))
 
+    @patch("src.model_registry.S3Utils")
+    @patch("src.data_registry.DataRegistry.sync")
+    def test_simulation_5_min(self, sync, S3Utils):
+        environment = Environment("config/config.yml")
+        environment.config["rl_runner"]["training_time_hours"] = 1 / 12
+        environment.config["agent_builder"]["n_agents"] = 1
+        rl_runner = RlRunner(environment)
+        rl_runner.prepare()
+        rl_runner.initial_run()
+        rl_runner.create_agents()
+        rl_runner.main_loop()
+
     def test_evaluate(self):
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)

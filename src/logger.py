@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from src.agent import Agent
-from src.portfolio import ClosedTransaction, Portfolio, PortfolioPosition
+from src.portfolio import ClosedTransaction, Portfolio
 
 
 class Logger:
@@ -29,15 +29,10 @@ class Logger:
             print(agent.agent_name, agent.training_strategy.__class__.__name__)
             print(agent.training_strategy.model)
         self.transactions = {agent.agent_name: [] for agent in agents}
-        self.open_positions = {agent.agent_name: [] for agent in agents}
 
     def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):
         self.transactions[agent] = self.transactions.get(agent, [])
         self.transactions[agent].extend(transactions)
-
-    def log_open_positions(self, agent: str, positions: list[PortfolioPosition]):
-        self.open_positions[agent] = self.open_positions.get(agent, [])
-        self.open_positions[agent].extend(positions)
 
     def display_transaction(self, transaction: ClosedTransaction):
         return f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}"
