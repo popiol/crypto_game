@@ -49,8 +49,10 @@ class CustomMetrics:
             n_buckets = 10
             if max_val - min_val < 10:
                 n_buckets = round(max_val - min_val + 1)
-            if col not in df:
-                df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[2:], 0))
+            if col not in df and col.startswith("n_layers_"):
+                df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[len("n_layers_") :], 0))
+            if col not in df and col.startswith("n_mutations_"):
+                df[col] = df["mutations"].apply(lambda x: x.get(col[len("n_mutations_") :], 0))
             df["grouping"] = df[col].apply(
                 lambda x: (
                     round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val

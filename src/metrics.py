@@ -72,7 +72,9 @@ class Metrics:
         return sum([val for key, val in self.metrics.get("mutations", {}).items()])
 
     def get_trained_ratio(self) -> float:
-        return self.get_n_trainings() / (self.get_n_params() + self.get_n_mutations() * 50000)
+        return self.get_n_trainings() / (
+            self.get_n_params() + self.get_n_mutations() * 50000 + self.get_n_merge_ancestors() * 50000
+        )
 
     def get_training_strategy(self):
         strategy = self.agent.training_strategy.__class__.__name__

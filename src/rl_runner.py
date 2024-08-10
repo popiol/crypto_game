@@ -38,9 +38,9 @@ class RlRunner:
         self.model_serializer = self.environment.model_serializer
         self.trainset = self.environment.trainset
 
-    def quotes_iterator(self, eval_mode: bool = False):
+    def quotes_iterator(self):
         quotes = QuotesSnapshot()
-        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator(eval_mode):
+        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator(self.environment.eval_mode):
             quotes.update(raw_quotes)
             quotes.update_bid_ask(bidask)
             yield timestamp, quotes
@@ -77,15 +77,15 @@ class RlRunner:
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.agent_name, closed_transactions)
 
-    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot, eval_mode: bool = False):
-        if not eval_mode:
+    def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot):
+        if not self.environment.eval_mode:
             self.trainset.store_shared_input(timestamp, self.data_transformer.get_shared_memory())
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             self.data_transformer.add_portfolio_to_memory(
                 agent.agent_name, [p.asset for p in portfolio_manager.portfolio.positions], self.asset_list
             )
             input = self.data_transformer.get_memory(agent.agent_name)
-            if not eval_mode:
+            if not self.environment.eval_mode:
                 self.trainset.store_agent_input(
                     timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name
                 )
@@ -144,7 +144,7 @@ class RlRunner:
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
-        for timestamp, quotes in self.quotes_iterator(eval_mode=True):
+        for timestamp, quotes in self.quotes_iterator():
             if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
                 bitcoin = get_bitcoin_quote(quotes)
                 if bitcoin_init is None:
@@ -154,7 +154,7 @@ class RlRunner:
             if features is None:
                 continue
             self.data_transformer.add_to_memory(features)
-            self.run_agents(timestamp, quotes, eval_mode=True)
+            self.run_agents(timestamp, quotes)
         bitcoin_change = bitcoin / bitcoin_init - 1
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
