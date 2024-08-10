@@ -66,10 +66,7 @@ class Metrics:
         return len(self.parents_as_list(self.metrics.get("parents")))
 
     def get_n_trainings(self) -> int:
-        n_trainings = self.metrics.get("n_trainings", 0)
-        stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
-        reward_stats_count = stats["count"] if stats else 0
-        return n_trainings + reward_stats_count
+        return self.metrics.get("n_trainings", 0) + self.agent.training_strategy.training_set_size
 
     def get_n_mutations(self) -> int:
         return sum([val for key, val in self.metrics.get("mutations", {}).items()])

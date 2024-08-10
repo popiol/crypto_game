@@ -11,6 +11,7 @@ class TrainingStrategy:
     def __init__(self, model: MlModel):
         self.model = model
         self._stats = Stats()
+        self.training_set_size = 0
         self.reset()
 
     def reset(self):
@@ -22,7 +23,8 @@ class TrainingStrategy:
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         raise NotImplementedError()
 
-    def add_to_stats(self, reward: float):
+    def add_to_stats(self, reward: float, training_set_size: int):
+        self.training_set_size += training_set_size
         self._stats.add_to_stats(reward)
 
     @property
@@ -40,7 +42,7 @@ class LearnOnMistakes(TrainingStrategy):
         return self.clone.predict(input)
 
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
-        self.add_to_stats(reward)
+        self.add_to_stats(reward, len(input))
         if reward < 0:
             output = np.round(1 - output)
             n_epochs = 1 if reward > self.stats["mean"] - self.stats["std"] else 2
@@ -57,7 +59,7 @@ class LearnOnSuccess(TrainingStrategy):
         return self.clone.predict(input)
 
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
-        self.add_to_stats(reward)
+        self.add_to_stats(reward, len(input))
         if reward > self.stats["mean"] + self.stats["std"]:
             self.model.train(input, output)
 
