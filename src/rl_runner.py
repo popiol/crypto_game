@@ -91,13 +91,20 @@ class RlRunner:
                 )
             self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
 
-    def train_on_closed_positions(self):
-        for agent in self.agents:
-            agent.train(self.logger.transactions[agent.agent_name])
-
-    def train_on_open_positions(self):
+    def reset_simulation(self):
+        self.data_transformer.reset()
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            agent.train_on_open_positions(portfolio_manager.portfolio.positions)
+            agent.reset()
+            portfolio_manager.reset()
+
+    def on_simulation_end(self):
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            self.logger.log_open_positions(agent.agent_name, portfolio_manager.portfolio.positions)
+        # self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
+
+    def train_agents(self):
+        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
+            agent.train(self.logger.transactions[agent.agent_name], portfolio_manager.portfolio.positions)
 
     def save_models(self):
         for agent in self.agents:
@@ -105,12 +112,6 @@ class RlRunner:
             serialized_model = self.model_serializer.serialize(agent.training_strategy.model)
             metrics = Metrics(agent).get_metrics()
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
-
-    def reset_simulation(self):
-        self.data_transformer.reset()
-        for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            agent.reset()
-            portfolio_manager.reset()
 
     def main_loop(self):
         for simulation_index in itertools.count():
@@ -123,9 +124,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes)
-            self.train_on_closed_positions()
-            self.train_on_open_positions()
-            # self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
+            self.on_simulation_end()
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
                 break
 
@@ -179,6 +178,7 @@ class RlRunner:
         self.initial_run()
         self.create_agents()
         self.main_loop()
+        self.train_agents()
         self.save_models()
 
     def evaluate(self):

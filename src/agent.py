@@ -82,19 +82,18 @@ class Agent:
         input = self.data_transformer.join_memory(shared_input, agent_input)
         return input, output
 
-    def train(self, closed_transactions: list[ClosedTransaction]):
+    def train(self, closed_transactions: list[ClosedTransaction], positions: list[PortfolioPosition]):
+        input = []
+        output = []
         for transaction in closed_transactions:
             buy_input, buy_output = self.get_input_output(transaction.place_buy_dt)
             sell_input, sell_output = self.get_input_output(transaction.place_sell_dt)
-            input = np.array([buy_input, sell_input])
-            output = np.array([buy_output, sell_output])
+            input.extend([buy_input, sell_input])
+            output.extend([buy_output, sell_output])
             reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
-            self.training_strategy.train(input, output, reward)
-
-    def train_on_open_positions(self, positions: list[PortfolioPosition]):
         for position in positions:
             buy_input, buy_output = self.get_input_output(position.place_dt)
-            input = np.array([buy_input])
-            output = np.array([buy_output])
+            input.append(buy_input)
+            output.append(buy_output)
             reward = position.value - position.buy_price * position.volume
-            self.training_strategy.train(input, output, reward)
+        self.training_strategy.train(np.array(input), np.array(output), reward)
