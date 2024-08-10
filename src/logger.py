@@ -32,8 +32,7 @@ class Logger:
 
     def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):
         self.transactions[agent] = self.transactions.get(agent, [])
-        for transaction in transactions:
-            self.transactions[agent].append(transaction)
+        self.transactions[agent].extend(transactions)
 
     def display_transaction(self, transaction: ClosedTransaction):
         return f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}"

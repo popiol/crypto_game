@@ -71,11 +71,8 @@ class RlRunner:
         timestamp: datetime,
         quotes: QuotesSnapshot,
         input: np.ndarray,
-        eval_mode: bool = False,
     ):
         closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
-        if not eval_mode:
-            agent.train(closed_transactions)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.agent_name, closed_transactions)
@@ -92,7 +89,11 @@ class RlRunner:
                 self.trainset.store_agent_input(
                     timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name
                 )
-            self.run_agent(agent, portfolio_manager, timestamp, quotes, input, eval_mode)
+            self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
+
+    def train_on_closed_positions(self):
+        for agent in self.agents:
+            agent.train(self.logger.transactions[agent.agent_name])
 
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
@@ -122,6 +123,7 @@ class RlRunner:
                     continue
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes)
+            self.train_on_closed_positions()
             self.train_on_open_positions()
             # self.logger.log_simulation_results([p.portfolio for p in self.portfolio_managers])
             if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
