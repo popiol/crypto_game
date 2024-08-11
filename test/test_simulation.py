@@ -29,6 +29,7 @@ class TestSimulation:
         iterate_models.return_value = [
             (agent.model_name, ModelSerializer().serialize(agent.training_strategy.model)) for agent in rl_runner.agents
         ]
+        environment.eval_mode = True
         rl_runner.evaluate_models()
         assert S3Utils.call_count == 1
         metrics = set_metrics.call_args.args[1]

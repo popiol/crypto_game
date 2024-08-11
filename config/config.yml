@@ -4,7 +4,7 @@ rl_runner:
 model_registry:
   remote_path: s3://popiol-crypto-models
   aggregated_local_path: data/aggregated
-  maturity_min_hours: 2
+  maturity_min_hours: 10
   max_mature_models: 10
   retirement_min_hours: 72
   archive_retention_days: 1
@@ -16,7 +16,7 @@ data_registry:
   retention_days: 14
 
 agent_builder:
-  n_agents: 5
+  n_agents: 1
   name_list_file: data/names.csv
 
 data_transformer:
