@@ -38,17 +38,19 @@ class RlRunner:
         self.model_serializer = self.environment.model_serializer
         self.trainset = self.environment.trainset
 
-    def quotes_iterator(self):
+    def quotes_iterator(self, scale: bool = True):
         quotes = QuotesSnapshot()
         for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator(self.environment.eval_mode):
             quotes.update(raw_quotes)
             quotes.update_bid_ask(bidask)
-            yield timestamp, quotes
+            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+            if scale:
+                features = self.data_transformer.scale_features(features, self.stats)
+            yield timestamp, quotes, features
 
     def initial_run(self):
         self.logger.log("Initial run")
-        for timestamp, quotes in self.quotes_iterator():
-            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+        for timestamp, quotes, features in self.quotes_iterator(scale=False):
             if not self.stats:
                 self.data_transformer.add_to_stats(features)
         if not self.stats:
@@ -114,9 +116,7 @@ class RlRunner:
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
             self.reset_simulation()
-            for timestamp, quotes in self.quotes_iterator():
-                features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
-                features = self.data_transformer.scale_features(features, self.stats)
+            for timestamp, quotes, features in self.quotes_iterator():
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
@@ -141,13 +141,11 @@ class RlRunner:
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
-        for timestamp, quotes in self.quotes_iterator():
+        for timestamp, quotes, features in self.quotes_iterator():
             if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
                 bitcoin = get_bitcoin_quote(quotes)
                 if bitcoin_init is None:
                     bitcoin_init = bitcoin
-            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
-            features = self.data_transformer.scale_features(features, self.stats)
             if features is None:
                 continue
             self.data_transformer.add_to_memory(features)

@@ -21,7 +21,7 @@ ignore = ["remove_layer", "shrink_layer", "extend_layer"]
 
 for col in df.columns:
     group = re.sub("|".join([s + "$" for s in suffixes]), "", col)
-    if group == col or group.startswith("add_") or group in ignore or group in head:
+    if col == "datetime" or group.startswith("add_") or group in ignore or group in head:
         continue
     groups.add(group)
 
@@ -30,7 +30,7 @@ colors = ["#7f7", "#f77", "#77f"]
 
 for group in groups:
     st.write("## " + group)
-    cols = [group + s for s in suffixes]
+    cols = [group + s for s in suffixes] if group + suffixes[0] in df else [group]
     chart = alt.Chart(df).mark_line().encode(x=alt.X("datetime", axis=alt.Axis(title=None)), y=col)
     chart = alt.layer(
         *[
