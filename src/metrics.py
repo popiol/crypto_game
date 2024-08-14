@@ -1,3 +1,5 @@
+import psutil
+
 from src.agent import Agent
 from src.data_transformer import QuotesSnapshot
 from src.portfolio import ClosedTransaction
@@ -95,6 +97,9 @@ class Metrics:
     def get_weight_stats(self):
         return self.agent.training_strategy.model.get_weight_stats()
 
+    def get_available_memory(self):
+        return psutil.virtual_memory().available
+
     def get_metrics(self):
         return {
             "reward_stats": self.agent.training_strategy.stats,
@@ -111,4 +116,5 @@ class Metrics:
             "agent_input_stats": self.get_agent_input_stats(),
             "output_stats": self.get_output_stats(),
             "weight_stats": self.get_weight_stats(),
+            "available_memory": self.get_available_memory(),
         }
