@@ -23,6 +23,7 @@ class DataRegistry:
         self.retention_days = retention_days
         self.asset_list_file = "asset_list.csv"
         self.stats_file = "stats.json"
+        self._files_and_timestamps = None
 
     def sync(self):
         end_dt = datetime.now()
@@ -54,7 +55,9 @@ class DataRegistry:
                 print("Removing", root)
                 os.rmdir(root)
 
-    def quotes_iterator(self, eval_mode: bool = False):
+    def files_and_timestamps(self, eval_mode: bool = False) -> list[tuple[str, datetime]]:
+        if self._files_and_timestamps is not None:
+            return self._files_and_timestamps
         if eval_mode:
             end_dt = datetime.now()
             start_dt = end_dt - timedelta(days=self.retention_days / 2)
@@ -62,6 +65,7 @@ class DataRegistry:
             start_dt = datetime.now() - timedelta(days=self.retention_days)
             end_dt = start_dt + timedelta(days=self.retention_days / 2)
         prefix = self.quotes_local_path
+        self._files_and_timestamps = []
         for year in sorted(glob.glob(prefix + "/*")):
             for month in sorted(glob.glob(year + "/*")):
                 for day in sorted(glob.glob(month + "/*")):
@@ -69,14 +73,18 @@ class DataRegistry:
                         timestamp = datetime.strptime(file.split("/")[-1].split(".")[0], "%Y%m%d%H%M%S")
                         if timestamp < start_dt and timestamp >= end_dt:
                             continue
-                        with open(file) as f:
-                            quotes = json.load(f)
-                        bidask_file = file.replace(".json", "_bidask.json")
-                        bidask = None
-                        if os.path.exists(bidask_file):
-                            with open(bidask_file) as f:
-                                bidask = json.load(f)
-                        yield timestamp, quotes, bidask
+                        self._files_and_timestamps.append((file, timestamp))
+        return self._files_and_timestamps
+
+    def get_quotes_and_bidask(self, file: str):
+        with open(file) as f:
+            quotes = json.load(f)
+        bidask_file = file.replace(".json", "_bidask.json")
+        bidask = None
+        if os.path.exists(bidask_file):
+            with open(bidask_file) as f:
+                bidask = json.load(f)
+        return quotes, bidask
 
     def get_asset_list(self) -> list[str]:
         assets = []

@@ -38,14 +38,26 @@ class RlRunner:
         self.model_serializer = self.environment.model_serializer
         self.trainset = self.environment.trainset
 
+    def next_quotes(self, quotes: QuotesSnapshot, file: str):
+        raw_quotes, bidask = self.data_registry.get_quotes_and_bidask(file)
+        quotes.update(raw_quotes)
+        quotes.update_bid_ask(bidask)
+        return quotes
+
+    def next_features(self, quotes: QuotesSnapshot):
+        features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+        features = self.data_transformer.scale_features(features, self.stats)
+        return features
+
     def quotes_iterator(self, scale: bool = True):
         quotes = QuotesSnapshot()
-        for timestamp, raw_quotes, bidask in self.data_registry.quotes_iterator(self.environment.eval_mode):
-            quotes.update(raw_quotes)
-            quotes.update_bid_ask(bidask)
-            features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+        cache = self.environment.cache
+        for file, timestamp in self.data_registry.files_and_timestamps(self.environment.eval_mode):
+            quotes = cache.get(self.next_quotes, timestamp, quotes, file)
             if scale:
-                features = self.data_transformer.scale_features(features, self.stats)
+                features = cache.get(self.next_features, timestamp, quotes)
+            else:
+                features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             yield timestamp, quotes, features
 
     def initial_run(self):

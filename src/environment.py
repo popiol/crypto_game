@@ -3,6 +3,7 @@ from functools import cached_property
 import yaml
 
 from src.agent_builder import AgentBuilder
+from src.cache import Cache
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer
 from src.evolution_handler import EvolutionHandler
@@ -71,3 +72,7 @@ class Environment:
     @cached_property
     def reports(self):
         return Reports(self.model_registry, **self.config["reports"])
+
+    @cached_property
+    def cache(self):
+        return Cache(**self.config["cache"])

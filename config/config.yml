@@ -45,3 +45,6 @@ reports:
   quick_stats_path: data/quick_stats.csv
   change_in_time_path: data/change_in_time.csv
   custom_metrics_path: data/custom_metrics.json
+
+cache:
+  min_memory_mb: 100
