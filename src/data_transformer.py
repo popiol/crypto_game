@@ -191,7 +191,6 @@ class DataTransformer:
         if self.last_features is None:
             self.last_features = features
             return None
-        raw_features = features.copy()
         for feature_index in range(len(features[0])):
             if InputFeatures.is_price(feature_index):
                 features[:, feature_index] = np.tanh(features[:, feature_index] / self.last_features[:, feature_index] - 1)
@@ -204,7 +203,6 @@ class DataTransformer:
                     (features[:, feature_index] + mean + std) / (self.last_features[:, feature_index] + mean + std) / 100
                 )
         np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)
-        self.last_features = raw_features
         return features
 
     def add_to_memory(self, features: np.ndarray):

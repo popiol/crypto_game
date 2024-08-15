@@ -46,8 +46,9 @@ class RlRunner:
 
     def next_features(self, quotes: QuotesSnapshot):
         features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
+        raw_features = features.copy()
         features = self.data_transformer.scale_features(features, self.stats)
-        return features
+        return features, raw_features
 
     def quotes_iterator(self, scale: bool = True):
         quotes = QuotesSnapshot()
@@ -55,7 +56,8 @@ class RlRunner:
         for file, timestamp in self.data_registry.files_and_timestamps(self.environment.eval_mode):
             quotes = cache.get(self.next_quotes, timestamp, quotes, file)
             if scale:
-                features = cache.get(self.next_features, timestamp, quotes)
+                features, raw_features = cache.get(self.next_features, timestamp, quotes)
+                self.data_transformer.last_features = raw_features
             else:
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
             yield timestamp, quotes, features
