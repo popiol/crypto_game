@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 from typing import Callable
 
@@ -19,5 +20,5 @@ class Cache:
         memory = psutil.virtual_memory().available
         if memory > self.min_memory_mb * 1000000:
             self.memory_cache[name] = self.memory_cache.get(name, {})
-            self.memory_cache[name][timestamp_str] = result
+            self.memory_cache[name][timestamp_str] = copy.deepcopy(result)
         return result
