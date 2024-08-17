@@ -28,6 +28,7 @@ class ModelRegistry:
         self.archived_prefix = os.path.join(self.s3_utils.path, "archived")
         self.metrics_prefix = os.path.join(self.s3_utils.path, "metrics")
         self.aggregated_prefix = os.path.join(self.s3_utils.path, "aggregated_metrics")
+        self.deployed_prefix = os.path.join(self.s3_utils.path, "deployed")
 
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
@@ -107,3 +108,7 @@ class ModelRegistry:
 
     def download_aggregated_metrics(self):
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.aggregated_prefix}/", self.aggregated_local_path)
+
+    def deploy_model(self, model_name: str):
+        self.s3_utils.copy_file(f"{self.current_prefix}/{model_name}", f"{self.deployed_prefix}/model")
+        self.s3_utils.copy_file(f"{self.metrics_prefix}/{model_name}", f"{self.deployed_prefix}/metrics.json")

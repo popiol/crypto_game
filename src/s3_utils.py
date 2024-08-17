@@ -83,6 +83,10 @@ class S3Utils:
         return (x for x in pages.search(f"Contents[{filter}].Key") if x is not None)
 
     def move_file(self, source: str, target: str):
+        self.copy_file(source, target)
+        s3 = boto3.resource("s3")
+        s3.Object(self.bucket_name, source).delete()
+
+    def copy_file(self, source: str, target: str):
         s3 = boto3.resource("s3")
         s3.Object(self.bucket_name, target).copy_from(CopySource=f"{self.bucket_name}/{source}")
-        s3.Object(self.bucket_name, source).delete()
