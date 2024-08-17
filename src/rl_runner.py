@@ -20,7 +20,7 @@ class RlRunner:
 
     def __init__(self, environment: Environment):
         self.environment = environment
-        self.training_time_hours: int = environment.config["rl_runner"]["training_time_hours"]
+        self.training_time_min: int = environment.config["rl_runner"]["training_time_min"]
         self.start_dt = datetime.now()
 
     def prepare(self):
@@ -136,7 +136,7 @@ class RlRunner:
                 self.data_transformer.add_to_memory(features)
                 self.run_agents(timestamp, quotes)
             self.train_on_open_positions()
-            if datetime.now() - self.start_dt > timedelta(hours=self.training_time_hours):
+            if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
 
     def evaluate_models(self):

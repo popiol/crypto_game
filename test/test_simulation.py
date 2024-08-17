@@ -18,7 +18,7 @@ class TestSimulation:
     def test_simulation_one_iteration(self, sync, S3Utils, iterate_models, get_metrics, set_metrics):
         get_metrics.return_value = {"a": 1}
         environment = Environment("config/config.yml")
-        environment.config["rl_runner"]["training_time_hours"] = -1
+        environment.config["rl_runner"]["training_time_min"] = -1
         environment.config["agent_builder"]["n_agents"] = 1
         rl_runner = RlRunner(environment)
         rl_runner.prepare()
@@ -40,7 +40,7 @@ class TestSimulation:
     @patch("src.data_registry.DataRegistry.sync")
     def test_simulation_5_min(self, sync, S3Utils):
         environment = Environment("config/config.yml")
-        environment.config["rl_runner"]["training_time_hours"] = 1 / 12
+        environment.config["rl_runner"]["training_time_min"] = 5
         environment.config["agent_builder"]["n_agents"] = 1
         rl_runner = RlRunner(environment)
         rl_runner.prepare()

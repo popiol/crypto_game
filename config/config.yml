@@ -1,5 +1,5 @@
 rl_runner:
-  training_time_hours: 1
+  training_time_min: 12
 
 model_registry:
   remote_path: s3://popiol-crypto-models
