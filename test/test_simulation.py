@@ -13,9 +13,8 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.get_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
-    @patch("src.model_registry.S3Utils")
-    @patch("src.data_registry.DataRegistry.sync")
-    def test_simulation_one_iteration(self, sync, S3Utils, iterate_models, get_metrics, set_metrics):
+    @patch("src.model_registry.ModelRegistry.save_model")
+    def test_simulation_one_iteration(self, save_model, iterate_models, get_metrics, set_metrics):
         get_metrics.return_value = {"a": 1}
         environment = Environment("config/config.yml")
         environment.config["rl_runner"]["training_time_min"] = -1
@@ -31,7 +30,7 @@ class TestSimulation:
         ]
         environment.eval_mode = True
         rl_runner.evaluate_models()
-        assert S3Utils.call_count == 1
+        assert save_model.call_count == 1
         metrics = set_metrics.call_args.args[1]
         print(metrics)
         assert set(["a", "evaluation_score"]).issubset(set(metrics))

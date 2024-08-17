@@ -53,18 +53,18 @@ class RlRunner:
     def quotes_iterator(self, scale: bool = True):
         quotes = QuotesSnapshot()
         cache = self.environment.cache
-        for file, timestamp in self.data_registry.files_and_timestamps(self.environment.eval_mode):
+        for file, timestamp, preprocess in self.data_registry.files_and_timestamps(self.environment.eval_mode):
             quotes = cache.get(self.next_quotes, timestamp, quotes, file)
             if scale:
                 features, raw_features = cache.get(self.next_features, timestamp, quotes)
                 self.data_transformer.last_features = raw_features
             else:
                 features = self.data_transformer.quotes_to_features(quotes, self.asset_list)
-            yield timestamp, quotes, features
+            yield timestamp, quotes, features, preprocess
 
     def initial_run(self):
         self.logger.log("Initial run")
-        for timestamp, quotes, features in self.quotes_iterator(scale=False):
+        for timestamp, quotes, features, preprocess in self.quotes_iterator(scale=False):
             if not self.stats:
                 self.data_transformer.add_to_stats(features)
         if not self.stats:
@@ -130,11 +130,12 @@ class RlRunner:
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
             self.reset_simulation()
-            for timestamp, quotes, features in self.quotes_iterator():
+            for timestamp, quotes, features, preprocess in self.quotes_iterator():
                 if features is None:
                     continue
                 self.data_transformer.add_to_memory(features)
-                self.run_agents(timestamp, quotes)
+                if not preprocess:
+                    self.run_agents(timestamp, quotes)
             self.train_on_open_positions()
             if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
@@ -155,7 +156,7 @@ class RlRunner:
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
-        for timestamp, quotes, features in self.quotes_iterator():
+        for timestamp, quotes, features, preprocess in self.quotes_iterator():
             if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
                 bitcoin = get_bitcoin_quote(quotes)
                 if bitcoin_init is None:
@@ -163,7 +164,8 @@ class RlRunner:
             if features is None:
                 continue
             self.data_transformer.add_to_memory(features)
-            self.run_agents(timestamp, quotes)
+            if not preprocess:
+                self.run_agents(timestamp, quotes)
         bitcoin_change = bitcoin / bitcoin_init - 1
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1

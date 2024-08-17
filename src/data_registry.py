@@ -55,15 +55,17 @@ class DataRegistry:
                 print("Removing", root)
                 os.rmdir(root)
 
-    def files_and_timestamps(self, eval_mode: bool = False) -> list[tuple[str, datetime]]:
+    def files_and_timestamps(self, eval_mode: bool = False) -> list[tuple[str, datetime, bool]]:
         if self._files_and_timestamps is not None:
             return self._files_and_timestamps
         if eval_mode:
             end_dt = datetime.now()
-            start_dt = end_dt - timedelta(days=self.retention_days / 2)
+            middle_dt = end_dt - timedelta(days=self.retention_days / 3)
+            start_dt = end_dt - timedelta(days=self.retention_days * 2 / 3)
         else:
             start_dt = datetime.now() - timedelta(days=self.retention_days)
-            end_dt = start_dt + timedelta(days=self.retention_days / 2)
+            middle_dt = start_dt + timedelta(days=self.retention_days / 3)
+            end_dt = start_dt + timedelta(days=self.retention_days * 2 / 3)
         prefix = self.quotes_local_path
         self._files_and_timestamps = []
         for year in sorted(glob.glob(prefix + "/*")):
@@ -73,7 +75,7 @@ class DataRegistry:
                         timestamp = datetime.strptime(file.split("/")[-1].split(".")[0], "%Y%m%d%H%M%S")
                         if timestamp < start_dt and timestamp >= end_dt:
                             continue
-                        self._files_and_timestamps.append((file, timestamp))
+                        self._files_and_timestamps.append((file, timestamp, timestamp < middle_dt))
         return self._files_and_timestamps
 
     def get_quotes_and_bidask(self, file: str):
