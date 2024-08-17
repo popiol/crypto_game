@@ -14,8 +14,8 @@ environment = Environment("config/config.yml")
 def list_current_models():
     st.title("Current metrics")
     df = pd.read_csv(environment.reports.quick_stats_path)
-    df = df[df.score != 0][:15]
-    df = df.sort_values("score", ascending=False)
+    df = df[df.score != 0]
+    df = df.sort_values("score", ascending=False)[:15]
     df["model"] = df["model"].apply(lambda x: f"?model={x}")
     st.dataframe(df, hide_index=True, column_config={"model": st.column_config.LinkColumn()})
 
