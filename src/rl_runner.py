@@ -157,14 +157,14 @@ class RlRunner:
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
         for timestamp, quotes, features, preprocess in self.quotes_iterator():
-            if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
-                bitcoin = get_bitcoin_quote(quotes)
-                if bitcoin_init is None:
-                    bitcoin_init = bitcoin
             if features is None:
                 continue
             self.data_transformer.add_to_memory(features)
             if not preprocess:
+                if quotes.has_asset("TBTCUSD") and quotes.has_asset("WBTCUSD"):
+                    bitcoin = get_bitcoin_quote(quotes)
+                    if bitcoin_init is None:
+                        bitcoin_init = bitcoin
                 self.run_agents(timestamp, quotes)
         bitcoin_change = bitcoin / bitcoin_init - 1
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):

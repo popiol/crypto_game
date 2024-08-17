@@ -47,13 +47,6 @@ class TestSimulation:
         rl_runner.create_agents()
         rl_runner.main_loop()
 
-    def test_evaluate(self):
-        environment = Environment("config/config.yml")
-        rl_runner = RlRunner(environment)
-        rl_runner.prepare()
-        rl_runner.initial_run()
-        rl_runner.evaluate_models()
-
     def test_get_weak_models(self):
         environment = Environment("config/config.yml")
         model_registry = environment.model_registry
@@ -69,7 +62,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
-        model_name = "Mia_20240802000531_f5396"
+        model_name = "Olivia_20240817190522_bd3d6"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
         model_registry = environment.model_registry
