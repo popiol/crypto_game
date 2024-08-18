@@ -1,6 +1,7 @@
 import src.check_running_master  # isort: skip
 import argparse
 import itertools
+import pickle
 import sys
 import time
 from datetime import datetime, timedelta
@@ -140,6 +141,12 @@ class RlRunner:
             if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
 
+    def save_current_input(self, quotes: QuotesSnapshot):
+        current_input_path = self.environment.config["predictor"]["current_input_path"]
+        with open(current_input_path, "wb") as f:
+            memory = self.data_transformer.get_shared_memory()
+            pickle.dump((memory, quotes), f)
+
     def evaluate_models(self):
         self.logger.log("Evaluate models")
         self.logger.transactions = {}
@@ -167,6 +174,7 @@ class RlRunner:
                         bitcoin_init = bitcoin
                 self.run_agents(timestamp, quotes)
         bitcoin_change = bitcoin / bitcoin_init - 1
+        self.save_current_input(quotes)
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             score = portfolio_manager.portfolio.value / portfolio_manager.init_cash - 1
             metrics = Metrics(agent)

@@ -48,3 +48,6 @@ reports:
 
 cache:
   min_memory_mb: 100
+
+predictor:
+  current_input_path: data/current_input.pickle
