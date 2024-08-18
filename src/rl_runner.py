@@ -202,7 +202,7 @@ class RlRunner:
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config")
+    parser.add_argument("--config", default="config/config.yml")
     parser.add_argument("--evaluate", action="store_true")
     args, other = parser.parse_known_args(argv)
     rl_runner = RlRunner(Environment(args.config))
