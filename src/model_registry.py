@@ -1,3 +1,4 @@
+import datetime
 import os
 import random
 import re
@@ -116,6 +117,23 @@ class ModelRegistry:
     def get_leader(self):
         model = self.s3_utils.download_bytes(f"{self.leader_prefix}/model")
         metrics = self.s3_utils.download_json(f"{self.leader_prefix}/metrics.json")
+        return model, metrics
+
+    def get_leader_metrics(self):
+        return self.s3_utils.download_json(f"{self.leader_prefix}/metrics.json")
+
+    def set_leader_metrics(self, metrics: dict):
+        self.s3_utils.upload_json(f"{self.leader_prefix}/metrics.json", metrics)
+
+    def get_portfolio(self):
         portfolio = self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
         memory = self.s3_utils.download_bytes(f"{self.leader_prefix}/memory.pickle")
-        return model, metrics, portfolio, memory
+        return portfolio, memory
+
+    def set_portfolio(self, portfolio: dict, memory: bytes):
+        self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
+        self.s3_utils.upload_json(f"{self.leader_prefix}/memory.pickle", memory)
+
+    def add_transactions(self, transactions: dict):
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.s3_utils.upload_json(f"{self.leader_prefix}/transactions/{timestamp}.json", transactions)

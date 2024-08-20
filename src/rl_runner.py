@@ -157,9 +157,12 @@ class RlRunner:
             model = self.model_serializer.deserialize(serialized_model)
             model = model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
-            agent = Agent(model_name.split("_")[0], self.data_transformer, self.trainset, TrainingStrategy(model), metrics)
+            agent = Agent(model_name.split("_")[0], self.data_transformer, None, TrainingStrategy(model), metrics)
             agent.model_name = model_name
             self.agents.append(agent)
+        model, metrics = self.model_registry.get_leader()
+        agent = Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics)
+        self.agents.append(agent)
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
@@ -184,7 +187,10 @@ class RlRunner:
             metrics.set_n_transactions(len(self.logger.transactions.get(agent.agent_name, [])))
             metrics_dict = metrics.get_metrics()
             self.all_metrics.append(metrics_dict)
-            self.model_registry.set_metrics(agent.model_name, metrics_dict)
+            if agent.agent_name.startswith("Leader_"):
+                self.model_registry.set_leader_metrics(metrics_dict)
+            else:
+                self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)
 
     def prepare_reports(self):
