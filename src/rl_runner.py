@@ -160,7 +160,8 @@ class RlRunner:
             agent = Agent(model_name.split("_")[0], self.data_transformer, None, TrainingStrategy(model), metrics)
             agent.model_name = model_name
             self.agents.append(agent)
-        model, metrics = self.model_registry.get_leader()
+        serialized_model, metrics = self.model_registry.get_leader()
+        model = self.model_serializer.deserialize(serialized_model)
         agent = Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics)
         self.agents.append(agent)
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
@@ -187,7 +188,7 @@ class RlRunner:
             metrics.set_n_transactions(len(self.logger.transactions.get(agent.agent_name, [])))
             metrics_dict = metrics.get_metrics()
             self.all_metrics.append(metrics_dict)
-            if agent.agent_name.startswith("Leader_"):
+            if agent.agent_name == "Leader":
                 self.model_registry.set_leader_metrics(metrics_dict)
             else:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)

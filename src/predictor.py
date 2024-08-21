@@ -54,10 +54,9 @@ class Predictor:
         model_name = row.model
         score = row.score
         print("Best model score", score)
-        metrics = self.environment.model_registry.get_leader_metrics()
-        leader_score = metrics["evaluation_score"]
+        leader_score = df[df.model.str.startswith("Leader_")].iloc[0].score
         print("Current leader score", leader_score)
-        if score >= leader_score:
+        if score > leader_score:
             print("Set new leader", model_name)
             self.environment.model_registry.set_leader(model_name)
 
