@@ -132,7 +132,7 @@ class ModelRegistry:
 
     def set_portfolio(self, portfolio: dict, memory: bytes):
         self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
-        self.s3_utils.upload_json(f"{self.leader_prefix}/memory.pickle", memory)
+        self.s3_utils.upload_bytes(f"{self.leader_prefix}/memory.pickle", memory)
 
     def add_transactions(self, transactions: list[dict]):
         if not transactions:
