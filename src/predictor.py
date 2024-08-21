@@ -1,8 +1,8 @@
 import argparse
-import datetime
 import pickle
 import sys
 import time
+from datetime import datetime
 
 import pandas as pd
 
@@ -23,28 +23,35 @@ class Predictor:
             shared_memory, quotes = pickle.load(f)
         serialized_model, metrics = self.environment.model_registry.get_leader()
         raw_portfolio, agent_memory_bytes = self.environment.model_registry.get_portfolio()
-        agent_memory = pickle.loads(agent_memory_bytes)
+        agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
         model = self.environment.model_serializer.deserialize(serialized_model)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
         asset_list = self.environment.data_registry.get_asset_list()
-        positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
+        if not raw_portfolio:
+            raw_portfolio = {
+                "positions": [],
+                "cash": portfolio_manager.init_cash,
+                "value": portfolio_manager.init_cash,
+                "orders": [],
+            }
+        positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
         portfolio_manager.portfolio = Portfolio(positions, raw_portfolio["cash"], raw_portfolio["value"])
-        portfolio_manager.orders = [PortfolioOrder.from_json(o) for o in orders["orders"]]
+        portfolio_manager.place_orders(datetime.now(), [PortfolioOrder.from_json(o) for o in raw_portfolio["orders"]])
         transactions = portfolio_manager.handle_orders(datetime.now(), quotes)
         self.environment.data_transformer.per_agent_memory[agent.agent_name] = agent_memory
         self.environment.data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
-        agent_memory = self.get_agent_memory(agent.agent_name)
-        agent_memory_bytes = pickle.dumps(agent_memory)
-        input = self.environment.data_transformer.join_memory(shared_memory, agent_memory_bytes)
-        orders = agent.make_decision(None, input, quotes, portfolio_manager.portfolio, asset_list)
+        agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
+        input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
+        orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list)
         raw_portfolio = {
             "positions": [p.to_json() for p in portfolio_manager.portfolio.positions],
             "cash": portfolio_manager.portfolio.cash,
             "value": portfolio_manager.portfolio.value,
             "orders": [o.to_json() for o in orders],
         }
-        self.environment.model_registry.set_portfolio(raw_portfolio, agent_memory)
+        agent_memory_bytes = pickle.dumps(agent_memory)
+        self.environment.model_registry.set_portfolio(raw_portfolio, agent_memory_bytes)
         transactions = [t.to_json() for t in transactions]
         self.environment.model_registry.add_transactions(transactions)
 

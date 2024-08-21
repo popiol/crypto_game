@@ -16,7 +16,7 @@ class PortfolioOrder:
     asset: str
     volume: float
     price: float
-    place_dt: datetime = None
+    place_dt: datetime
 
     @staticmethod
     def from_json(obj: dict):

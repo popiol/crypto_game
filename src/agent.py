@@ -52,6 +52,7 @@ class Agent:
                 asset=position.asset,
                 volume=position.volume,
                 price=quotes.closing_price(position.asset) * output[position.asset].relative_sell_price,
+                place_dt=timestamp,
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
@@ -73,6 +74,7 @@ class Agent:
                 asset=best_asset,
                 volume=cost / buy_price,
                 price=buy_price,
+                place_dt=timestamp,
             )
             orders.append(buy_order)
         return orders
