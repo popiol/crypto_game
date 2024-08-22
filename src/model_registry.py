@@ -1,7 +1,7 @@
-import datetime
 import os
 import random
 import re
+from datetime import datetime
 
 import numpy as np
 
