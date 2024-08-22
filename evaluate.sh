@@ -7,8 +7,6 @@ for pid in $(pidof -x evaluate.sh); do
     fi
 done
 
-. ../.profile
-
 git reset --hard
 git pull
 mkdir -p logs/archive
