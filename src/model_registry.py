@@ -125,10 +125,13 @@ class ModelRegistry:
     def set_leader_metrics(self, metrics: dict):
         self.s3_utils.upload_json(f"{self.leader_prefix}/metrics.json", metrics)
 
-    def get_portfolio(self):
+    def get_leader_portfolio(self):
         portfolio = self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
+        return portfolio
+
+    def get_leader_memory(self):
         memory = self.s3_utils.download_bytes(f"{self.leader_prefix}/memory.pickle")
-        return portfolio, memory
+        return memory
 
     def set_portfolio(self, portfolio: dict, memory: bytes):
         self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)

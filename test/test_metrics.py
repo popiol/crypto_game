@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from src.agent import Agent
+from src.environment import Environment
 from src.metrics import Metrics
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
@@ -90,3 +91,10 @@ class TestMetrics:
         agent.metrics["reward_stats"] = {"count": 1}
         metrics = Metrics(agent)
         assert np.isclose(metrics.get_trained_ratio(), 1 / agent.training_strategy.model.get_n_params())
+
+    def test_get_leader_portfolio_value(self):
+        environment = Environment("config/config.yml")
+        reports = environment.reports
+        score = reports.get_leader_portfolio_value()
+        print(score)
+        assert type(score) == float

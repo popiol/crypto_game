@@ -18,11 +18,16 @@ class Reports:
         self.change_in_time_path = change_in_time_path
         self.custom_metrics_path = custom_metrics_path
 
+    def get_leader_portfolio_value(self) -> float:
+        portfolio = self.model_registry.get_leader_portfolio()
+        return portfolio["value"]
+
     def aggregate_metrics(self, all_metrics: list[dict]):
         if not all_metrics:
             return {}
         aggregated = AggregatedMetrics(all_metrics)
         aggregated_dict = aggregated.get_metrics()
+        aggregated_dict["leader_value"] = self.get_leader_portfolio_value()
         custom = CustomMetrics(aggregated.df, aggregated_dict)
         return {**aggregated_dict, "custom": custom.get_metrics()}
 

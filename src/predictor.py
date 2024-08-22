@@ -22,7 +22,8 @@ class Predictor:
         with open(current_input_path, "rb") as f:
             shared_memory, quotes = pickle.load(f)
         serialized_model, metrics = self.environment.model_registry.get_leader()
-        raw_portfolio, agent_memory_bytes = self.environment.model_registry.get_portfolio()
+        raw_portfolio = self.environment.model_registry.get_leader_portfolio()
+        agent_memory_bytes = self.environment.model_registry.get_leader_memory()
         agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
         model = self.environment.model_serializer.deserialize(serialized_model)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
