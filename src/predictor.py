@@ -57,15 +57,21 @@ class Predictor:
 
     def choose_leader(self):
         df = pd.read_csv(self.environment.reports.quick_stats_path)
-        row = df[df.score == df.score.max()].iloc[0]
-        model_name = row.model
-        score = row.score
-        print("Best model score", score)
-        leader_score = df[df.model.str.startswith("Leader_")].iloc[0].score
-        print("Current leader score", leader_score)
-        if score > leader_score:
-            print("Set new leader", model_name)
-            self.environment.model_registry.set_leader(model_name)
+        leader = df[df.model.str.startswith("Leader_")].iloc[0]
+        print("Current leader score", leader.score, "with", leader.n_transactions, "transactions")
+        best_model = df[df.score == df.score.max()].iloc[0]
+        print("Best model score", best_model.score, "with", best_model.n_transactions, "transactions")
+        active_models = df[df.n_transactions > 0]
+        best_active = active_models[active_models.score == active_models.score.max()].iloc[0]
+        print("Best active model score", best_active.score, "with", best_active.n_transactions, "transactions")
+        new_model = leader
+        if leader.n_transactions == 0 and best_active.score > 0.05:
+            new_model = best_active
+        elif best_model.score > leader.score:
+            new_model = best_model
+        if new_model.model != leader.model:
+            print("Set new leader", new_model.model)
+            self.environment.model_registry.set_leader(new_model.model)
 
 
 def main(argv):
