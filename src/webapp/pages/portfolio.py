@@ -4,9 +4,9 @@ import streamlit as st
 
 from src.environment import Environment
 
-st.set_page_config(page_title="Aggregated metrics", layout="wide")
+st.set_page_config(page_title="Portfolio", layout="wide")
 
-st.title("Aggregated metrics")
+st.title("Portfolio")
 
 environment = Environment("config/config.yml")
 df = pd.read_csv(environment.reports.change_in_time_path)
