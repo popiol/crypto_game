@@ -28,8 +28,7 @@ class RlRunner:
         self.logger = Logger()
         self.logger.log("Sync data")
         self.data_registry = self.environment.data_registry
-        if not self.environment.eval_mode:
-            self.data_registry.sync()
+        self.data_registry.sync()
         self.data_transformer = self.environment.data_transformer
         self.asset_list = self.data_registry.get_asset_list()
         self.stats = self.data_registry.get_stats()

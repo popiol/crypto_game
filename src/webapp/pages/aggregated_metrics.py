@@ -31,10 +31,12 @@ colors = ["#7f7", "#f77", "#77f"]
 for group in groups:
     st.write("## " + group)
     cols = [group + s for s in suffixes] if group + suffixes[0] in df else [group]
-    chart = alt.Chart(df).mark_line().encode(x=alt.X("datetime", axis=alt.Axis(title=None)), y=col)
+    chart = alt.Chart(df).encode(x=alt.X("datetime", axis=alt.Axis(title=None)), y=col)
     chart = alt.layer(
         *[
-            chart.mark_line(color=color, strokeWidth=5).encode(y=alt.Y(col, axis=alt.Axis(title=None)))
+            chart.mark_line(color=color, strokeWidth=5).encode(
+                y=alt.Y(col, axis=alt.Axis(title=None), scale=alt.Scale(zero=False))
+            )
             for col, color in zip(cols, colors)
         ]
     )
