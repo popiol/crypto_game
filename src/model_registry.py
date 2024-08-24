@@ -137,8 +137,8 @@ class ModelRegistry:
         self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
         self.s3_utils.upload_bytes(f"{self.leader_prefix}/memory.pickle", memory)
 
-    def add_transactions(self, transactions: list[dict]):
-        if not transactions:
-            return
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        self.s3_utils.upload_json(f"{self.leader_prefix}/transactions/{timestamp}.json", transactions)
+    def add_transactions(self, transactions: list[dict], copy_to: str):
+        if transactions:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            self.s3_utils.upload_json(f"{self.leader_prefix}/transactions/{timestamp}.json", transactions)
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/transactions/", copy_to)

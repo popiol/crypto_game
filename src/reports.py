@@ -12,11 +12,21 @@ from src.model_registry import ModelRegistry
 
 class Reports:
 
-    def __init__(self, model_registry: ModelRegistry, quick_stats_path: str, change_in_time_path: str, custom_metrics_path: str):
+    def __init__(
+        self,
+        model_registry: ModelRegistry,
+        quick_stats_path: str,
+        change_in_time_path: str,
+        custom_metrics_path: str,
+        portfolio_path: str,
+        transactions_path: str,
+    ):
         self.model_registry = model_registry
         self.quick_stats_path = quick_stats_path
         self.change_in_time_path = change_in_time_path
         self.custom_metrics_path = custom_metrics_path
+        self.portfolio_path = portfolio_path
+        self.transactions_path = transactions_path
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()

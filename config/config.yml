@@ -45,6 +45,8 @@ reports:
   quick_stats_path: data/quick_stats.csv
   change_in_time_path: data/change_in_time.csv
   custom_metrics_path: data/custom_metrics.json
+  portfolio_path: data/portfolio.json
+  transactions_path: data/transactions
 
 cache:
   min_memory_mb: 100

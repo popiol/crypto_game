@@ -1,3 +1,6 @@
+import glob
+import json
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -23,3 +26,32 @@ chart = (
     )
 )
 st.altair_chart(chart, use_container_width=True, theme=None)
+
+st.write("## Open positions")
+
+with open(environment.reports.portfolio_path) as f:
+    portfolio = json.load(f)
+
+data = {index: row for index, row in enumerate(portfolio["positions"])}
+
+if data:
+    df = pd.DataFrame.from_dict(data, orient="index")
+    st.dataframe(df, hide_index=True)
+else:
+    st.write("No open positions")
+
+st.write("## Closed transactions")
+
+files = sorted(glob.glob(environment.reports.transactions_path + "/*.json"))[-10:]
+transactions = []
+for file in files:
+    with open(file) as f:
+        transactions.extend(json.load(f))
+
+data = {index: row for index, row in enumerate(transactions)}
+
+if data:
+    df = pd.DataFrame.from_dict(data, orient="index")
+    st.dataframe(df, hide_index=True)
+else:
+    st.write("No closed transactions")

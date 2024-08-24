@@ -1,4 +1,5 @@
 import argparse
+import json
 import pickle
 import sys
 import time
@@ -53,8 +54,10 @@ class Predictor:
         }
         agent_memory_bytes = pickle.dumps(agent_memory)
         self.environment.model_registry.set_portfolio(raw_portfolio, agent_memory_bytes)
+        with open(self.environment.reports.portfolio_path, "w") as f:
+            json.dump(raw_portfolio, f)
         transactions = [t.to_json() for t in transactions]
-        self.environment.model_registry.add_transactions(transactions)
+        self.environment.model_registry.add_transactions(transactions, self.environment.reports.transactions_path)
 
     def choose_leader(self):
         df = pd.read_csv(self.environment.reports.quick_stats_path)
