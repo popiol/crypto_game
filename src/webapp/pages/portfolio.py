@@ -12,9 +12,22 @@ st.set_page_config(page_title="Portfolio", layout="wide")
 st.title("Portfolio")
 
 environment = Environment("config/config.yml")
+
+with open(environment.reports.portfolio_path) as f:
+    portfolio = json.load(f)
+
+st.write(
+    " ".join(
+        [
+            f"Value: <font size='6'>\${round(portfolio['value'],2)}</font>",
+            f"Cash: <font size='6'>\${round(portfolio['cash'],2)}</font>",
+        ]
+    ),
+    unsafe_allow_html=True,
+)
+
 df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
-
 df = df[~df.leader_value.isna()]
 
 chart = (
@@ -28,9 +41,6 @@ chart = (
 st.altair_chart(chart, use_container_width=True, theme=None)
 
 st.write("## Open positions")
-
-with open(environment.reports.portfolio_path) as f:
-    portfolio = json.load(f)
 
 data = {index: row for index, row in enumerate(portfolio["positions"])}
 
