@@ -40,7 +40,7 @@ chart = (
     .encode(
         x=alt.X("datetime", axis=alt.Axis(title=None)),
         y=alt.Y("max(value):Q", axis=alt.Axis(title=None), scale=alt.Scale(zero=False)),
-        color="variable:N",
+        color=alt.Color("variable:N", sort="descending"),
     )
 )
 st.altair_chart(chart, use_container_width=True, theme=None)
