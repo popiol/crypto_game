@@ -20,3 +20,4 @@ class TestReports:
         reports = environment.reports
         df = reports.calc_leader_stats()
         print(df)
+        df.to_csv(reports.leader_stats_path, index=False)
