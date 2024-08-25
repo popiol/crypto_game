@@ -3,7 +3,6 @@ rl_runner:
 
 model_registry:
   remote_path: s3://popiol-crypto-models
-  aggregated_local_path: data/aggregated
   maturity_min_hours: 2
   max_mature_models: 10
   retirement_min_hours: 72
@@ -42,11 +41,14 @@ evolution_handler:
   max_n_params: 1000000
 
 reports:
+  aggregated_path: data/aggregated
   quick_stats_path: data/quick_stats.csv
   change_in_time_path: data/change_in_time.csv
   custom_metrics_path: data/custom_metrics.json
   portfolio_path: data/portfolio.json
   transactions_path: data/transactions
+  leader_history_path: data/leader_history
+  leader_stats: data/leader_stats.csv
 
 cache:
   min_memory_mb: 100

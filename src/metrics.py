@@ -74,7 +74,7 @@ class Metrics:
         return n_trainings + reward_stats_count
 
     def get_n_mutations(self) -> int:
-        return sum([val for key, val in self.metrics.get("mutations", {}).items()])
+        return sum(self.metrics.get("mutations", {}).values())
 
     def get_trained_ratio(self) -> float:
         return self.get_n_trainings() / (
@@ -109,6 +109,7 @@ class Metrics:
             "n_params": self.get_n_params(),
             "n_layers": self.get_n_layers(),
             "n_layers_per_type": self.get_n_layers_per_type(),
+            "n_mutations": self.get_n_mutations(),
             "n_trainings": self.get_n_trainings(),
             "trained_ratio": self.get_trained_ratio(),
             "training_strategy": self.get_training_strategy(),

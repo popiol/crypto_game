@@ -15,18 +15,24 @@ class Reports:
     def __init__(
         self,
         model_registry: ModelRegistry,
+        aggregated_path: str,
         quick_stats_path: str,
         change_in_time_path: str,
         custom_metrics_path: str,
         portfolio_path: str,
         transactions_path: str,
+        leader_history_path: str,
+        leader_stats: str,
     ):
         self.model_registry = model_registry
+        self.aggregated_path = aggregated_path
         self.quick_stats_path = quick_stats_path
         self.change_in_time_path = change_in_time_path
         self.custom_metrics_path = custom_metrics_path
         self.portfolio_path = portfolio_path
         self.transactions_path = transactions_path
+        self.leader_history_path = leader_history_path
+        self.leader_stats = leader_stats
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
@@ -100,13 +106,53 @@ class Reports:
             dfs.append(pd.DataFrame.from_dict(values))
         return pd.concat(dfs)
 
+    def calc_leader_stats(self):
+        self.model_registry.download_leader_history(self.leader_history_path)
+        files = glob.glob(self.leader_history_path + "/*.json")
+        df = pd.DataFrame()
+        if os.path.exists(self.leader_stats):
+            df = pd.read_csv(self.leader_stats)
+            last_dt = df.datetime.max()
+            last_dt = re.sub("[^0-9]", "", last_dt)[:10]
+            files = [file for file in files if file.split("/")[-1].split("_")[1][:10] > last_dt]
+        dfs = [df]
+        all_data = {}
+        for file in sorted(files):
+            file_name = file.split("/")[-1]
+            data_type = file_name.split("_")[0]
+            timestamp = file_name.split("_")[1][:10]
+            with open(file) as f:
+                all_data[timestamp] = all_data.get(timestamp, {})
+                all_data[timestamp][data_type] = json.load(f)
+        for timestamp, data in all_data.items():
+            stats = {"datetime": timestamp}
+            if "metrics" in data:
+                metrics = data["metrics"]
+                for key, value in metrics.items():
+                    if type(value) in [str, int, float] and key not in [
+                        "BTCUSD",
+                        "BTCUSD_change",
+                        "evaluation_score",
+                        "available_memory",
+                    ]:
+                        stats[key] = [value]
+            if "portfolio" in data:
+                portfolio = data["portfolio"]
+                stats["n_open_positions"] = [len(portfolio["positions"])]
+                stats["n_orders"] = [len(portfolio["orders"])]
+                stats["n_closed_transactions"] = [len(portfolio["positions"])]
+            dfs.append(pd.DataFrame.from_dict(stats))
+        return pd.concat(dfs)
+
     def run(self, model_names: list[str], all_metrics: list[dict]):
         aggregated = self.aggregate_metrics(all_metrics)
         self.model_registry.set_aggregated_metrics(aggregated)
         stats = self.get_quick_stats(model_names, all_metrics)
         stats.to_csv(self.quick_stats_path, index=False)
-        self.model_registry.download_aggregated_metrics()
-        files = glob.glob(self.model_registry.aggregated_local_path + "/*.json")
+        self.model_registry.download_aggregated_metrics(self.aggregated_path)
+        files = glob.glob(self.aggregated_path + "/*.json")
         self.copy_custom_metrics(files)
         df = self.calc_change_in_time(files)
         df.to_csv(self.change_in_time_path, index=False)
+        df = self.calc_leader_stats()
+        df.to_csv(self.leader_stats, index=False)

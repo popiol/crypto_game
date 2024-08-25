@@ -53,7 +53,8 @@ class Predictor:
             "orders": [o.to_json() for o in orders],
         }
         agent_memory_bytes = pickle.dumps(agent_memory)
-        self.environment.model_registry.set_portfolio(raw_portfolio, agent_memory_bytes)
+        self.environment.model_registry.set_leader_portfolio(raw_portfolio)
+        self.environment.model_registry.set_leader_memory(agent_memory_bytes)
         with open(self.environment.reports.portfolio_path, "w") as f:
             json.dump(raw_portfolio, f)
         transactions = [t.to_json() for t in transactions]

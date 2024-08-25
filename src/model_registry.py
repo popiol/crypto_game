@@ -13,14 +13,12 @@ class ModelRegistry:
     def __init__(
         self,
         remote_path: str,
-        aggregated_local_path: str,
         maturity_min_hours: int,
         max_mature_models: int,
         retirement_min_hours: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
-        self.aggregated_local_path = aggregated_local_path
         self.maturity_min_hours = maturity_min_hours
         self.max_mature_models = max_mature_models
         self.retirement_min_hours = retirement_min_hours
@@ -107,8 +105,8 @@ class ModelRegistry:
         file_name = re.sub("[^0-9]", "", metrics["datetime"])[:10] + ".json"
         self.s3_utils.upload_json(f"{self.aggregated_prefix}/{file_name}", metrics)
 
-    def download_aggregated_metrics(self):
-        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.aggregated_prefix}/", self.aggregated_local_path)
+    def download_aggregated_metrics(self, local_path: str):
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.aggregated_prefix}/", local_path)
 
     def set_leader(self, model_name: str):
         self.s3_utils.copy_file(f"{self.current_prefix}/{model_name}", f"{self.leader_prefix}/model")
@@ -124,17 +122,21 @@ class ModelRegistry:
 
     def set_leader_metrics(self, metrics: dict):
         self.s3_utils.upload_json(f"{self.leader_prefix}/metrics.json", metrics)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.s3_utils.upload_json(f"{self.leader_prefix}/history/metrics_{timestamp}.json", metrics)
 
     def get_leader_portfolio(self):
-        portfolio = self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
-        return portfolio
+        return self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
+
+    def set_leader_portfolio(self, portfolio: dict):
+        self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.s3_utils.upload_json(f"{self.leader_prefix}/history/portfolio_{timestamp}.json", portfolio)
 
     def get_leader_memory(self):
-        memory = self.s3_utils.download_bytes(f"{self.leader_prefix}/memory.pickle")
-        return memory
+        return self.s3_utils.download_bytes(f"{self.leader_prefix}/memory.pickle")
 
-    def set_portfolio(self, portfolio: dict, memory: bytes):
-        self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
+    def set_leader_memory(self, memory: bytes):
         self.s3_utils.upload_bytes(f"{self.leader_prefix}/memory.pickle", memory)
 
     def add_transactions(self, transactions: list[dict], copy_to: str):
@@ -142,3 +144,6 @@ class ModelRegistry:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             self.s3_utils.upload_json(f"{self.leader_prefix}/transactions/{timestamp}.json", transactions)
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/transactions/", copy_to)
+
+    def download_leader_history(self, local_path: str):
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/history/", local_path)

@@ -50,6 +50,16 @@ if data:
 else:
     st.write("No open positions")
 
+st.write("## Orders")
+
+data = {index: row for index, row in enumerate(portfolio["orders"])}
+
+if data:
+    df = pd.DataFrame.from_dict(data, orient="index")
+    st.dataframe(df, hide_index=True)
+else:
+    st.write("No orders")
+
 st.write("## Closed transactions")
 
 files = sorted(glob.glob(environment.reports.transactions_path + "/*.json"))[-10:]
