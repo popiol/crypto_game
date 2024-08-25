@@ -44,7 +44,10 @@ def show_model(model_name: str):
                 col.write(key)
                 print_dict(val, level + 1)
 
-    metrics = model_registry.get_metrics(model_name)
+    if model_name.startswith("Leader_"):
+        metrics = model_registry.get_leader_metrics()
+    else:
+        metrics = model_registry.get_metrics(model_name)
     print_dict(metrics)
 
 
