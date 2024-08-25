@@ -48,7 +48,7 @@ reports:
   portfolio_path: data/portfolio.json
   transactions_path: data/transactions
   leader_history_path: data/leader_history
-  leader_stats: data/leader_stats.csv
+  leader_stats_path: data/leader_stats.csv
 
 cache:
   min_memory_mb: 100

@@ -22,7 +22,7 @@ class Reports:
         portfolio_path: str,
         transactions_path: str,
         leader_history_path: str,
-        leader_stats: str,
+        leader_stats_path: str,
     ):
         self.model_registry = model_registry
         self.aggregated_path = aggregated_path
@@ -32,7 +32,7 @@ class Reports:
         self.portfolio_path = portfolio_path
         self.transactions_path = transactions_path
         self.leader_history_path = leader_history_path
-        self.leader_stats = leader_stats
+        self.leader_stats_path = leader_stats_path
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
@@ -110,10 +110,9 @@ class Reports:
         self.model_registry.download_leader_history(self.leader_history_path)
         files = glob.glob(self.leader_history_path + "/*.json")
         df = pd.DataFrame()
-        if os.path.exists(self.leader_stats):
-            df = pd.read_csv(self.leader_stats)
-            last_dt = df.datetime.max()
-            last_dt = re.sub("[^0-9]", "", last_dt)[:10]
+        if os.path.exists(self.leader_stats_path):
+            df = pd.read_csv(self.leader_stats_path)
+            last_dt = str(df.datetime.max())
             files = [file for file in files if file.split("/")[-1].split("_")[1][:10] > last_dt]
         dfs = [df]
         all_data = {}
@@ -155,4 +154,4 @@ class Reports:
         df = self.calc_change_in_time(files)
         df.to_csv(self.change_in_time_path, index=False)
         df = self.calc_leader_stats()
-        df.to_csv(self.leader_stats, index=False)
+        df.to_csv(self.leader_stats_path, index=False)
