@@ -30,12 +30,17 @@ df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
 df = df[~df.leader_value.isna()]
 
+df.leader_value = df.leader_value / df.iloc[0].leader_value - 1
+df["BTCUSD"] = df.BTCUSD_mean / df.iloc[0].BTCUSD_mean - 1
+
 chart = (
     alt.Chart(df)
     .mark_line(strokeWidth=5)
+    .transform_fold(fold=["leader_value", "BTCUSD"], as_=["variable", "value"])
     .encode(
         x=alt.X("datetime", axis=alt.Axis(title=None)),
-        y=alt.Y("leader_value", axis=alt.Axis(title=None), scale=alt.Scale(zero=False)),
+        y=alt.Y("max(value):Q", axis=alt.Axis(title=None), scale=alt.Scale(zero=False)),
+        color="variable:N",
     )
 )
 st.altair_chart(chart, use_container_width=True, theme=None)
