@@ -121,25 +121,27 @@ class Reports:
             data_type = file_name.split("_")[0]
             timestamp = file_name.split("_")[1][:10]
             with open(file) as f:
-                all_data[timestamp] = all_data.get(timestamp, {})
-                all_data[timestamp][data_type] = json.load(f)
-        for timestamp, data in all_data.items():
+                all_data[data_type] = all_data.get(data_type, {})
+                all_data[data_type][timestamp] = json.load(f)
+        min_len = min(len(all_data["portfolio"]), len(all_data["metrics"]))
+        portfolio_timestamps = list(all_data["portfolio"].keys())[-min_len:]
+        metrics_timestamps = list(all_data["metrics"].keys())[-min_len:]
+        for portfolio_timestamp, metrics_timestamp in zip(portfolio_timestamps, metrics_timestamps):
+            timestamp = max(portfolio_timestamp, metrics_timestamp)
             stats = {"datetime": timestamp}
-            if "metrics" in data:
-                metrics = data["metrics"]
-                for key, value in metrics.items():
-                    if type(value) in [str, int, float] and key not in [
-                        "BTCUSD",
-                        "BTCUSD_change",
-                        "evaluation_score",
-                        "available_memory",
-                    ]:
-                        stats[key] = [value]
-            if "portfolio" in data:
-                portfolio = data["portfolio"]
-                stats["n_open_positions"] = [len(portfolio["positions"])]
-                stats["n_orders"] = [len(portfolio["orders"])]
-                stats["n_closed_transactions"] = [len(portfolio["positions"])]
+            metrics = all_data["metrics"][metrics_timestamp]
+            for key, value in metrics.items():
+                if type(value) in [str, int, float] and key not in [
+                    "BTCUSD",
+                    "BTCUSD_change",
+                    "evaluation_score",
+                    "available_memory",
+                ]:
+                    stats[key] = [value]
+            portfolio = all_data["portfolio"][portfolio_timestamp]
+            stats["n_open_positions"] = [len(portfolio["positions"])]
+            stats["n_orders"] = [len(portfolio["orders"])]
+            stats["n_closed_transactions"] = [len(portfolio["positions"])]
             dfs.append(pd.DataFrame.from_dict(stats))
         return pd.concat(dfs)
 
