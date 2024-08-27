@@ -18,6 +18,7 @@ class PortfolioManager:
         self.transaction_fee = transaction_fee
         self.expiration_time_sec = expiration_time_sec
         self.min_transaction = min_transaction
+        self.debug = False
         self.reset()
 
     def reset(self):
@@ -29,7 +30,6 @@ class PortfolioManager:
             cost_new = sum(o.volume * o.price for o in orders if o.order_type == PortfolioOrderType.buy)
             cost_all = sum(o.volume * o.price for o in self.orders + orders if o.order_type == PortfolioOrderType.buy)
         except RuntimeWarning:
-            print("orders", orders + self.orders)
             return
         if cost_all > self.portfolio.cash:
             c = (self.portfolio.cash - cost_all + cost_new) / cost_new
@@ -73,14 +73,20 @@ class PortfolioManager:
         if order.order_type != PortfolioOrderType.buy:
             return False
         if quotes.closing_price(order.asset) >= order.price:
+            if self.debug:
+                print("Buy price too low", order.asset, order.price, "<=", quotes.closing_price(order.asset))
             return False
         assert order.price > 0
         assert order.volume > 0
         cost = order.price * order.volume
         if cost > self.portfolio.cash * 1.1:
+            if self.debug:
+                print("Not enough cash", order.asset, self.portfolio.cash, "<~", cost)
             return True
         cost = min(cost, self.portfolio.cash)
         if cost < self.min_transaction:
+            if self.debug:
+                print("Order too small", order.asset, cost, "<", self.min_transaction)
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
         precision = math.pow(10, math.floor(math.log10(order.volume)) - 3)
@@ -97,6 +103,9 @@ class PortfolioManager:
             )
             position.volume += order.volume
             position.place_dt = order.place_dt
+        if self.debug:
+            print("Buy order completed")
+            print(order)
         return True
 
     def sell_asset(
@@ -107,6 +116,8 @@ class PortfolioManager:
         if asset_index is None:
             return True
         if quotes.closing_price(order.asset) <= order.price:
+            if self.debug:
+                print("Sell price too high", order.asset, order.price, ">=", quotes.closing_price(order.asset))
             return False
         position: PortfolioPosition = self.portfolio.positions[asset_index]
         prev_volume = position.volume
@@ -131,6 +142,9 @@ class PortfolioManager:
                 profit,
             )
         )
+        if self.debug:
+            print("Sell order completed")
+            print(order)
         return True
 
     def handle_orders(self, timestamp: datetime, quotes: QuotesSnapshot) -> list[ClosedTransaction]:

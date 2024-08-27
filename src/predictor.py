@@ -30,6 +30,7 @@ class Predictor:
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
         asset_list = self.environment.data_registry.get_asset_list()
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
+        portfolio_manager.debug = True
         if not raw_portfolio:
             raw_portfolio = {
                 "positions": [],
