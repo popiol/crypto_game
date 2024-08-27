@@ -107,6 +107,7 @@ class Reports:
         return pd.concat(dfs)
 
     def calc_leader_stats(self):
+        # prepare portfolio history
         self.model_registry.download_leader_history(self.leader_history_path)
         files = glob.glob(self.leader_history_path + "/*.json")
         df = pd.DataFrame()
@@ -126,6 +127,15 @@ class Reports:
         min_len = min(len(all_data["portfolio"]), len(all_data["metrics"]))
         portfolio_timestamps = list(all_data["portfolio"].keys())[-min_len:]
         metrics_timestamps = list(all_data["metrics"].keys())[-min_len:]
+
+        # prepare transactions
+        files = sorted(glob.glob(self.transactions_path + "/*.json"))
+        transactions = {}
+        for file in files:
+            timestamp = file.split("/")[-1].split(".")[0]
+            with open(file) as f:
+                transactions[timestamp] = json.load(f)
+
         for portfolio_timestamp, metrics_timestamp in zip(portfolio_timestamps, metrics_timestamps):
             timestamp = max(portfolio_timestamp, metrics_timestamp)
             stats = {"datetime": timestamp}
@@ -141,7 +151,7 @@ class Reports:
             portfolio = all_data["portfolio"][portfolio_timestamp]
             stats["n_open_positions"] = [len(portfolio["positions"])]
             stats["n_orders"] = [len(portfolio["orders"])]
-            stats["n_closed_transactions"] = [len(portfolio["positions"])]
+            stats["n_closed_transactions"] = [len([key for key in transactions if key[:10] <= timestamp])]
             dfs.append(pd.DataFrame.from_dict(stats))
         return pd.concat(dfs)
 
