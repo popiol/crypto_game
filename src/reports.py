@@ -124,6 +124,8 @@ class Reports:
             with open(file) as f:
                 all_data[data_type] = all_data.get(data_type, {})
                 all_data[data_type][timestamp] = json.load(f)
+        if len(all_data) < 2:
+            return df
         min_len = min(len(all_data["portfolio"]), len(all_data["metrics"]))
         portfolio_timestamps = list(all_data["portfolio"].keys())[-min_len:]
         metrics_timestamps = list(all_data["metrics"].keys())[-min_len:]
