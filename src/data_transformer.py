@@ -233,6 +233,17 @@ class DataTransformer:
         return self.per_agent_memory[agent]
 
     def join_memory(self, shared_memory: np.ndarray, agent_memory: np.ndarray) -> np.ndarray:
+        shared_n_assets = np.shape(shared_memory)[1]
+        agent_n_assets = np.shape(agent_memory)[1]
+        n_assets = max(shared_n_assets, agent_n_assets)
+        if shared_n_assets < n_assets:
+            shape = list(np.shape(shared_memory))
+            shape[1] = n_assets - shared_n_assets
+            shared_memory = np.concatenate([shared_memory, np.zeros(shape)], axis=1)
+        if agent_n_assets < n_assets:
+            shape = list(np.shape(agent_memory))
+            shape[1] = n_assets - agent_n_assets
+            agent_memory = np.concatenate([agent_memory, np.zeros(shape)], axis=1)
         return np.concatenate([shared_memory, agent_memory], axis=-1)
 
     def get_memory(self, agent: str) -> np.ndarray:
