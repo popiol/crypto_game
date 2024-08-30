@@ -107,7 +107,10 @@ class RlRunner:
                 self.trainset.store_agent_input(
                     timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name
                 )
-            self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
+            try:
+                self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
+            except ValueError:
+                pass
 
     def reset_simulation(self):
         self.data_transformer.reset()
