@@ -107,10 +107,7 @@ class RlRunner:
                 self.trainset.store_agent_input(
                     timestamp, self.data_transformer.get_agent_memory(agent.agent_name), agent.agent_name
                 )
-            try:
-                self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
-            except ValueError:
-                pass
+            self.run_agent(agent, portfolio_manager, timestamp, quotes, input)
 
     def reset_simulation(self):
         self.data_transformer.reset()
@@ -164,6 +161,7 @@ class RlRunner:
             self.agents.append(agent)
         serialized_model, metrics = self.model_registry.get_leader()
         model = self.model_serializer.deserialize(serialized_model)
+        model = model_builder.adjust_dimensions(model)
         agent = Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics)
         self.agents.append(agent)
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
