@@ -23,6 +23,7 @@ class Reports:
         transactions_path: str,
         leader_history_path: str,
         leader_stats_path: str,
+        baseline_transactions_path: str,
     ):
         self.model_registry = model_registry
         self.aggregated_path = aggregated_path
@@ -33,6 +34,7 @@ class Reports:
         self.transactions_path = transactions_path
         self.leader_history_path = leader_history_path
         self.leader_stats_path = leader_stats_path
+        self.baseline_transactions_path = baseline_transactions_path
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
