@@ -28,6 +28,7 @@ class ModelRegistry:
         self.metrics_prefix = os.path.join(self.s3_utils.path, "metrics")
         self.aggregated_prefix = os.path.join(self.s3_utils.path, "aggregated_metrics")
         self.leader_prefix = os.path.join(self.s3_utils.path, "leader")
+        self.baseline_prefix = os.path.join(self.s3_utils.path, "baseline")
 
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
@@ -147,3 +148,15 @@ class ModelRegistry:
 
     def download_leader_history(self, local_path: str):
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/history/", local_path)
+
+    def get_baseline_portfolio(self):
+        return self.s3_utils.download_json(f"{self.baseline_prefix}/portfolio.json")
+
+    def set_baseline_portfolio(self, portfolio: dict):
+        self.s3_utils.upload_json(f"{self.baseline_prefix}/portfolio.json", portfolio)
+
+    def add_baseline_transactions(self, transactions: list[dict], copy_to: str):
+        if transactions:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            self.s3_utils.upload_json(f"{self.baseline_prefix}/transactions/{timestamp}.json", transactions)
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.baseline_prefix}/transactions/", copy_to)

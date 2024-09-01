@@ -19,6 +19,7 @@ class QuotesSnapshot:
         "o": ["opening_price"],
         "bid2": ["bid_price_2", "bid_volume_2"],
         "ask2": ["ask_price_2", "ask_volume_2"],
+        "custom": ["min", "max", "min_ch", "max_ch"],
     }
 
     def __init__(self, quotes: dict = None):
@@ -45,6 +46,17 @@ class QuotesSnapshot:
                 )
                 prev_bid = self.quotes[asset][f"bid{index+1}"]
                 prev_ask = self.quotes[asset][f"ask{index+1}"]
+
+    def update_custom(self):
+        for asset_name, asset in self.quotes().item():
+            if "custom" not in asset:
+                price = self.closing_price(asset_name)
+                asset["custom"] = [price, price, 0, 0]
+            else:
+                asset["custom"][2] = min(asset["custom"][2], price - asset["custom"][1])
+                asset["custom"][3] = max(asset["custom"][3], price - asset["custom"][0])
+                asset["custom"][0] = min(asset["custom"][0], price)
+                asset["custom"][1] = max(asset["custom"][1], price)
 
     def closing_price(self, asset: str) -> float:
         return float(self.quotes[asset]["c"][0])
@@ -112,12 +124,17 @@ class InputFeatures(ModelFeatures):
     bid_volume_2: float = None
     ask_price_2: float = None
     ask_volume_2: float = None
+    custom_min: float = None
+    custom_max: float = None
+    custom_min_ch: float = None
+    custom_max_ch: float = None
+    # agent features
     is_in_portfolio: float = 0.0
 
     @classmethod
     def is_price(cls, feature_index: int) -> bool:
         name = fields(cls)[feature_index].name
-        return "price" in name or name in ["low_today", "low_24h", "high_today", "high_24h"]
+        return "price" in name or "custom" in name or name in ["low_today", "low_24h", "high_today", "high_24h"]
 
     @classmethod
     def agent_features(cls) -> list[str]:
