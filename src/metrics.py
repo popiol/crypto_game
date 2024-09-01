@@ -11,7 +11,7 @@ class Metrics:
         self.agent = agent
         self.quotes = quotes
         self.transactions = transactions
-        self.model = agent.training_strategy.model
+        self.model = agent.training_strategy.model if agent.training_strategy else None
         self.metrics = agent.metrics
 
     def set_evaluation_score(self, score: float):
@@ -34,6 +34,8 @@ class Metrics:
         return price_2 / price_1 - 1
 
     def get_n_merge_ancestors(self) -> int:
+        if self.model is None:
+            return 0
         return len(
             set.union(
                 *[set([x for x in l.name.split("_")[1:] if len(x) == self.agent.model_id_len]) for l in self.model.get_layers()]
@@ -41,12 +43,18 @@ class Metrics:
         )
 
     def get_n_params(self) -> int:
+        if self.model is None:
+            return 0
         return int(self.model.get_n_params())
 
     def get_n_layers(self) -> int:
+        if self.model is None:
+            return 0
         return len(self.model.get_layers())
 
     def get_n_layers_per_type(self) -> dict[str, int]:
+        if self.model is None:
+            return {}
         counts = {}
         for l in self.model.get_layers():
             counts[l.layer_type] = counts.get(l.layer_type, 0) + 1
@@ -68,6 +76,8 @@ class Metrics:
         return len(self.parents_as_list(self.metrics.get("parents")))
 
     def get_n_trainings(self) -> int:
+        if self.model is None:
+            return 0
         n_trainings = self.metrics.get("n_trainings", 0)
         stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
         reward_stats_count = stats["count"] if stats else 0
@@ -77,32 +87,49 @@ class Metrics:
         return sum(self.metrics.get("mutations", {}).values())
 
     def get_trained_ratio(self) -> float:
+        if self.model is None:
+            return 0
         return self.get_n_trainings() / (
             self.get_n_params() + self.get_n_mutations() * 50000 + self.get_n_merge_ancestors() * 50000
         )
 
     def get_training_strategy(self):
+        if self.model is None:
+            return "Baseline"
         strategy = self.agent.training_strategy.__class__.__name__
         return self.metrics.get("training_strategy") if strategy == "TrainingStrategy" else strategy
 
     def get_shared_input_stats(self):
+        if self.model is None:
+            return {}
         return self.agent.data_transformer.get_shared_input_stats() or self.metrics.get("shared_input_stats")
 
     def get_agent_input_stats(self):
+        if self.model is None:
+            return {}
         return self.agent.data_transformer.get_agent_input_stats() or self.metrics.get("agent_input_stats")
 
     def get_output_stats(self):
+        if self.model is None:
+            return {}
         return self.agent.data_transformer.get_output_stats() or self.metrics.get("output_stats")
 
     def get_weight_stats(self):
+        if self.model is None:
+            return {}
         return self.agent.training_strategy.model.get_weight_stats()
 
     def get_available_memory(self):
         return psutil.virtual_memory().available
 
+    def get_reward_stats(self):
+        if self.model is None:
+            return {}
+        return self.agent.training_strategy.stats
+
     def get_metrics(self):
         return {
-            "reward_stats": self.agent.training_strategy.stats,
+            "reward_stats": self.get_reward_stats(),
             **self.metrics,
             "n_ancestors": self.get_n_ancestors(),
             "n_merge_ancestors": self.get_n_merge_ancestors(),

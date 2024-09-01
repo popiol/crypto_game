@@ -20,6 +20,8 @@ class BaselineAgent(Agent):
     ):
         output = {}
         for asset in asset_list:
+            if not quotes.has_asset(asset):
+                continue
             score = min(-quotes.min_ch(asset), quotes.max_ch(asset))
             relative_buy_volume = 0.5
             buy_price = min(quotes.max_val(asset) + quotes.min_ch(asset) * 0.95, quotes.closing_price(asset))
