@@ -149,6 +149,12 @@ class ModelRegistry:
     def download_leader_history(self, local_path: str):
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/history/", local_path)
 
+    def get_baseline_metrics(self):
+        return self.s3_utils.download_json(f"{self.baseline_prefix}/metrics.json")
+
+    def set_baseline_metrics(self, metrics: dict):
+        self.s3_utils.upload_json(f"{self.baseline_prefix}/metrics.json", metrics)
+
     def get_baseline_portfolio(self):
         return self.s3_utils.download_json(f"{self.baseline_prefix}/portfolio.json")
 

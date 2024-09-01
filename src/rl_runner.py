@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from src.agent import Agent
+from src.baseline.baseline_agent import BaselineAgent
 from src.data_transformer import QuotesSnapshot
 from src.environment import Environment
 from src.logger import Logger
@@ -163,8 +164,9 @@ class RlRunner:
         serialized_model, metrics = self.model_registry.get_leader()
         model = self.model_serializer.deserialize(serialized_model)
         model = model_builder.adjust_dimensions(model)
-        agent = Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics)
-        self.agents.append(agent)
+        self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
+        metrics = self.model_registry.get_baseline_metrics()
+        self.agents.append(BaselineAgent("Baseline", metrics))
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
