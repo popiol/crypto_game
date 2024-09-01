@@ -42,6 +42,7 @@ class RlRunner:
         raw_quotes, bidask = self.data_registry.get_quotes_and_bidask(file)
         quotes.update(raw_quotes)
         quotes.update_bid_ask(bidask)
+        quotes.update_custom()
         return quotes
 
     def next_features(self, quotes: QuotesSnapshot):

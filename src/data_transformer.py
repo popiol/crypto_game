@@ -48,7 +48,7 @@ class QuotesSnapshot:
                 prev_ask = self.quotes[asset][f"ask{index+1}"]
 
     def update_custom(self):
-        for asset_name, asset in self.quotes().item():
+        for asset_name, asset in self.quotes.items():
             if "custom" not in asset:
                 price = self.closing_price(asset_name)
                 asset["custom"] = [price, price, 0, 0]
