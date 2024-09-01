@@ -52,6 +52,7 @@ class CustomMetrics:
             if col not in df and col.startswith("n_layers_"):
                 df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[len("n_layers_") :], 0))
             if col not in df and col.startswith("n_mutations_"):
+                df["mutations"] = df["mutations"].replace(np.nan, {})
                 df[col] = df["mutations"].apply(lambda x: x.get(col[len("n_mutations_") :], 0))
             df["grouping"] = df[col].apply(
                 lambda x: (
