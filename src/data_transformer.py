@@ -202,7 +202,7 @@ class DataTransformer:
 
     @property
     def stats(self):
-        return self._stats.asdict()
+        return {key: val.tolist() if type(val) == np.ndarray else val for key, val in self._stats.asdict().items()}
 
     def scale_features(self, features: np.ndarray, stats: list[dict]):
         if self.last_features is None:

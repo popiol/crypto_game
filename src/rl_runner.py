@@ -68,7 +68,7 @@ class RlRunner:
             if not self.stats:
                 self.data_transformer.add_to_stats(features)
         if not self.stats:
-            self.stats = {key: val.tolist() for key, val in self.data_transformer.stats.items()}
+            self.stats = self.data_transformer.stats
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
         self.environment.n_assets = len(self.asset_list)
