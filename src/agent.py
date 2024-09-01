@@ -3,7 +3,7 @@ from datetime import datetime
 
 import numpy as np
 
-from src.data_transformer import DataTransformer, QuotesSnapshot
+from src.data_transformer import DataTransformer, OutputFeatures, QuotesSnapshot
 from src.portfolio import (
     ClosedTransaction,
     Portfolio,
@@ -38,13 +38,14 @@ class Agent:
     def reset(self):
         self.training_strategy.reset()
 
-    def make_decision(
-        self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
+    def _make_decision(
+        self,
+        timestamp: datetime,
+        output: list[OutputFeatures],
+        quotes: QuotesSnapshot,
+        portfolio: Portfolio,
+        asset_list: list[str],
     ) -> list[PortfolioOrder]:
-        output_matrix = self.training_strategy.predict(input)
-        if self.trainset:
-            self.trainset.store_output(timestamp, output_matrix, self.agent_name)
-        output = self.data_transformer.transform_output(output_matrix, asset_list)
         orders = []
         for position in portfolio.positions:
             sell_order = PortfolioOrder(
@@ -59,7 +60,7 @@ class Agent:
         scores = [
             (
                 features.score
-                if asset in quotes.quotes and features.relative_buy_price > 0.9 and features.relative_buy_volume > 0
+                if asset in quotes.quotes and 0.9 < features.relative_buy_price <= 1 and features.relative_buy_volume > 0
                 else np.nan
             )
             for asset, features in output.items()
@@ -78,6 +79,15 @@ class Agent:
             )
             orders.append(buy_order)
         return orders
+
+    def make_decision(
+        self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
+    ):
+        output_matrix = self.training_strategy.predict(input)
+        if self.trainset:
+            self.trainset.store_output(timestamp, output_matrix, self.agent_name)
+        output = self.data_transformer.transform_output(output_matrix, asset_list)
+        return self._make_decision(timestamp, output, quotes, portfolio, asset_list)
 
     def get_input_output(self, timestamp: datetime) -> tuple[np.ndarray, np.ndarray]:
         shared_input, agent_input, output = self.trainset.get_by_timestamp(timestamp, self.agent_name)

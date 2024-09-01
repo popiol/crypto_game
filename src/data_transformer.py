@@ -61,6 +61,18 @@ class QuotesSnapshot:
     def closing_price(self, asset: str) -> float:
         return float(self.quotes[asset]["c"][0])
 
+    def min_val(self, asset: str) -> float:
+        return self.quotes[asset]["custom"][0]
+
+    def max_val(self, asset: str) -> float:
+        return self.quotes[asset]["custom"][1]
+
+    def min_ch(self, asset: str) -> float:
+        return self.quotes[asset]["custom"][2]
+
+    def max_ch(self, asset: str) -> float:
+        return self.quotes[asset]["custom"][0]
+
     def items(self):
         return ((name, self.features(asset)) for name, asset in self.quotes.items())
 
