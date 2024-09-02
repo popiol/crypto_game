@@ -193,6 +193,8 @@ class RlRunner:
             self.all_metrics.append(metrics_dict)
             if agent.agent_name == "Leader":
                 self.model_registry.set_leader_metrics(metrics_dict)
+            elif agent.agent_name == "Baseline":
+                self.model_registry.set_baseline_metrics(metrics_dict)
             else:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)

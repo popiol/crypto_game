@@ -23,6 +23,7 @@ class Reports:
         transactions_path: str,
         leader_history_path: str,
         leader_stats_path: str,
+        baseline_portfolio_path: str,
         baseline_transactions_path: str,
     ):
         self.model_registry = model_registry
@@ -34,10 +35,15 @@ class Reports:
         self.transactions_path = transactions_path
         self.leader_history_path = leader_history_path
         self.leader_stats_path = leader_stats_path
+        self.baseline_portfolio_path = baseline_portfolio_path
         self.baseline_transactions_path = baseline_transactions_path
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
+        return portfolio["value"]
+
+    def get_baseline_portfolio_value(self) -> float:
+        portfolio = self.model_registry.get_baseline_portfolio()
         return portfolio["value"]
 
     def aggregate_metrics(self, all_metrics: list[dict]):
@@ -46,6 +52,7 @@ class Reports:
         aggregated = AggregatedMetrics(all_metrics)
         aggregated_dict = aggregated.get_metrics()
         aggregated_dict["leader_value"] = self.get_leader_portfolio_value()
+        aggregated_dict["baseline_value"] = self.get_baseline_portfolio_value()
         custom = CustomMetrics(aggregated.df, aggregated_dict)
         return {**aggregated_dict, "custom": custom.get_metrics()}
 

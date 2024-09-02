@@ -49,7 +49,9 @@ reports:
   transactions_path: data/transactions
   leader_history_path: data/leader_history
   leader_stats_path: data/leader_stats.csv
+  baseline_portfolio_path: data/baseline_portfolio.json
   baseline_transactions_path: data/baseline_transactions
+  
 
 cache:
   min_memory_mb: 100
