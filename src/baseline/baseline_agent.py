@@ -24,16 +24,19 @@ class BaselineAgent(Agent):
         positions = [p.asset for p in portfolio.positions]
         for asset in asset_list:
             if not skip_buy and asset not in positions and quotes.has_asset(asset):
-                score = min(-quotes.min_ch(asset), quotes.max_ch(asset))
+                score = min(
+                    quotes.max_val(asset) - quotes.daily_low(asset),
+                    quotes.daily_high(asset) - quotes.min_val(asset),
+                ) / (quotes.min_val(asset) + quotes.max_val(asset))
                 relative_buy_volume = 0.5
-                buy_price = min(quotes.max_val(asset) + quotes.min_ch(asset) * 1, quotes.closing_price(asset))
+                buy_price = min(quotes.min_val(asset) * 0.65 + quotes.max_val(asset) * 0.35, quotes.closing_price(asset))
                 relative_buy_price = buy_price / quotes.closing_price(asset)
             else:
                 score = np.nan
                 relative_buy_volume = np.nan
                 relative_buy_price = np.nan
             if quotes.has_asset(asset):
-                sell_price = max(quotes.min_val(asset) + quotes.max_ch(asset) * 0.5, quotes.closing_price(asset))
+                sell_price = max(quotes.min_val(asset) * 0.6 + quotes.max_val(asset) * 0.4, quotes.closing_price(asset))
                 relative_sell_price = sell_price / quotes.closing_price(asset)
             else:
                 relative_sell_price = np.nan

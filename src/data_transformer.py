@@ -59,6 +59,12 @@ class QuotesSnapshot:
     def closing_price(self, asset: str) -> float:
         return float(self.quotes[asset]["c"][0])
 
+    def daily_low(self, asset: str) -> float:
+        return float(self.quotes[asset]["l"][1])
+
+    def daily_high(self, asset: str) -> float:
+        return float(self.quotes[asset]["h"][1])
+
     def min_val(self, asset: str) -> float:
         return self.quotes[asset]["custom"][0]
 

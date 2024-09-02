@@ -60,7 +60,10 @@ class Agent:
         scores = [
             (
                 features.score
-                if asset in quotes.quotes and 0.9 < features.relative_buy_price <= 1 and features.relative_buy_volume > 0
+                if quotes.has_asset(asset)
+                and 0.9 < features.relative_buy_price <= 1
+                and features.relative_buy_volume > 0
+                and not asset.endswith("USDUSD")
                 else np.nan
             )
             for asset, features in output.items()
