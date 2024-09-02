@@ -26,31 +26,29 @@ class QuotesSnapshot:
         self.quotes = quotes or {}
 
     def update(self, quotes: dict):
-        quotes = {key: val for key, val in quotes.items() if float(val["c"][0]) > 0}
+        quotes = {key: {**self.quotes.get(key, {}), **val} for key, val in quotes.items() if float(val["c"][0]) > 0}
         self.quotes = {**self.quotes, **quotes}
 
     def update_bid_ask(self, bidask: dict):
         if bidask is None:
             return
-        for asset in bidask:
-            if asset not in self.quotes:
-                continue
+        for asset in self.quotes:
             prev_bid = self.quotes[asset]["b"]
             prev_ask = self.quotes[asset]["a"]
             for index in range(1, 2):
                 self.quotes[asset][f"bid{index+1}"] = (
-                    bidask[asset]["bids"][index] if len(bidask[asset]["bids"]) > index else prev_bid
+                    bidask[asset]["bids"][index] if asset in bidask and len(bidask[asset]["bids"]) > index else prev_bid
                 )
                 self.quotes[asset][f"ask{index+1}"] = (
-                    bidask[asset]["asks"][index] if len(bidask[asset]["asks"]) > index else prev_ask
+                    bidask[asset]["asks"][index] if asset in bidask and len(bidask[asset]["asks"]) > index else prev_ask
                 )
                 prev_bid = self.quotes[asset][f"bid{index+1}"]
                 prev_ask = self.quotes[asset][f"ask{index+1}"]
 
     def update_custom(self):
         for asset_name, asset in self.quotes.items():
+            price = self.closing_price(asset_name)
             if "custom" not in asset:
-                price = self.closing_price(asset_name)
                 asset["custom"] = [price, price, 0, 0]
             else:
                 asset["custom"][2] = min(asset["custom"][2], price - asset["custom"][1])
@@ -71,7 +69,7 @@ class QuotesSnapshot:
         return self.quotes[asset]["custom"][2]
 
     def max_ch(self, asset: str) -> float:
-        return self.quotes[asset]["custom"][0]
+        return self.quotes[asset]["custom"][3]
 
     def items(self):
         return ((name, self.features(asset)) for name, asset in self.quotes.items())

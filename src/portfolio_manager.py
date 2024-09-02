@@ -106,6 +106,7 @@ class PortfolioManager:
         if self.debug:
             print("Buy order completed")
             print(order)
+            print("current price", quotes.closing_price(order.asset))
         return True
 
     def sell_asset(
