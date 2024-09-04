@@ -47,7 +47,9 @@ class BaselinePredictor:
         with open(self.environment.reports.baseline_portfolio_path, "w") as f:
             json.dump(raw_portfolio, f)
         transactions = [t.to_json() for t in transactions]
-        self.environment.model_registry.add_transactions(transactions, self.environment.reports.baseline_transactions_path)
+        self.environment.model_registry.add_baseline_transactions(
+            transactions, self.environment.reports.baseline_transactions_path
+        )
 
 
 def main(argv):
