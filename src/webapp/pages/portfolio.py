@@ -77,6 +77,7 @@ data = {index: row for index, row in enumerate(transactions)}
 
 if data:
     df = pd.DataFrame.from_dict(data, orient="index")
+    df = df.sort_values("place_sell_dt", ascending=False)
     st.dataframe(df, hide_index=True)
 else:
     st.write("No closed transactions")
