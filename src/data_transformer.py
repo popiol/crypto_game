@@ -19,7 +19,7 @@ class QuotesSnapshot:
         "o": ["opening_price"],
         "bid2": ["bid_price_2", "bid_volume_2"],
         "ask2": ["ask_price_2", "ask_volume_2"],
-        "custom": ["min", "max", "min_ch", "max_ch"],
+        "custom": ["custom_min", "custom_max", "custom_min_ch", "custom_max_ch"],
     }
 
     def __init__(self, quotes: dict = None):
