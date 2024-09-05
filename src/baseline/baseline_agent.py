@@ -36,7 +36,7 @@ class BaselineAgent(Agent):
                 relative_buy_volume = np.nan
                 relative_buy_price = np.nan
             if quotes.has_asset(asset):
-                sell_price = max(quotes.daily_low(asset) * 0.5 + quotes.max_val(asset) * 0.5, quotes.closing_price(asset))
+                sell_price = max(quotes.daily_low(asset) * 0.9 + quotes.max_val(asset) * 0.1, quotes.closing_price(asset))
                 relative_sell_price = sell_price / quotes.closing_price(asset)
             else:
                 relative_sell_price = np.nan
