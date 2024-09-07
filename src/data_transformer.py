@@ -26,7 +26,11 @@ class QuotesSnapshot:
         self.quotes = quotes or {}
 
     def update(self, quotes: dict):
-        quotes = {key: {**self.quotes.get(key, {}), **val} for key, val in quotes.items() if float(val["c"][0]) > 0}
+        quotes = {
+            key: {**self.quotes.get(key, {}), **val}
+            for key, val in quotes.items()
+            if float(val["c"][0]) > 0 and float(val["c"][0]) != 1
+        }
         self.quotes = {**self.quotes, **quotes}
 
     def update_bid_ask(self, bidask: dict):
