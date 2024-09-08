@@ -65,6 +65,7 @@ class Predictor:
 
     def choose_leader(self):
         df = pd.read_csv(self.environment.reports.quick_stats_path)
+        df = df[~df.model.str.startswith("Baseline_")]
         leader = df[df.model.str.startswith("Leader_")].iloc[0]
         print("Current leader score", leader.score, "with", leader.n_transactions, "transactions")
         best_model = df[df.score == df.score.max()].iloc[0]
