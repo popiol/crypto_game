@@ -73,7 +73,7 @@ class DataRegistry:
                 for day in sorted(glob.glob(month + "/*")):
                     for file in sorted(glob.glob(day + "/??????????????.json")):
                         timestamp = datetime.strptime(file.split("/")[-1].split(".")[0], "%Y%m%d%H%M%S")
-                        if timestamp < start_dt and timestamp >= end_dt:
+                        if timestamp < start_dt or timestamp >= end_dt:
                             continue
                         self._files_and_timestamps.append((file, timestamp, timestamp < middle_dt))
         return self._files_and_timestamps
