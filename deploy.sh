@@ -9,3 +9,4 @@ git push
 
 /bin/bash -c "$commands"
 ssh crypto2 /bin/bash -c "$commands"
+ssh crypto3 /bin/bash -c "$commands"
