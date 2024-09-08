@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import psutil
 
 from src.agent import Agent
@@ -127,6 +129,12 @@ class Metrics:
             return {}
         return self.agent.training_strategy.stats
 
+    def get_model_age(self) -> float:
+        if self.model is None:
+            return 0
+        timestamp = datetime.strptime(self.agent.model_name.split("_")[1], "%Y%m%d%H%M%S")
+        return (datetime.now() - timestamp).seconds / 3600
+
     def get_metrics(self):
         return {
             "reward_stats": self.get_reward_stats(),
@@ -138,6 +146,7 @@ class Metrics:
             "n_layers_per_type": self.get_n_layers_per_type(),
             "n_mutations": self.get_n_mutations(),
             "n_trainings": self.get_n_trainings(),
+            "model_age": self.get_model_age(),
             "trained_ratio": self.get_trained_ratio(),
             "training_strategy": self.get_training_strategy(),
             "shared_input_stats": self.get_shared_input_stats(),
