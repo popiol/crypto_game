@@ -81,7 +81,7 @@ class Metrics:
         if self.model is None:
             return 0
         n_trainings = self.metrics.get("n_trainings", 0)
-        stats = self.metrics.get("reward_stats", self.agent.training_strategy.stats)
+        stats = self.agent.training_strategy.stats
         reward_stats_count = stats["count"] if stats else 0
         return n_trainings + reward_stats_count
 
