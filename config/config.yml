@@ -3,7 +3,7 @@ rl_runner:
 
 model_registry:
   remote_path: s3://popiol-crypto-models
-  maturity_min_hours: 0
+  maturity_min_hours: 1
   max_mature_models: 10
   retirement_min_hours: 72
   archive_retention_days: 1
