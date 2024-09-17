@@ -102,6 +102,7 @@ class PortfolioManager:
                 position.volume + order.volume
             )
             position.volume += order.volume
+            position.cost += cost
             position.place_dt = order.place_dt
         if self.debug:
             print("Buy order completed")
