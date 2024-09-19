@@ -15,13 +15,13 @@ class ModelRegistry:
         remote_path: str,
         maturity_min_hours: int,
         max_mature_models: int,
-        retirement_min_hours: int,
+        retirement_min_days: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
         self.maturity_min_hours = maturity_min_hours
         self.max_mature_models = max_mature_models
-        self.retirement_min_hours = retirement_min_hours
+        self.retirement_min_days = retirement_min_days
         self.archive_retention_days = archive_retention_days
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
         self.archived_prefix = os.path.join(self.s3_utils.path, "archived")
@@ -62,7 +62,7 @@ class ModelRegistry:
         self.clean_archive()
 
     def archive_old_models(self):
-        files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_hours)
+        files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_days)
         for file in files:
             model = file.split("/")[-1]
             print("archive", model)

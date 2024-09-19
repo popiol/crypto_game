@@ -1,11 +1,11 @@
 rl_runner:
-  training_time_min: 14
+  training_time_min: 29
 
 model_registry:
   remote_path: s3://popiol-crypto-models
   maturity_min_hours: 1
   max_mature_models: 10
-  retirement_min_hours: 72
+  retirement_min_days: 7
   archive_retention_days: 1
 
 data_registry:
