@@ -98,7 +98,7 @@ class ModelRegistry:
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
 
     def clean_archive(self):
-        files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)
+        files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days)
         for file in files:
             self.s3_utils.delete_file(file)
 
