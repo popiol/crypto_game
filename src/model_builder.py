@@ -242,6 +242,17 @@ class ModelBuilder:
 
         return self.modify_model(model, modification)
 
+    def remove_relu(self, model: MlModel, layer_index: int):
+        print("Remove relu", layer_index)
+        assert 0 <= layer_index < len(model.model.layers) - 2
+
+        def modification(input: ModificationInput):
+            print("activation", input.config.get("activation"))
+            if input.index == layer_index:
+                input.config["activation"] = None
+
+        return self.modify_model(model, modification)
+
     def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
         model_2 = self.adjust_dimensions(model_2)

@@ -112,6 +112,9 @@ class EvolutionHandler:
             if random.random() < self.relu_prob and layer.shape:
                 model = self.model_builder.add_relu(model, index)
                 mutations["add_relu"] = mutations.get("add_relu", 0) + 1
+            elif random.random() < self.relu_prob and layer.shape:
+                model = self.model_builder.remove_relu(model, index)
+                mutations["remove_relu"] = mutations.get("remove_relu", 0) + 1
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())
