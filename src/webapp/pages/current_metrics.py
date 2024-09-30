@@ -26,7 +26,7 @@ def show_model(model_name: str):
 
     def print_dict(obj, level: int = 0):
         max_cols = 20
-        if level > max_cols:
+        if level >= max_cols:
             return
         get_col = lambda level: st.columns([level / max_cols, 1 - level / max_cols])[1] if level else st
         params = ""
