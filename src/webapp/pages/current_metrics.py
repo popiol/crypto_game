@@ -25,7 +25,10 @@ def show_model(model_name: str):
     model_registry = environment.model_registry
 
     def print_dict(obj, level: int = 0):
-        get_col = lambda level: st.columns([0.05 * level, 1 - 0.05 * level])[1] if level else st
+        max_cols = 20
+        if level > max_cols:
+            return
+        get_col = lambda level: st.columns([level / max_cols, 1 - level / max_cols])[1] if level else st
         params = ""
         for key, val in obj.items():
             if type(val) == dict:
