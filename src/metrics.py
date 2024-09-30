@@ -91,7 +91,9 @@ class Metrics:
     def get_trained_ratio(self) -> float:
         if self.model is None:
             return 0
-        return self.get_n_trainings() / (self.get_n_params() + self.get_n_mutations() * 100 + self.get_n_merge_ancestors() * 100)
+        return self.get_n_trainings() / (
+            self.get_n_params() + self.get_n_mutations() * 1000 + self.get_n_merge_ancestors() * 1000
+        )
 
     def get_training_strategy(self):
         if self.model is None:

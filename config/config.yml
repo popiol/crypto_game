@@ -32,11 +32,11 @@ trainset:
   local_path: data/trainset
 
 evolution_handler:
-  remove_layer_prob: 0.01
-  add_layer_prob: 0.01
-  shrink_prob: 0.02
-  extend_prob: 0.02
-  relu_prob: 0.02
+  remove_layer_prob: 0.002
+  add_layer_prob: 0.002
+  shrink_prob: 0.004
+  extend_prob: 0.004
+  relu_prob: 0.004
   resize_by: 10
   max_n_params: 1000000
 
