@@ -38,7 +38,7 @@ evolution_handler:
   extend_prob: 0.004
   relu_prob: 0.004
   resize_by: 10
-  max_n_params: 1000000
+  max_n_params: 10000000
 
 reports:
   aggregated_path: data/aggregated
