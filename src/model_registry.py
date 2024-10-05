@@ -15,12 +15,14 @@ class ModelRegistry:
         remote_path: str,
         maturity_min_hours: int,
         max_mature_models: int,
+        max_immature_models: int,
         retirement_min_days: int,
         archive_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
         self.maturity_min_hours = maturity_min_hours
         self.max_mature_models = max_mature_models
+        self.max_immature_models = max_immature_models
         self.retirement_min_days = retirement_min_days
         self.archive_retention_days = archive_retention_days
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
@@ -58,7 +60,8 @@ class ModelRegistry:
 
     def archive_models(self):
         self.archive_old_models()
-        self.archive_weak_models()
+        self.archive_weak_models(mature=True)
+        self.archive_weak_models(mature=False)
         self.clean_archive()
 
     def archive_old_models(self):
@@ -69,8 +72,11 @@ class ModelRegistry:
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
             self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
 
-    def get_weak_models(self) -> list[str]:
-        files = self.s3_utils.list_files(self.current_prefix + "/", self.maturity_min_hours)
+    def get_weak_models(self, mature: bool) -> list[str]:
+        older_than = self.maturity_min_hours if mature else None
+        younger_than = self.maturity_min_hours if not mature else None
+        max_models = self.max_mature_models if mature else self.max_immature_models
+        files = self.s3_utils.list_files(self.current_prefix + "/", older_than, younger_than)
         models = []
         to_archive = []
         for file in files:
@@ -85,13 +91,13 @@ class ModelRegistry:
                     models.append(model_and_score)
             except:
                 to_archive.append((model_name, 0))
-        if len(models) > self.max_mature_models:
-            weak_models = sorted(models, key=lambda x: x[1])[: -self.max_mature_models]
+        if len(models) > max_models:
+            weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend(weak_models)
         return [model for model, _ in to_archive]
 
-    def archive_weak_models(self):
-        models = self.get_weak_models()
+    def archive_weak_models(self, mature: bool):
+        models = self.get_weak_models(mature)
         for model in models:
             print("archive", model)
             self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")

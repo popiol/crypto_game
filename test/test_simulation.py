@@ -51,10 +51,18 @@ class TestSimulation:
         environment = Environment("config/config.yml")
         model_registry = environment.model_registry
         model_registry.max_mature_models = 1
-        models = model_registry.get_weak_models()
+        models = model_registry.get_weak_models(mature=True)
+        print("mature", models)
         assert len(models) > 0
         model_registry.max_mature_models = len(models)
-        models = model_registry.get_weak_models()
+        models = model_registry.get_weak_models(mature=True)
+        assert len(models) == 1
+        model_registry.max_immature_models = 1
+        models = model_registry.get_weak_models(mature=False)
+        print("immature", models)
+        assert len(models) > 0
+        model_registry.max_immature_models = len(models)
+        models = model_registry.get_weak_models(mature=False)
         assert len(models) == 1
 
     @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
