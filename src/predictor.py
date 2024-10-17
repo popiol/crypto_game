@@ -3,7 +3,7 @@ import json
 import pickle
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -67,6 +67,10 @@ class Predictor:
         df = pd.read_csv(self.environment.reports.quick_stats_path)
         df = df[~df.model.str.startswith("Baseline_")]
         leader = df[df.model.str.startswith("Leader_")].iloc[0]
+        df = df[df.n_ancestors >= df.n_ancestors.mean()]
+        maturity_min_hours = self.environment.model_registry.maturity_min_hours
+        maturity_dt = (datetime.now() - timedelta(hours=maturity_min_hours)).strftime("%Y%m%d%H:%M:%S")
+        df = df[df.model.apply(lambda x: x.split("_")[1]) < maturity_dt]
         print("Current leader score", leader.score, "with", leader.n_transactions, "transactions")
         best_model = df[df.score == df.score.max()].iloc[0]
         print("Best model score", best_model.score, "with", best_model.n_transactions, "transactions")
