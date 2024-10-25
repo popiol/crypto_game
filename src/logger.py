@@ -28,21 +28,21 @@ class Logger:
         for agent in agents:
             print(agent.agent_name, agent.training_strategy.__class__.__name__)
             print(agent.training_strategy.model)
-        self.transactions = {agent.agent_name: [] for agent in agents}
+        self.transactions = {agent.model_name: [] for agent in agents}
 
-    def log_transactions(self, agent: str, transactions: list[ClosedTransaction]):
-        self.transactions[agent] = self.transactions.get(agent, [])
-        self.transactions[agent].extend(transactions)
+    def log_transactions(self, model: str, transactions: list[ClosedTransaction]):
+        self.transactions[model] = self.transactions.get(model, [])
+        self.transactions[model].extend(transactions)
 
     def display_transaction(self, transaction: ClosedTransaction):
         return f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}"
 
     def log_simulation_results(self, portfolios: list[Portfolio]):
         results = {}
-        for agent, portfolio in zip(self.transactions, portfolios):
-            transactions = [self.display_transaction(x) for x in self.transactions[agent]]
-            results[agent] = [round(portfolio.value, 2), *transactions]
+        for model, portfolio in zip(self.transactions, portfolios):
+            transactions = [self.display_transaction(x) for x in self.transactions[model]]
+            results[model] = [round(portfolio.value, 2), *transactions]
         self.print_table(results)
-        for agent in self.transactions:
-            self.transactions[agent] = []
+        for model in self.transactions:
+            self.transactions[model] = []
         print(flush=True)

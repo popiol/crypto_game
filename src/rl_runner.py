@@ -95,7 +95,7 @@ class RlRunner:
             agent.train(transactions=closed_transactions)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
-        self.logger.log_transactions(agent.agent_name, closed_transactions)
+        self.logger.log_transactions(agent.model_name, closed_transactions)
 
     def run_agents(self, timestamp: datetime, quotes: QuotesSnapshot):
         if not self.environment.eval_mode:
