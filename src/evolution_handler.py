@@ -13,6 +13,7 @@ class EvolutionHandler:
     model_registry: ModelRegistry
     model_serializer: ModelSerializer
     model_builder: ModelBuilder
+    new_basic_model_prob: float
     remove_layer_prob: float
     add_layer_prob: float
     shrink_prob: float
@@ -22,7 +23,10 @@ class EvolutionHandler:
     max_n_params: int
 
     def create_model(self) -> tuple[MlModel, dict]:
-        method = random.randint(0, 2)
+        if random.random() < self.new_basic_model_prob:
+            method = 0
+        else:
+            method = random.randint(1, 2)
         if method == 0:
             model, metrics = self.create_new_model()
         elif method == 1:
