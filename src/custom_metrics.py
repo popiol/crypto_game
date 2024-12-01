@@ -14,6 +14,9 @@ class CustomMetrics:
         asset_dependent_score = df.n_asset_dependent.sum().tolist()
         asset_independent_score = df.n_asset_independent.sum().tolist()
         metrics["asset_dependency"] = {"independent": asset_independent_score, "dependent": asset_dependent_score}
+        merge_stats = {col[len("merge_") :]: self.aggregated[col]["sum"] for col in self.aggregated if col.startswith("merge_")}
+        if merge_stats:
+            metrics["merge_version"] = merge_stats
         metrics["training_strategy_score"] = (
             df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
         )

@@ -43,6 +43,13 @@ class AggregatedMetrics:
                         aggregated_key = "n_mutations_" + key
                         aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
                         aggregated[aggregated_key].append(val)
+        if "merge_version" in df:
+            for merge_version in df["merge_version"]:
+                if type(merge_version) == dict:
+                    for key, val in merge_version.items():
+                        aggregated_key = "merge_" + key.lower()
+                        aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
+                        aggregated[aggregated_key].append(val)
         for key, val in aggregated.items():
             if type(val) == list:
                 aggregated[key] = self.stats(aggregated[key])

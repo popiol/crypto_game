@@ -224,8 +224,8 @@ class TestEvolution:
         model_1 = builder.build_model(asset_dependent=True)
         model_2 = builder.build_model(asset_dependent=False)
         model_3 = builder.merge_models(model_1, model_2)
-        model_4 = builder.merge_models(model_2, model_3)
-        assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers())
+        model_4 = builder.merge_models(model_2, model_3, builder.MergeVersion.TRANSFORM)
+        assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 1
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)

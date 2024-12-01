@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Callable
 
 import numpy as np
@@ -253,7 +254,11 @@ class ModelBuilder:
 
         return self.modify_model(model, modification)
 
-    def merge_models(self, model_1: MlModel, model_2: MlModel) -> MlModel:
+    class MergeVersion(Enum):
+        CONCAT = auto()
+        TRANSFORM = auto()
+
+    def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
         model_2 = self.adjust_dimensions(model_2)
         model_id_1 = model_1.name.split("_")[-1]
@@ -278,6 +283,8 @@ class ModelBuilder:
             tensor_2 = new_layer(tensor_2)
             tensors[l.name] = tensor_2
         tensor = keras.layers.Concatenate()([tensor_1, tensor_2])
+        if merge_version == self.MergeVersion.TRANSFORM:
+            tensor = keras.layers.Dense(100)(tensor)
         tensor = keras.layers.Dense(self.n_outputs)(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
