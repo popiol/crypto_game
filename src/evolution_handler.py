@@ -104,6 +104,7 @@ class EvolutionHandler:
                 offset = min(offset, n_layers - index - 2)
                 prev_n_layers = len(model.get_layers())
                 model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
+                print("Success" if len(model.get_layers()) != prev_n_layers else "Failed")
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
                 skip = offset
                 mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
@@ -134,5 +135,6 @@ class EvolutionHandler:
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
                     mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
+                print("Success" if len(model.get_layers()) != prev_n_layers else "Failed")
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
         return model, metrics
