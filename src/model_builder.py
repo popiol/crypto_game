@@ -248,7 +248,6 @@ class ModelBuilder:
         assert 0 <= layer_index < len(model.model.layers) - 2
 
         def modification(input: ModificationInput):
-            print("activation", input.config.get("activation"))
             if input.index == layer_index:
                 input.config["activation"] = None
 
