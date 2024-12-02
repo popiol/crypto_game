@@ -89,12 +89,11 @@ class DataRegistry:
         return quotes, bidask
 
     def get_asset_list(self) -> list[str]:
-        assets = []
         remote_path = f"{self.remote_config.path}/{self.asset_list_file}"
         contents = self.remote_config.download_bytes(remote_path)
         if contents:
-            assets = contents.decode().splitlines()
-        return assets
+            return contents.decode().splitlines()
+        return []
 
     def set_asset_list(self, assets: list[str]):
         remote_path = f"{self.remote_config.path}/{self.asset_list_file}"

@@ -104,37 +104,42 @@ class EvolutionHandler:
                 offset = min(offset, n_layers - index - 2)
                 prev_n_layers = len(model.get_layers())
                 model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
-                print("Success" if len(model.get_layers()) != prev_n_layers else "Failed")
-                n_layers_diff += len(model.get_layers()) - prev_n_layers
-                skip = offset
-                mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
-                continue
+                if not self.model_builder.last_failed:
+                    n_layers_diff += len(model.get_layers()) - prev_n_layers
+                    skip = offset
+                    mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
+                    continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
             shrink_or_extend = random.choices(
                 [0, 1, 2], [self.shrink_prob, self.extend_prob, 1 - self.shrink_prob - self.extend_prob]
             )[0]
             if shrink_or_extend == 0 and layer.shape and layer.shape[1] >= 2 * resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
-                mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
+                if not self.model_builder.last_failed:
+                    mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
             elif shrink_or_extend == 1 and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
-                mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
+                if not self.model_builder.last_failed:
+                    mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
             if random.random() < self.relu_prob and layer.shape:
                 model = self.model_builder.add_relu(model, index)
-                mutations["add_relu"] = mutations.get("add_relu", 0) + 1
+                if not self.model_builder.last_failed:
+                    mutations["add_relu"] = mutations.get("add_relu", 0) + 1
             elif random.random() < self.relu_prob and layer.shape:
                 model = self.model_builder.remove_relu(model, index)
-                mutations["remove_relu"] = mutations.get("remove_relu", 0) + 1
+                if not self.model_builder.last_failed:
+                    mutations["remove_relu"] = mutations.get("remove_relu", 0) + 1
             if random.random() < self.add_layer_prob:
                 choice = random.randint(0, 1)
                 prev_n_layers = len(model.get_layers())
                 if choice == 0:
                     size = max(10, round(random.gauss(100, 30)))
                     model = self.model_builder.add_dense_layer(model, index, size)
-                    mutations["add_dense_layer"] = mutations.get("add_dense_layer", 0) + 1
+                    if not self.model_builder.last_failed:
+                        mutations["add_dense_layer"] = mutations.get("add_dense_layer", 0) + 1
                 elif choice == 1:
                     model = self.model_builder.add_conv_layer(model, index)
-                    mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
-                print("Success" if len(model.get_layers()) != prev_n_layers else "Failed")
+                    if not self.model_builder.last_failed:
+                        mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
         return model, metrics

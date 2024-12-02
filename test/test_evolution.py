@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
+from src.environment import Environment
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
@@ -241,3 +244,17 @@ class TestEvolution:
         model_2 = model_serializer.deserialize(model_registry.get_model(model_name_2))
         model_3 = builder.merge_models(model_1, model_2)
         print(model_3)
+
+    def test_mutations_conv(self):
+        environment = Environment("config/config.yml")
+        evolution_handler = environment.evolution_handler
+        model_builder = environment.model_builder
+        model, metrics = evolution_handler.create_new_model()
+        metrics["mutations"] = {}
+        with patch("src.model_builder.ModelBuilder.add_conv_layer", wraps=model_builder.add_conv_layer) as add_conv_layer:
+            for _ in range(100):
+                model, metrics = evolution_handler.mutate(model, metrics)
+                if metrics["mutations"].get("add_conv_layer"):
+                    break
+        print("mutations:", metrics["mutations"])
+        print("call count:", add_conv_layer.call_count)

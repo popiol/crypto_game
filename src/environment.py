@@ -22,7 +22,6 @@ class Environment:
         if config_path:
             self.load_config(config_path)
         self.eval_mode = False
-        self.n_assets: int = None
 
     def load_config(self, file_path: str):
         with open(file_path) as f:
@@ -35,6 +34,10 @@ class Environment:
     @cached_property
     def data_registry(self):
         return DataRegistry(**self.config["data_registry"])
+
+    @cached_property
+    def n_assets(self):
+        return len(self.data_registry.get_asset_list())
 
     @cached_property
     def data_transformer(self):

@@ -124,8 +124,6 @@ class TestSimulation:
 
     def test_merge_existing_models(self):
         environment = Environment("config/config.yml")
-        asset_list = environment.data_registry.get_asset_list()
-        environment.n_assets = len(asset_list)
         evolution_handler = environment.evolution_handler
         model, metrics = evolution_handler.merge_existing_models()
         print(metrics)

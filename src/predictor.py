@@ -27,7 +27,6 @@ class Predictor:
         agent_memory_bytes = self.environment.model_registry.get_leader_memory()
         agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
         asset_list = self.environment.data_registry.get_asset_list()
-        self.environment.n_assets = len(asset_list)
         model = self.environment.model_serializer.deserialize(serialized_model)
         model = self.environment.model_builder.adjust_dimensions(model)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)

@@ -123,6 +123,7 @@ class ModelBuilder:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         tensors = {inputs.name: inputs}
         layer_names = []
+        self.last_failed = False
         for index, l in enumerate(model.model.layers[1:]):
             parent_layers = model.get_parent_layer_names(index)
             tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
@@ -139,13 +140,18 @@ class ModelBuilder:
                 new_layer = l.from_config(config)
                 tensor = new_layer(tensor)
             except (ValueError, TypeError, AttributeError):
+                self.last_failed = True
+                print("Modification failed")
                 return model
             tensors[l.name] = tensor
         if tensor.shape != (None, self.n_assets, self.n_outputs):
+            self.last_failed = True
+            print("Modification failed")
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
         self.copy_weights(model.model, new_model)
+        print("Modification succeeded")
         return MlModel(new_model)
 
     def adjust_dimensions(self, model: MlModel) -> MlModel:
@@ -249,7 +255,9 @@ class ModelBuilder:
 
         def modification(input: ModificationInput):
             if input.index == layer_index:
-                input.config["activation"] = None
+                if input.config["activation"] == "linear":
+                    raise ValueError("No activation to remove")
+                input.config["activation"] = "linear"
 
         return self.modify_model(model, modification)
 
