@@ -9,7 +9,7 @@ st.set_page_config(page_title="Leader stats", layout="wide")
 st.title("Leader stats")
 
 environment = Environment("config/config.yml")
-
+environment.model_registry.download_report(environment.reports.leader_stats_path)
 df = pd.read_csv(environment.reports.leader_stats_path)
 df["datetime"] = pd.to_datetime(df["datetime"], format="%Y%m%d%H")
 

@@ -63,6 +63,7 @@ class Predictor:
         self.environment.model_registry.add_transactions(transactions, self.environment.reports.transactions_path)
 
     def choose_leader(self):
+        self.environment.model_registry.download_report(self.environment.reports.quick_stats_path)
         df = pd.read_csv(self.environment.reports.quick_stats_path)
         df = df[~df.model.str.startswith("Baseline_")]
         leader = df[df.model.str.startswith("Leader_")].iloc[0]

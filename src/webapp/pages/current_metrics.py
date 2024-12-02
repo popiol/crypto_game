@@ -13,6 +13,7 @@ environment = Environment("config/config.yml")
 
 def list_current_models():
     st.title("Current metrics")
+    environment.model_registry.download_report(environment.reports.quick_stats_path)
     df = pd.read_csv(environment.reports.quick_stats_path)
     df = df[df.score != 0]
     df = df.sort_values("score", ascending=False)[:15]

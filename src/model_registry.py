@@ -1,7 +1,9 @@
 import os
 import random
 import re
+import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
@@ -177,3 +179,11 @@ class ModelRegistry:
     def upload_report(self, file_path: str):
         basename = os.path.basename(file_path)
         self.s3_utils.upload_file(file_path, f"{self.reports_prefix}/{basename}")
+
+    def download_report(self, file_path: str):
+        local_mtime = datetime.fromtimestamp(os.path.getmtime(file_path)).replace(tzinfo=ZoneInfo(time.tzname[0]))
+        basename = os.path.basename(file_path)
+        remote_path = f"{self.reports_prefix}/{basename}"
+        remote_mtime = self.s3_utils.get_last_modification_time(remote_path)
+        if remote_mtime > local_mtime:
+            self.s3_utils.download_file(remote_path, file_path)

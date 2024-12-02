@@ -11,6 +11,7 @@ st.set_page_config(page_title="Aggregated metrics", layout="wide")
 st.title("Aggregated metrics")
 
 environment = Environment("config/config.yml")
+environment.model_registry.download_report(environment.reports.change_in_time_path)
 df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
 

@@ -26,6 +26,7 @@ st.write(
     unsafe_allow_html=True,
 )
 
+environment.model_registry.download_report(environment.reports.change_in_time_path)
 df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
 df = df[~df.baseline_value.isna()]

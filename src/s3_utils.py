@@ -15,6 +15,10 @@ class S3Utils:
         self.path = "/".join(s3_path.split("/")[3:])
         self.path = re.sub("/+$", "", self.path)
 
+    def get_last_modification_time(self, remote_path: str) -> datetime:
+        s3 = boto3.resource("s3")
+        return s3.Object(self.bucket_name, remote_path).last_modified
+
     def sync(self, source: str, target: str) -> bool:
         proc = subprocess.Popen(["/usr/local/bin/aws", "s3", "sync", source, target], stdout=subprocess.PIPE)
         out, err = proc.communicate()
