@@ -178,3 +178,9 @@ class Reports:
         df.to_csv(self.change_in_time_path, index=False)
         df = self.calc_leader_stats()
         df.to_csv(self.leader_stats_path, index=False)
+        self.upload_reports()
+
+    def upload_reports(self):
+        self.model_registry.upload_report(self.quick_stats_path)
+        self.model_registry.upload_report(self.change_in_time_path)
+        self.model_registry.upload_report(self.leader_stats_path)

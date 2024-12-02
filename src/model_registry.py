@@ -31,6 +31,7 @@ class ModelRegistry:
         self.aggregated_prefix = os.path.join(self.s3_utils.path, "aggregated_metrics")
         self.leader_prefix = os.path.join(self.s3_utils.path, "leader")
         self.baseline_prefix = os.path.join(self.s3_utils.path, "baseline")
+        self.reports_prefix = os.path.join(self.s3_utils.path, "reports")
 
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
@@ -172,3 +173,7 @@ class ModelRegistry:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             self.s3_utils.upload_json(f"{self.baseline_prefix}/transactions/{timestamp}.json", transactions)
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.baseline_prefix}/transactions/", copy_to)
+
+    def upload_report(self, file_path: str):
+        basename = os.path.basename(file_path)
+        self.s3_utils.upload_file(file_path, f"{self.reports_prefix}/{basename}")
