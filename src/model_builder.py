@@ -160,6 +160,7 @@ class ModelBuilder:
         return model
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
+        print("Adjust n_assets")
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
         if self.n_assets == n_assets:
@@ -174,6 +175,7 @@ class ModelBuilder:
         return self.modify_model(model, modification)
 
     def adjust_n_features(self, model: MlModel) -> MlModel:
+        print("Adjust n_features")
         n_features = model.model.layers[0].batch_shape[3]
         assert self.n_features >= n_features
         if self.n_features == n_features:
