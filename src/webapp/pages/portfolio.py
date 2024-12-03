@@ -13,6 +13,7 @@ st.title("Portfolio")
 
 environment = Environment("config/config.yml")
 
+environment.model_registry.download_leader_portfolio(environment.reports.portfolio_path)
 with open(environment.reports.portfolio_path) as f:
     portfolio = json.load(f)
 

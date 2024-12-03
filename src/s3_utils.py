@@ -1,7 +1,10 @@
 import json
+import os
 import re
 import subprocess
+import time
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import boto3
 from botocore.exceptions import ClientError
@@ -24,8 +27,13 @@ class S3Utils:
         out, err = proc.communicate()
         return b"download" in out or b"upload" in out
 
-    def download_file(self, remote_path: str, local_path: str) -> bool:
+    def download_file(self, remote_path: str, local_path: str, only_updated: bool = False) -> bool:
         print("Download", local_path)
+        if only_updated:
+            local_mtime = datetime.fromtimestamp(os.path.getmtime(local_path)).replace(tzinfo=ZoneInfo(time.tzname[0]))
+            remote_mtime = self.get_last_modification_time(remote_path)
+            if remote_mtime <= local_mtime:
+                return True
         s3 = boto3.client("s3")
         try:
             s3.download_file(self.bucket_name, remote_path, local_path)

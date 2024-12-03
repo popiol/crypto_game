@@ -1,9 +1,7 @@
 import os
 import random
 import re
-import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import numpy as np
 
@@ -138,6 +136,9 @@ class ModelRegistry:
     def get_leader_portfolio(self):
         return self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
 
+    def download_leader_portfolio(self, file_path: str):
+        self.s3_utils.download_file(f"{self.leader_prefix}/portfolio.json", file_path, only_updated=True)
+
     def set_leader_portfolio(self, portfolio: dict):
         self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -181,9 +182,5 @@ class ModelRegistry:
         self.s3_utils.upload_file(file_path, f"{self.reports_prefix}/{basename}")
 
     def download_report(self, file_path: str):
-        local_mtime = datetime.fromtimestamp(os.path.getmtime(file_path)).replace(tzinfo=ZoneInfo(time.tzname[0]))
         basename = os.path.basename(file_path)
-        remote_path = f"{self.reports_prefix}/{basename}"
-        remote_mtime = self.s3_utils.get_last_modification_time(remote_path)
-        if remote_mtime > local_mtime:
-            self.s3_utils.download_file(remote_path, file_path)
+        self.s3_utils.download_file(f"{self.reports_prefix}/{basename}", file_path, only_updated=True)
