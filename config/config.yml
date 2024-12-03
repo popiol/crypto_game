@@ -34,7 +34,7 @@ trainset:
 
 evolution_handler:
   resize_by: 10
-  max_n_params: 10000000
+  max_n_params: 1000000
 
 evolution_randomizer:
   new_basic_model_prob: 0.3
