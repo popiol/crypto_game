@@ -62,6 +62,7 @@ class ModelBuilder:
     def build_model_v2(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
+        l = keras.layers.Dropout(0.3)(l)
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
             l = keras.layers.Dense(100)(l)
