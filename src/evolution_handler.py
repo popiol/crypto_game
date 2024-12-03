@@ -33,7 +33,7 @@ class EvolutionHandler:
     def create_new_model(self) -> tuple[MlModel, dict]:
         version = list(self.model_builder.ModelVersion)[random.randrange(len(self.model_builder.ModelVersion))]
         asset_dependent = bool(random.randint(0, 1))
-        print("create model, asset_dependent:", asset_dependent, "version:", version.name)
+        print("create model, asset_dependent:", asset_dependent, ", version:", version.name)
         metrics = {
             "n_asset_dependent": int(asset_dependent),
             "n_asset_independent": int(not asset_dependent),
