@@ -31,7 +31,17 @@ class ModelBuilder:
     n_features: int
     n_outputs: int
 
-    def build_model(self, asset_dependent=False) -> MlModel:
+    class ModelVersion(Enum):
+        V1 = auto()
+        V2 = auto()
+
+    def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
+        if version == self.ModelVersion.V1:
+            return self.build_model_v1(asset_dependent)
+        if version == self.ModelVersion.V2:
+            return self.build_model_v2(asset_dependent)
+
+    def build_model_v1(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         if asset_dependent:
@@ -44,6 +54,26 @@ class ModelBuilder:
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v2(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        if asset_dependent:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 2, 1))(l)
+        else:
+            l = keras.layers.Permute((2, 3, 1))(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Permute((1, 3, 2))(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Reshape((self.n_assets, 10000))(l)
+        l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)

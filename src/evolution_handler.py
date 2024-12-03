@@ -38,10 +38,15 @@ class EvolutionHandler:
         return model, metrics
 
     def create_new_model(self) -> tuple[MlModel, dict]:
+        version = list(self.model_builder.ModelVersion)[random.randrange(len(self.model_builder.ModelVersion))]
         asset_dependent = bool(random.randint(0, 1))
-        print("create model, asset_dependent:", asset_dependent)
-        metrics = {"n_asset_dependent": int(asset_dependent), "n_asset_independent": int(not asset_dependent)}
-        return self.model_builder.build_model(asset_dependent), metrics
+        print("create model, asset_dependent:", asset_dependent, "version:", version.name)
+        metrics = {
+            "n_asset_dependent": int(asset_dependent),
+            "n_asset_independent": int(not asset_dependent),
+            "model_version": {version.name: 1},
+        }
+        return self.model_builder.build_model(asset_dependent, version), metrics
 
     def load_spicific_model(self, model_name: str, model: MlModel = None, serialized_model: bytes = None) -> tuple[MlModel, dict]:
         if model is None:
@@ -81,7 +86,7 @@ class EvolutionHandler:
         for metric_name in metrics_1:
             if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
                 metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
-        merge_version = list(self.model_builder.MergeVersion)[random.randrange(2)]
+        merge_version = list(self.model_builder.MergeVersion)[random.randrange(len(self.model_builder.MergeVersion))]
         merge_version_metrics: dict = metrics.get("merge_version", {})
         merge_version_metrics[merge_version.name] = merge_version_metrics.get(merge_version.name, 0) + 1
         metrics["merge_version"] = merge_version_metrics

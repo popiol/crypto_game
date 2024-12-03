@@ -258,3 +258,15 @@ class TestEvolution:
                     break
         print("mutations:", metrics["mutations"])
         print("call count:", add_conv_layer.call_count)
+
+    def test_create_new_model(self):
+        environment = Environment("config/config.yml")
+        evolution_handler = environment.evolution_handler
+        model_1, metrics_1 = evolution_handler.create_new_model()
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        model_2, metrics_2 = evolution_handler.create_new_model()
+        output_2 = model_2.predict(input)
+        assert np.shape(output_1) == np.shape(output_2)
+        print(metrics_1, len(model_1.get_layers()), model_1.get_n_params())
+        print(metrics_2, len(model_2.get_layers()), model_2.get_n_params())
