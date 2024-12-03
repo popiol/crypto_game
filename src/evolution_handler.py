@@ -20,11 +20,11 @@ class EvolutionHandler:
 
     def create_model(self) -> tuple[MlModel, dict]:
         method = self.evolution_randomizer.model_creation_method()
-        if method == 0:
+        if method == self.evolution_randomizer.ModelCreationMethod.NEW_MODEL:
             model, metrics = self.create_new_model()
-        elif method == 1:
+        elif method == self.evolution_randomizer.ModelCreationMethod.EXISTING_MODEL:
             model, metrics = self.load_existing_model()
-        elif method == 2:
+        elif method == self.evolution_randomizer.ModelCreationMethod.MERGE_MODELS:
             model, metrics = self.merge_existing_models()
         model = self.model_builder.adjust_dimensions(model)
         model, metrics = self.mutate(model, metrics)

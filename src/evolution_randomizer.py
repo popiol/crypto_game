@@ -12,10 +12,15 @@ class EvolutionRandomizer:
     resize_prob: float
     relu_prob: float
 
+    class ModelCreationMethod(Enum):
+        EXISTING_MODEL = auto()
+        MERGE_MODELS = auto()
+        NEW_MODEL = auto()
+
     def model_creation_method(self):
         if random.random() < self.new_basic_model_prob:
-            return 0
-        return random.randint(1, 2)
+            return self.ModelCreationMethod.NEW_MODEL
+        return list(self.ModelCreationMethod)[random.randrange(len(self.ModelCreationMethod) - 1)]
 
     def remove_layer(self):
         return random.random() < self.remove_layer_prob

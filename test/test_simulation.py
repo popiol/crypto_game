@@ -3,18 +3,21 @@ from unittest.mock import patch
 from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
 from src.environment import Environment
+from src.evolution_randomizer import EvolutionRandomizer
 from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
 
 
 class TestSimulation:
 
+    @patch("src.evolution_randomizer.EvolutionRandomizer.model_creation_method")
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.get_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.save_model")
-    def test_simulation_one_iteration(self, save_model, iterate_models, get_metrics, set_metrics):
+    def test_simulation_one_iteration(self, save_model, iterate_models, get_metrics, set_metrics, model_creation_method):
         get_metrics.return_value = {"a": 1}
+        model_creation_method.return_value = EvolutionRandomizer.ModelCreationMethod.NEW_MODEL
         environment = Environment("config/config.yml")
         environment.config["rl_runner"]["training_time_min"] = -1
         environment.config["agent_builder"]["n_agents"] = 1
