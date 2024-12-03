@@ -7,6 +7,7 @@ from src.cache import Cache
 from src.data_registry import DataRegistry
 from src.data_transformer import DataTransformer
 from src.evolution_handler import EvolutionHandler
+from src.evolution_randomizer import EvolutionRandomizer
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
 from src.model_serializer import ModelSerializer
@@ -60,9 +61,17 @@ class Environment:
         )
 
     @cached_property
+    def evolution_randomizer(self):
+        return EvolutionRandomizer(**self.config["evolution_randomizer"])
+
+    @cached_property
     def evolution_handler(self):
         return EvolutionHandler(
-            self.model_registry, self.model_serializer, self.model_builder, **self.config["evolution_handler"]
+            self.model_registry,
+            self.model_serializer,
+            self.model_builder,
+            self.evolution_randomizer,
+            **self.config["evolution_handler"]
         )
 
     @cached_property

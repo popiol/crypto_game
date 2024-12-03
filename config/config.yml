@@ -33,14 +33,15 @@ trainset:
   local_path: data/trainset
 
 evolution_handler:
+  resize_by: 10
+  max_n_params: 10000000
+
+evolution_randomizer:
   new_basic_model_prob: 0.3
   remove_layer_prob: 0.005
   add_layer_prob: 0.005
-  shrink_prob: 0.01
-  extend_prob: 0.01
-  relu_prob: 0.01
-  resize_by: 10
-  max_n_params: 10000000
+  resize_prob: 0.01
+  relu_prob: 0.005
 
 reports:
   aggregated_path: data/aggregated

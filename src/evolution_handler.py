@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass
 
+from src.evolution_randomizer import EvolutionRandomizer
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
 from src.model_registry import ModelRegistry
@@ -13,20 +14,12 @@ class EvolutionHandler:
     model_registry: ModelRegistry
     model_serializer: ModelSerializer
     model_builder: ModelBuilder
-    new_basic_model_prob: float
-    remove_layer_prob: float
-    add_layer_prob: float
-    shrink_prob: float
-    extend_prob: float
-    relu_prob: float
+    evolution_randomizer: EvolutionRandomizer
     resize_by: int
     max_n_params: int
 
     def create_model(self) -> tuple[MlModel, dict]:
-        if random.random() < self.new_basic_model_prob:
-            method = 0
-        else:
-            method = random.randint(1, 2)
+        method = self.evolution_randomizer.model_creation_method()
         if method == 0:
             model, metrics = self.create_new_model()
         elif method == 1:
@@ -104,7 +97,7 @@ class EvolutionHandler:
             if skip > 0:
                 skip -= 1
                 continue
-            if random.random() < self.remove_layer_prob:
+            if self.evolution_randomizer.remove_layer():
                 offset = abs(round(random.gauss(0, 2)))
                 offset = min(offset, n_layers - index - 2)
                 prev_n_layers = len(model.get_layers())
@@ -115,34 +108,32 @@ class EvolutionHandler:
                     mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
                     continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
-            shrink_or_extend = random.choices(
-                [0, 1, 2], [self.shrink_prob, self.extend_prob, 1 - self.shrink_prob - self.extend_prob]
-            )[0]
-            if shrink_or_extend == 0 and layer.shape and layer.shape[1] >= 2 * resize_by:
+            resize_action = self.evolution_randomizer.resize_layer()
+            if resize_action == self.evolution_randomizer.ResizeAction.SHRINK and layer.shape and layer.shape[1] >= 2 * resize_by:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
                 if not self.model_builder.last_failed:
                     mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
-            elif shrink_or_extend == 1 and layer.shape:
+            elif resize_action == self.evolution_randomizer.ResizeAction.EXTEND and layer.shape:
                 model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
                 if not self.model_builder.last_failed:
                     mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
-            if random.random() < self.relu_prob and layer.shape:
+            if self.evolution_randomizer.add_relu() and layer.shape:
                 model = self.model_builder.add_relu(model, index)
                 if not self.model_builder.last_failed:
                     mutations["add_relu"] = mutations.get("add_relu", 0) + 1
-            elif random.random() < self.relu_prob and layer.shape:
+            elif self.evolution_randomizer.remove_relu() and layer.shape:
                 model = self.model_builder.remove_relu(model, index)
                 if not self.model_builder.last_failed:
                     mutations["remove_relu"] = mutations.get("remove_relu", 0) + 1
-            if random.random() < self.add_layer_prob:
-                choice = random.randint(0, 1)
+            add_layer_action = self.evolution_randomizer.add_layer()
+            if add_layer_action != self.evolution_randomizer.AddLayerAction.NO_ACTION:
                 prev_n_layers = len(model.get_layers())
-                if choice == 0:
+                if add_layer_action == self.evolution_randomizer.AddLayerAction.DENSE:
                     size = max(10, round(random.gauss(100, 30)))
                     model = self.model_builder.add_dense_layer(model, index, size)
                     if not self.model_builder.last_failed:
                         mutations["add_dense_layer"] = mutations.get("add_dense_layer", 0) + 1
-                elif choice == 1:
+                elif add_layer_action == self.evolution_randomizer.AddLayerAction.CONV:
                     model = self.model_builder.add_conv_layer(model, index)
                     if not self.model_builder.last_failed:
                         mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
