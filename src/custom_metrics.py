@@ -17,6 +17,11 @@ class CustomMetrics:
         merge_stats = {col[len("merge_") :]: self.aggregated[col]["sum"] for col in self.aggregated if col.startswith("merge_")}
         if merge_stats:
             metrics["merge_version"] = merge_stats
+        version_stats = {
+            col[len("version_") :]: self.aggregated[col]["sum"] for col in self.aggregated if col.startswith("version_")
+        }
+        if version_stats:
+            metrics["model_version"] = version_stats
         metrics["training_strategy_score"] = (
             df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
         )
