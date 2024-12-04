@@ -11,6 +11,7 @@ st.set_page_config(page_title="Custom metrics", layout="wide")
 st.title("Custom metrics")
 
 environment = Environment("config/config.yml")
+environment.model_registry.download_report(environment.reports.custom_metrics_path)
 with open(environment.reports.custom_metrics_path) as f:
     custom = json.load(f)
 
