@@ -67,11 +67,12 @@ class TestSimulation:
         models = model_registry.get_weak_models(mature=False)
         assert len(models) == 1
 
+    @patch("src.reports.Reports.upload_reports")
     @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.archive_models")
-    def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics):
+    def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics, upload_reports):
         model_name = "Emma_20241127124526_5592f"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
