@@ -136,8 +136,9 @@ class ModelRegistry:
     def get_leader_portfolio(self):
         return self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
 
-    def download_leader_portfolio(self, file_path: str):
+    def download_leader_portfolio(self, file_path: str, transactions_path: str):
         self.s3_utils.download_file(f"{self.leader_prefix}/portfolio.json", file_path, only_updated=True)
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/transactions/", transactions_path)
 
     def set_leader_portfolio(self, portfolio: dict):
         self.s3_utils.upload_json(f"{self.leader_prefix}/portfolio.json", portfolio)
