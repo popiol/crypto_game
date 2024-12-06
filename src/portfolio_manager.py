@@ -79,7 +79,7 @@ class PortfolioManager:
         assert order.price > 0
         assert order.volume > 0
         cost = order.price * order.volume
-        if cost > self.portfolio.cash * 1.1:
+        if cost * 1.1 > self.portfolio.cash:
             if self.debug:
                 print("Not enough cash", order.asset, self.portfolio.cash, "<~", cost)
             return True

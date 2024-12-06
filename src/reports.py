@@ -2,6 +2,7 @@ import glob
 import json
 import os
 import re
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -10,33 +11,20 @@ from src.custom_metrics import CustomMetrics
 from src.model_registry import ModelRegistry
 
 
+@dataclass
 class Reports:
 
-    def __init__(
-        self,
-        model_registry: ModelRegistry,
-        aggregated_path: str,
-        quick_stats_path: str,
-        change_in_time_path: str,
-        custom_metrics_path: str,
-        portfolio_path: str,
-        transactions_path: str,
-        leader_history_path: str,
-        leader_stats_path: str,
-        baseline_portfolio_path: str,
-        baseline_transactions_path: str,
-    ):
-        self.model_registry = model_registry
-        self.aggregated_path = aggregated_path
-        self.quick_stats_path = quick_stats_path
-        self.change_in_time_path = change_in_time_path
-        self.custom_metrics_path = custom_metrics_path
-        self.portfolio_path = portfolio_path
-        self.transactions_path = transactions_path
-        self.leader_history_path = leader_history_path
-        self.leader_stats_path = leader_stats_path
-        self.baseline_portfolio_path = baseline_portfolio_path
-        self.baseline_transactions_path = baseline_transactions_path
+    model_registry: ModelRegistry
+    aggregated_path: str
+    quick_stats_path: str
+    change_in_time_path: str
+    custom_metrics_path: str
+    portfolio_path: str
+    transactions_path: str
+    leader_history_path: str
+    leader_stats_path: str
+    baseline_portfolio_path: str
+    baseline_transactions_path: str
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
