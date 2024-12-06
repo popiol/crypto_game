@@ -150,7 +150,7 @@ class ModelBuilder:
             layer_names.append(layer_name)
         return layer_name
 
-    def modify_model(self, model: MlModel, modification: Callable) -> MlModel:
+    def modify_model(self, model: MlModel, modification: Callable[[ModificationInput], ModificationOutput]) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         tensors = {inputs.name: inputs}
         layer_names = []
@@ -201,7 +201,7 @@ class ModelBuilder:
         def modification(input: ModificationInput):
             if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
                 input.config["units"] = self.n_assets
-            elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_assets:
+            elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
 
         return self.modify_model(model, modification)
