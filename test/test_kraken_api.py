@@ -13,7 +13,15 @@ class TestKrakenApi:
 
     def test_place_order(self):
         api = KrakenApi()
-        api.place_order(PortfolioOrder(PortfolioOrderType.buy, "XBTUSD", 1.25, 27500, datetime.now()))
+        api.place_order(
+            PortfolioOrder(
+                order_type=PortfolioOrderType.buy,
+                asset="SBRUSD",
+                volume=7000,
+                price=0.003,
+                place_dt=datetime.now(),
+            )
+        )
 
     def test_get_orders(self):
         api = KrakenApi()

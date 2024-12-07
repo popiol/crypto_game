@@ -62,7 +62,7 @@ class KrakenApi:
             "price": order.price,
             "volume": order.volume,
             "expiretm": "+3540",
-            "validate": True,
+            # "validate": True,
         }
         headers = self.get_headers(command, params)
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
@@ -134,8 +134,8 @@ class KrakenApi:
                 order_type=PortfolioOrderType[o["descr"]["type"]],
                 asset=o["descr"]["pair"],
                 volume=o["vol"],
-                price=o["price"],
-                place_dt=o["opentm"],
+                price=o["descr"]["price"],
+                place_dt=datetime.fromtimestamp(o["opentm"]),
             )
             for o in resp.json()["result"]["open"].values()
         ]
