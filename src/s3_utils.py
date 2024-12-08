@@ -20,7 +20,10 @@ class S3Utils:
 
     def get_last_modification_time(self, remote_path: str) -> datetime:
         s3 = boto3.resource("s3")
-        return s3.Object(self.bucket_name, remote_path).last_modified
+        try:
+            return s3.Object(self.bucket_name, remote_path).last_modified
+        except ClientError:
+            return None
 
     def sync(self, source: str, target: str) -> bool:
         proc = subprocess.Popen(["/usr/local/bin/aws", "s3", "sync", source, target], stdout=subprocess.PIPE)

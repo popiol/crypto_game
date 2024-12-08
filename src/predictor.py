@@ -58,10 +58,17 @@ class Predictor:
         model = self.environment.model_serializer.deserialize(serialized_model)
         model = self.environment.model_builder.adjust_dimensions(model)
         raw_portfolio = self.environment.model_registry.get_real_portfolio()
-        positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
         portfolio_api = KrakenApi()
         cash = portfolio_api.get_cash()
-        last_update = self.environment.model_registry.get_real_portfolio_last_update()
+        if not raw_portfolio:
+            raw_portfolio = {
+                "positions": [],
+                "cash": cash,
+                "value": None,
+                "orders": [],
+            }
+        positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
+        last_update = self.environment.model_registry.get_real_portfolio_last_update() or datetime.now() - timedelta(hours=1)
         new_positions = portfolio_api.get_positions(last_update)
         transactions = portfolio_api.get_closed_transactions(last_update)
         positions = self.update_positions_and_transactions(positions, new_positions, transactions)
@@ -73,6 +80,11 @@ class Predictor:
         agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
         input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
+        portfolio_manager = self.environment.get_portfolio_managers(1)[0]
+        portfolio_manager.debug = True
+        portfolio_manager.portfolio = portfolio
+        portfolio_manager.place_orders(datetime.now(), orders)
+        portfolio_manager.adjust_orders(quotes)
         for order in orders:
             portfolio_api.place_order(order)
         placed_orders = portfolio_api.get_orders()

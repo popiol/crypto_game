@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -69,10 +68,15 @@ class PortfolioManager:
                 break
         return asset_index
 
-    def buy_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int) -> bool:
+    def round(self, x: float):
+        y = round(x, 4)
+        print(x, "rounded to", y)
+        return y
+
+    def buy_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, adjust_only: bool = False) -> bool:
         if order.order_type != PortfolioOrderType.buy:
             return False
-        if quotes.closing_price(order.asset) >= order.price:
+        if quotes.closing_price(order.asset) >= order.price and not adjust_only:
             if self.debug:
                 print("Buy price too low", order.asset, order.price, "<=", quotes.closing_price(order.asset))
             return False
@@ -89,10 +93,12 @@ class PortfolioManager:
                 print("Order too small", order.asset, cost, "<", self.min_transaction)
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
-        precision = math.pow(10, math.floor(math.log10(order.volume)) - 3)
-        order.volume = math.floor(order.volume / precision) * precision
+        order.volume = self.round(order.volume)
+        order.price = self.round(order.price)
         cost = order.price * order.volume * (1 + self.transaction_fee)
         assert cost <= self.portfolio.cash
+        if adjust_only:
+            return True
         self.portfolio.cash -= cost
         if asset_index is None:
             self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, cost, order.place_dt))
@@ -111,13 +117,18 @@ class PortfolioManager:
         return True
 
     def sell_asset(
-        self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, closed_transactions: list[ClosedTransaction]
+        self,
+        order: PortfolioOrder,
+        quotes: QuotesSnapshot,
+        asset_index: int,
+        closed_transactions: list[ClosedTransaction],
+        adjust_only: bool = False,
     ) -> bool:
         if order.order_type != PortfolioOrderType.sell:
             return False
         if asset_index is None:
             return True
-        if quotes.closing_price(order.asset) <= order.price:
+        if quotes.closing_price(order.asset) <= order.price and not adjust_only:
             if self.debug:
                 print("Sell price too high", order.asset, order.price, ">=", quotes.closing_price(order.asset))
             return False
@@ -127,8 +138,12 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
+        order.volume = self.round(order.volume)
+        order.price = self.round(order.price)
         assert order.price > 0
         assert order.volume > 0
+        if adjust_only:
+            return True
         profit = order.price * order.volume * (1 - self.transaction_fee)
         self.portfolio.cash += profit
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
@@ -169,3 +184,11 @@ class PortfolioManager:
             raise
         self.orders = new_orders
         return closed_transactions
+
+    def adjust_orders(self, quotes: QuotesSnapshot):
+        for order in self.orders:
+            asset_index = self.find_position(order.asset)
+            if self.buy_asset(order, quotes, asset_index, adjust_only=True):
+                continue
+            if self.sell_asset(order, quotes, asset_index, [], adjust_only=True):
+                continue
