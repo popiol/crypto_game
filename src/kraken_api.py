@@ -8,7 +8,12 @@ from datetime import datetime
 
 import requests
 
-from src.portfolio import PortfolioOrder, PortfolioOrderType, PortfolioPosition
+from src.portfolio import (
+    ClosedTransaction,
+    PortfolioOrder,
+    PortfolioOrderType,
+    PortfolioPosition,
+)
 
 
 class KrakenApi:
@@ -55,7 +60,6 @@ class KrakenApi:
             "price": order.price,
             "volume": order.volume,
             "expiretm": "+3540",
-            # "validate": True,
         }
         headers = self.get_headers(command, params)
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
@@ -88,30 +92,6 @@ class KrakenApi:
         orders = {id: order for id, order in orders.items() if order["status"] == "closed"}
         return orders
 
-    def get_orders_info(self, txids: list[str]) -> dict:
-        print("get real order info for", txids)
-        command = "QueryOrders"
-        params = {
-            "nonce": self.get_nonce(),
-            "txid": ",".join(txids),
-            "trades": False,
-        }
-        headers = self.get_headers(command, params)
-        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        print(resp.text)
-        return resp.json()["result"]
-
-    def convert_position(self, api_position: dict, orders_info: dict) -> PortfolioPosition:
-        order_info = orders_info[api_position["ordertxid"]]
-        return PortfolioPosition(
-            api_position["pair"],
-            api_position["vol"],
-            order_info["price"],
-            api_position["cost"],
-            datetime.fromtimestamp(order_info["opentm"]),
-            api_position["value"],
-        )
-
     def get_positions(self, since: datetime):
         print("get real positions")
         balance = self.get_balance()
@@ -119,13 +99,13 @@ class KrakenApi:
         print("volumes", volumes)
         orders = self.get_closed_orders(since)
         print("orders", orders)
-        orders = [order for order in orders.values() if order["descr"]["pair"] in volumes]
+        orders = [order for order in orders.values() if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy"]
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
-                volume=order["vol"],
-                buy_price=order["price"],
-                cost=order["cost"],
+                volume=float(order["vol"]),
+                buy_price=float(order["price"]),
+                cost=float(order["cost"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),
                 value=None,
             )
@@ -151,31 +131,27 @@ class KrakenApi:
             PortfolioOrder(
                 order_type=PortfolioOrderType[o["descr"]["type"]],
                 asset=o["descr"]["pair"],
-                volume=o["vol"],
-                price=o["descr"]["price"],
+                volume=float(o["vol"]),
+                price=float(o["descr"]["price"]),
                 place_dt=datetime.fromtimestamp(o["opentm"]),
             )
             for o in resp.json()["result"]["open"].values()
         ]
 
     def get_closed_transactions(self, since: datetime):
-        print("get real orders")
-        command = "ClosedOrders"
-        params = {
-            "nonce": self.get_nonce(),
-            "trades": False,
-            "start": since.timestamp(),
-            "closetime": "close",
-        }
-        headers = self.get_headers(command, params)
-        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        print(resp.text)
-        # return [
-        #     ClosedTransaction(
-        #         asset=o["descr"]["pair"],
-        #         volume=o["vol"],
-        #         price=o["price"],
-        #         place_dt=o["opentm"],
-        #     )
-        #     for o in resp.json()["result"]["closed"].values()
-        # ]
+        print("get real closed transactions")
+        orders = self.get_closed_orders(since)
+        orders = [order for order in orders.values() if order["descr"]["type"] == "sell"]
+        return [
+            ClosedTransaction(
+                asset=order["descr"]["pair"],
+                volume=float(order["vol"]),
+                buy_price=None,
+                sell_price=float(order["price"]),
+                place_buy_dt=None,
+                place_sell_dt=datetime.fromtimestamp(order["closetm"]),
+                cost=None,
+                profit=None,
+            )
+            for order in orders
+        ]
