@@ -16,9 +16,9 @@ class TestKrakenApi:
         api.place_order(
             PortfolioOrder(
                 order_type=PortfolioOrderType.buy,
-                asset="SBRUSD",
-                volume=7000,
-                price=0.003,
+                asset="POLISUSD",
+                volume=70,
+                price=0.301,
                 place_dt=datetime.now(),
             )
         )
@@ -30,10 +30,15 @@ class TestKrakenApi:
 
     def test_get_positions(self):
         api = KrakenApi()
-        positions = api.get_positions()
+        positions = api.get_positions(datetime.strptime("2024-12-07", "%Y-%m-%d"))
         print(positions)
 
     def test_get_closed_transactions(self):
         api = KrakenApi()
         transactions = api.get_closed_transactions(datetime.strptime("2020-01-01", "%Y-%m-%d"))
         print(transactions)
+
+    def test_get_closed_orders(self):
+        api = KrakenApi()
+        orders = api.get_closed_orders(datetime.strptime("2020-01-01", "%Y-%m-%d"))
+        print(orders)

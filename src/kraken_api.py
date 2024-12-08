@@ -38,13 +38,6 @@ class KrakenApi:
         urlpath = f"{self.prefix}/{command}"
         message = urlpath.encode() + hashlib.sha256(encoded).digest()
         signature = base64.b64encode(hmac.new(base64.b64decode(self.secret_key), message, hashlib.sha512).digest()).decode()
-        print("postdata:", postdata)
-        print("encoded:", encoded)
-        print("urlpath:", urlpath)
-        print("message:", message)
-        print("api_key:", self.api_key)
-        print("secret_key:", self.secret_key)
-        print("signature:", signature)
         return {
             "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
             "API-Key": self.api_key,
@@ -67,6 +60,33 @@ class KrakenApi:
         headers = self.get_headers(command, params)
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
         print(resp.text)
+
+    def get_balance(self) -> dict:
+        print("get real balance")
+        command = "Balance"
+        params = {
+            "nonce": self.get_nonce(),
+        }
+        headers = self.get_headers(command, params)
+        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
+        print(resp.text)
+        return resp.json()["result"]
+
+    def get_closed_orders(self, since: datetime):
+        print("get closed orders")
+        command = "ClosedOrders"
+        params = {
+            "nonce": self.get_nonce(),
+            "trades": False,
+            "start": since.timestamp(),
+            "closetime": "close",
+        }
+        headers = self.get_headers(command, params)
+        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
+        print(resp.text)
+        orders = resp.json()["result"]["closed"]
+        orders = {id: order for id, order in orders.items() if order["status"] == "closed"}
+        return orders
 
     def get_orders_info(self, txids: list[str]) -> dict:
         print("get real order info for", txids)
@@ -92,32 +112,30 @@ class KrakenApi:
             api_position["value"],
         )
 
-    def get_positions(self):
+    def get_positions(self, since: datetime):
         print("get real positions")
-        command = "OpenPositions"
-        params = {
-            "nonce": self.get_nonce(),
-            "docalcs": True,
-        }
-        headers = self.get_headers(command, params)
-        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        print(resp.text)
-        positions = resp.json()["result"].values()
-        if not positions:
-            return []
-        orders_info = self.get_orders_info([p["ordertxid"] for p in positions])
-        return [self.convert_position(p, orders_info) for p in positions]
+        balance = self.get_balance()
+        volumes = {asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0 and asset != "ZUSD"}
+        print("volumes", volumes)
+        orders = self.get_closed_orders(since)
+        print("orders", orders)
+        orders = [order for order in orders.values() if order["descr"]["pair"] in volumes]
+        return [
+            PortfolioPosition(
+                asset=order["descr"]["pair"],
+                volume=order["vol"],
+                buy_price=order["price"],
+                cost=order["cost"],
+                place_dt=datetime.fromtimestamp(order["opentm"]),
+                value=None,
+            )
+            for order in orders
+        ]
 
     def get_cash(self) -> float:
         print("get real cash")
-        command = "Balance"
-        params = {
-            "nonce": self.get_nonce(),
-        }
-        headers = self.get_headers(command, params)
-        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        print(resp.text)
-        return float(resp.json()["result"]["ZUSD"])
+        balance = self.get_balance()
+        return float(balance["ZUSD"])
 
     def get_orders(self):
         print("get real orders")
