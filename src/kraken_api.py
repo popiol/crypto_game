@@ -5,6 +5,7 @@ import json
 import time
 import urllib
 from datetime import datetime
+from functools import cache
 
 import requests
 
@@ -65,6 +66,7 @@ class KrakenApi:
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
         print(resp.text)
 
+    @cache
     def get_balance(self) -> dict:
         print("get real balance")
         command = "Balance"
@@ -76,6 +78,7 @@ class KrakenApi:
         print(resp.text)
         return resp.json()["result"]
 
+    @cache
     def get_closed_orders(self, since: datetime):
         print("get closed orders")
         command = "ClosedOrders"

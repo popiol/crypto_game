@@ -83,8 +83,11 @@ class Predictor:
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         portfolio_manager.debug = True
         portfolio_manager.portfolio = portfolio
-        portfolio_manager.place_orders(datetime.now(), orders)
+        portfolio_manager.orders = portfolio_api.get_orders()
+        timestamp = datetime.now()
+        portfolio_manager.place_orders(timestamp, orders)
         portfolio_manager.adjust_orders(quotes)
+        orders = [o for o in portfolio_manager.orders if o.place_dt == timestamp]
         for order in orders:
             portfolio_api.place_order(order)
         placed_orders = portfolio_api.get_orders()
