@@ -10,7 +10,12 @@ import pandas as pd
 from src.agent import Agent
 from src.environment import Environment
 from src.kraken_api import KrakenApi
-from src.portfolio import Portfolio, PortfolioOrder, PortfolioPosition
+from src.portfolio import (
+    ClosedTransaction,
+    Portfolio,
+    PortfolioOrder,
+    PortfolioPosition,
+)
 from src.training_strategy import TrainingStrategy
 
 
@@ -19,45 +24,71 @@ class Predictor:
     def __init__(self, environment: Environment):
         self.environment = environment
 
+    def update_positions_and_transactions(
+        self, positions: list[PortfolioPosition], new_positions: list[PortfolioPosition], transactions: list[ClosedTransaction]
+    ):
+        for transaction in transactions:
+            matched = False
+            for position in positions:
+                if transaction.asset == position.asset:
+                    position.volume = 0
+                    matched = True
+                    transaction.buy_price = position.buy_price
+                    transaction.place_buy_dt = position.place_dt
+                    transaction.cost = position.cost
+            if not matched:
+                raise Exception("Unmatched closing transaction", transaction, "for positions", positions)
+        updated = new_positions.copy()
+        for position in positions:
+            if position.volume == 0:
+                continue
+            if [p for p in updated if p.asset == position.asset]:
+                continue
+            updated.append(position)
+        return updated
+
     def place_real_orders(self):
         current_input_path = self.environment.config["predictor"]["current_input_path"]
         with open(current_input_path, "rb") as f:
             shared_memory, quotes = pickle.load(f)
         serialized_model, metrics = self.environment.model_registry.get_leader()
-        portfolio_api = KrakenApi()
-        positions = portfolio_api.get_positions()
-        cash = portfolio_api.get_cash()
-        agent_memory_bytes = self.environment.model_registry.get_leader_memory()
+        agent_memory_bytes = self.environment.model_registry.get_real_memory()
         agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
         asset_list = self.environment.data_registry.get_asset_list()
         model = self.environment.model_serializer.deserialize(serialized_model)
         model = self.environment.model_builder.adjust_dimensions(model)
+        raw_portfolio = self.environment.model_registry.get_real_portfolio()
+        positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
+        portfolio_api = KrakenApi()
+        cash = portfolio_api.get_cash()
+        last_update = self.environment.model_registry.get_real_portfolio_last_update()
+        new_positions = portfolio_api.get_positions(last_update)
+        transactions = portfolio_api.get_closed_transactions(last_update)
+        positions = self.update_positions_and_transactions(positions, new_positions, transactions)
+        portfolio = Portfolio(positions, cash, None)
+        portfolio.update_value(quotes)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
-        portfolio_manager = self.environment.get_portfolio_managers(1)[0]
-        portfolio_manager.debug = True
-        portfolio_value = sum([p.value for p in positions]) + cash
-        portfolio_manager.portfolio = Portfolio(positions, cash, portfolio_value)
         self.environment.data_transformer.per_agent_memory[agent.agent_name] = agent_memory
         self.environment.data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
         agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
         input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
-        orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list)
+        orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
         for order in orders:
             portfolio_api.place_order(order)
         placed_orders = portfolio_api.get_orders()
         raw_portfolio = {
             "positions": [p.to_json() for p in positions],
             "cash": cash,
-            "value": portfolio_value,
+            "value": portfolio.value,
             "orders": [o.to_json() for o in placed_orders],
         }
         agent_memory_bytes = pickle.dumps(agent_memory)
-        self.environment.model_registry.set_leader_portfolio(raw_portfolio)
-        self.environment.model_registry.set_leader_memory(agent_memory_bytes)
-        with open(self.environment.reports.portfolio_path, "w") as f:
+        self.environment.model_registry.set_real_portfolio(raw_portfolio)
+        self.environment.model_registry.set_real_memory(agent_memory_bytes)
+        with open(self.environment.reports.real_portfolio_path, "w") as f:
             json.dump(raw_portfolio, f)
-        transactions = [t.to_json() for t in portfolio_api.get_closed_transactions()]
-        self.environment.model_registry.add_transactions(transactions, self.environment.reports.transactions_path)
+        raw_transactions = [t.to_json() for t in transactions]
+        self.environment.model_registry.add_real_transactions(raw_transactions, self.environment.reports.real_transactions_path)
 
     def simulate(self):
         current_input_path = self.environment.config["predictor"]["current_input_path"]

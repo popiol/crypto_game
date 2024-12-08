@@ -105,7 +105,7 @@ class KrakenApi:
                 asset=order["descr"]["pair"],
                 volume=float(order["vol"]),
                 buy_price=float(order["price"]),
-                cost=float(order["cost"]),
+                cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),
                 value=None,
             )
@@ -149,9 +149,9 @@ class KrakenApi:
                 buy_price=None,
                 sell_price=float(order["price"]),
                 place_buy_dt=None,
-                place_sell_dt=datetime.fromtimestamp(order["closetm"]),
+                place_sell_dt=datetime.fromtimestamp(order["opentm"]),
                 cost=None,
-                profit=None,
+                profit=float(order["cost"]) - float(order["fee"]),
             )
             for order in orders
         ]

@@ -32,6 +32,7 @@ class ModelRegistry:
         self.leader_prefix = os.path.join(self.s3_utils.path, "leader")
         self.baseline_prefix = os.path.join(self.s3_utils.path, "baseline")
         self.reports_prefix = os.path.join(self.s3_utils.path, "reports")
+        self.real_prefix = os.path.join(self.s3_utils.path, "real")
 
     def save_model(self, model_name: str, serialized_model: bytes, metrics: dict):
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
@@ -116,6 +117,8 @@ class ModelRegistry:
     def download_aggregated_metrics(self, local_path: str):
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.aggregated_prefix}/", local_path)
 
+    # leader
+
     def set_leader(self, model_name: str):
         self.s3_utils.copy_file(f"{self.current_prefix}/{model_name}", f"{self.leader_prefix}/model")
         self.s3_utils.copy_file(f"{self.metrics_prefix}/{model_name}", f"{self.leader_prefix}/metrics.json")
@@ -160,6 +163,8 @@ class ModelRegistry:
     def download_leader_history(self, local_path: str):
         self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.leader_prefix}/history/", local_path)
 
+    # baseline
+
     def get_baseline_metrics(self):
         return self.s3_utils.download_json(f"{self.baseline_prefix}/metrics.json")
 
@@ -185,3 +190,35 @@ class ModelRegistry:
     def download_report(self, file_path: str):
         basename = os.path.basename(file_path)
         self.s3_utils.download_file(f"{self.reports_prefix}/{basename}", file_path, only_updated=True)
+
+    # real portfolio
+
+    def get_real_portfolio(self):
+        return self.s3_utils.download_json(f"{self.real_prefix}/portfolio.json")
+
+    def get_real_portfolio_last_update(self):
+        return self.s3_utils.get_last_modification_time(f"{self.real_prefix}/portfolio.json")
+
+    def download_real_portfolio(self, file_path: str, transactions_path: str):
+        self.s3_utils.download_file(f"{self.real_prefix}/portfolio.json", file_path, only_updated=True)
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.real_prefix}/transactions/", transactions_path)
+
+    def set_real_portfolio(self, portfolio: dict):
+        self.s3_utils.upload_json(f"{self.real_prefix}/portfolio.json", portfolio)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.s3_utils.upload_json(f"{self.real_prefix}/history/portfolio_{timestamp}.json", portfolio)
+
+    def get_real_memory(self):
+        return self.s3_utils.download_bytes(f"{self.real_prefix}/memory.pickle")
+
+    def set_real_memory(self, memory: bytes):
+        self.s3_utils.upload_bytes(f"{self.real_prefix}/memory.pickle", memory)
+
+    def add_real_transactions(self, transactions: list[dict], copy_to: str):
+        if transactions:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            self.s3_utils.upload_json(f"{self.real_prefix}/transactions/{timestamp}.json", transactions)
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.real_prefix}/transactions/", copy_to)
+
+    def download_real_history(self, local_path: str):
+        self.s3_utils.sync(f"s3://{self.s3_utils.bucket_name}/{self.real_prefix}/history/", local_path)

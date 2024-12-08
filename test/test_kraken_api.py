@@ -35,10 +35,10 @@ class TestKrakenApi:
 
     def test_get_closed_transactions(self):
         api = KrakenApi()
-        transactions = api.get_closed_transactions(datetime.strptime("2020-01-01", "%Y-%m-%d"))
+        transactions = api.get_closed_transactions(datetime.strptime("2024-12-08 10:00:00", "%Y-%m-%d %H:%M:%S"))
         print(transactions)
 
     def test_get_closed_orders(self):
         api = KrakenApi()
-        orders = api.get_closed_orders(datetime.strptime("2020-01-01", "%Y-%m-%d"))
+        orders = api.get_closed_orders(datetime.strptime("2024-12-07 00:00:00", "%Y-%m-%d %H:%M:%S"))
         print(orders)

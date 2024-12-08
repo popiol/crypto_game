@@ -25,6 +25,8 @@ class Reports:
     leader_stats_path: str
     baseline_portfolio_path: str
     baseline_transactions_path: str
+    real_portfolio_path: str
+    real_transactions_path: str
 
     def get_leader_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_leader_portfolio()
