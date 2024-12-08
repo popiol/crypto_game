@@ -26,8 +26,14 @@ class PortfolioManager:
 
     def adjust_buy_volume(self, orders: list[PortfolioOrder]):
         try:
-            cost_new = sum(o.volume * o.price for o in orders if o.order_type == PortfolioOrderType.buy)
-            cost_all = sum(o.volume * o.price for o in self.orders + orders if o.order_type == PortfolioOrderType.buy)
+            cost_new = sum(
+                o.volume * o.price * (1 + self.transaction_fee) for o in orders if o.order_type == PortfolioOrderType.buy
+            )
+            cost_all = sum(
+                o.volume * o.price * (1 + self.transaction_fee)
+                for o in self.orders + orders
+                if o.order_type == PortfolioOrderType.buy
+            )
         except RuntimeWarning:
             return
         if cost_all > self.portfolio.cash:
