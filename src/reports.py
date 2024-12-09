@@ -32,6 +32,10 @@ class Reports:
         portfolio = self.model_registry.get_leader_portfolio()
         return portfolio["value"]
 
+    def get_real_portfolio_value(self) -> float:
+        portfolio = self.model_registry.get_real_portfolio()
+        return portfolio["value"]
+
     def get_baseline_portfolio_value(self) -> float:
         portfolio = self.model_registry.get_baseline_portfolio()
         return portfolio["value"]
@@ -42,6 +46,7 @@ class Reports:
         aggregated = AggregatedMetrics(all_metrics)
         aggregated_dict = aggregated.get_metrics()
         aggregated_dict["leader_value"] = self.get_leader_portfolio_value()
+        aggregated_dict["real_portfolio_value"] = self.get_real_portfolio_value()
         aggregated_dict["baseline_value"] = self.get_baseline_portfolio_value()
         custom = CustomMetrics(aggregated.df, aggregated_dict)
         return {**aggregated_dict, "custom": custom.get_metrics()}
