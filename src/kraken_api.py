@@ -4,7 +4,7 @@ import hmac
 import json
 import time
 import urllib
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import cache
 
 import requests
@@ -101,7 +101,12 @@ class KrakenApi:
         balance = self.get_balance()
         volumes = {asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0 and asset != "ZUSD"}
         print("volumes", volumes)
-        orders = self.get_closed_orders(since)
+        for _ in range(10):
+            orders = self.get_closed_orders(since)
+            if len(orders) >= len(volumes):
+                break
+            since -= timedelta(days=1)
+            print("Going back to", since)
         print("orders", orders)
         orders = [order for order in orders.values() if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy"]
         return [
