@@ -24,6 +24,7 @@ class KrakenApi:
         self.api_ver = "0"
         self.prefix = f"/{self.api_ver}/private"
         self.endpoint = f"{self.api_url}{self.prefix}"
+        self.public_endpoint = f"{self.api_url}/{self.api_ver}/public"
         self.api_key = ""
         self.secret_key = ""
 
@@ -158,3 +159,12 @@ class KrakenApi:
             )
             for order in orders
         ]
+
+    def get_n_decimals(self, assets: list[str]):
+        print("get number of decimals")
+        command = "Assets"
+        assets = [asset[:-3] for asset in assets]
+        params = {"asset": ",".join(assets)}
+        resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
+        print(resp.text)
+        return {f"{asset}USD": resp.json()["result"][asset]["decimals"] for asset in assets}

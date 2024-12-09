@@ -18,6 +18,7 @@ class PortfolioManager:
         self.expiration_time_sec = expiration_time_sec
         self.min_transaction = min_transaction
         self.debug = False
+        self.n_decimals = {}
         self.reset()
 
     def reset(self):
@@ -74,8 +75,10 @@ class PortfolioManager:
                 break
         return asset_index
 
-    def round(self, x: float):
-        y = round(x, 4)
+    def round(self, x: float, precision: int = 4):
+        if precision is None:
+            return x
+        y = round(x, precision)
         print(x, "rounded to", y)
         return y
 
@@ -99,7 +102,7 @@ class PortfolioManager:
                 print("Order too small", order.asset, cost, "<", self.min_transaction)
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
-        order.volume = self.round(order.volume)
+        order.volume = self.round(order.volume, self.n_decimals.get(order.asset))
         order.price = self.round(order.price)
         cost = order.price * order.volume * (1 + self.transaction_fee)
         assert cost <= self.portfolio.cash
@@ -144,7 +147,7 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
-        order.volume = self.round(order.volume)
+        order.volume = self.round(order.volume, self.n_decimals.get(order.asset))
         order.price = self.round(order.price)
         assert order.price > 0
         assert order.volume > 0

@@ -42,3 +42,8 @@ class TestKrakenApi:
         api = KrakenApi()
         orders = api.get_closed_orders(datetime.strptime("2024-12-07 00:00:00", "%Y-%m-%d %H:%M:%S"))
         print(orders)
+
+    def test_get_n_decimals(self):
+        api = KrakenApi()
+        n_decimals = api.get_n_decimals(["MNT"])
+        print(n_decimals)
