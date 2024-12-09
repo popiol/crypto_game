@@ -161,7 +161,9 @@ class KrakenApi:
         ]
 
     def get_n_decimals(self, assets: list[str]):
-        print("get number of decimals")
+        if not assets:
+            return {}
+        print("get number of decimals for", assets)
         command = "Assets"
         assets = [asset[:-3] for asset in assets]
         params = {"asset": ",".join(assets)}
