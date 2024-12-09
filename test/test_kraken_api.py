@@ -45,5 +45,5 @@ class TestKrakenApi:
 
     def test_get_n_decimals(self):
         api = KrakenApi()
-        n_decimals = api.get_n_decimals(["MNT"])
+        n_decimals = api.get_n_decimals(["MNTUSD"])
         print(n_decimals)
