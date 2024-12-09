@@ -78,7 +78,7 @@ class PortfolioManager:
     def round(self, x: float, precision: int = 4):
         if precision is None:
             return x
-        y = round(x, precision)
+        y = int(x * pow(10, precision)) / pow(10, precision)
         print(x, "rounded to", y)
         return y
 
