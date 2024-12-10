@@ -38,7 +38,7 @@ class PortfolioManager:
             )
         except RuntimeWarning:
             return
-        if cost_all > self.portfolio.cash and cost_new > 0:
+        if cost_all > self.portfolio.cash and cost_all - cost_new < self.portfolio.cash:
             c = (self.portfolio.cash - cost_all + cost_new) / cost_new
             for order in orders:
                 if order.order_type == PortfolioOrderType.buy:
