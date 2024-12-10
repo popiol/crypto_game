@@ -18,18 +18,12 @@ df["datetime"] = pd.to_datetime(df["datetime"])
 groups = set()
 suffixes = ["_min", "_max", "_mean"]
 head = ["evaluation_score"]
-ignore = ["remove_layer", "shrink_layer", "extend_layer", "leader_value", "baseline_value"]
+ignore = ["leader_value", "baseline_value", "real_portfolio_value"]
 
 for col in df.columns:
     group = re.sub("|".join([s + "$" for s in suffixes]), "", col)
-    if (
-        col == "datetime"
-        or group.startswith("add_")
-        or group in ignore
-        or group in head
-        or group.startswith("n_layers_")
-        or group.startswith("n_mutations_")
-    ):
+    print(group)
+    if col == "datetime" or group in ignore or group in head or group.startswith("n_layers_"):
         continue
     groups.add(group)
 

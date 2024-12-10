@@ -70,11 +70,11 @@ class EvolutionHandler:
         metrics_2 = self.model_registry.get_metrics(model_name_2)
         metrics = {}
         metrics["parents"] = {model_name_1: metrics_1.get("parents"), model_name_2: metrics_2.get("parents")}
-        for key in ["mutations", "model_version"]:
+        for key in ["mutations", "merge_version", "model_version"]:
             values_1 = metrics_1.get(key, {})
             values_2 = metrics_2.get(key, {})
             metrics[key] = {
-                key: values_1.get(key, 0) + values_2.get(key, 0) for key in set(values_1.keys()).union(set(values_2.keys()))
+                key2: values_1.get(key2, 0) + values_2.get(key2, 0) for key2 in set(values_1.keys()).union(set(values_2.keys()))
             }
         for metric_name in metrics_1:
             if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
