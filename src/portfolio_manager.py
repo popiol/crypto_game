@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -78,9 +79,10 @@ class PortfolioManager:
     def round(self, x: float, precision: int = 4):
         if precision is None:
             return x
-        y = int(x * pow(10, precision)) / pow(10, precision)
-        print(x, "rounded to", y)
-        return y
+        if x > pow(10, -precision + 1):
+            return int(x * pow(10, precision)) / pow(10, precision)
+        precision = math.pow(10, math.floor(math.log10(x)) - 1)
+        return int(x / precision) * precision
 
     def buy_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, adjust_only: bool = False) -> bool:
         if order.order_type != PortfolioOrderType.buy:
