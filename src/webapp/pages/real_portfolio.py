@@ -71,7 +71,7 @@ else:
 
 st.write("## Closed transactions")
 
-files = sorted(glob.glob(environment.reports.transactions_path + "/*.json"))[-10:]
+files = sorted(glob.glob(environment.reports.real_transactions_path + "/*.json"))[-10:]
 transactions = []
 for file in files:
     with open(file) as f:
