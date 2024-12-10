@@ -56,7 +56,6 @@ reports:
   baseline_transactions_path: data/baseline_transactions
   real_portfolio_path: data/real_portfolio.json
   real_transactions_path: data/real_transactions
-  
 
 cache:
   min_memory_mb: 100
