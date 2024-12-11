@@ -92,7 +92,8 @@ class ModelRegistry:
                 else:
                     models.append(model_and_score)
             except:
-                to_archive.append((model_name, 0))
+                if mature:
+                    to_archive.append((model_name, 0))
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend(weak_models)
