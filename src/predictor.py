@@ -3,6 +3,7 @@ import json
 import pickle
 import sys
 import time
+from copy import deepcopy
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -76,7 +77,7 @@ class Predictor:
         transactions = portfolio_api.get_closed_transactions(since)
         positions = self.update_positions_and_transactions(positions, new_positions, transactions)
         print("updated positions", positions)
-        portfolio = Portfolio(positions, cash, None)
+        portfolio = Portfolio(deepcopy(positions), cash, None)
         portfolio.update_value(quotes)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
         self.environment.data_transformer.per_agent_memory[agent.agent_name] = agent_memory

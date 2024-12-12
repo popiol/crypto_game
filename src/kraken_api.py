@@ -81,7 +81,7 @@ class KrakenApi:
 
     @cache
     def get_closed_orders(self, since: datetime):
-        print("get closed orders")
+        print("get closed orders since", since)
         command = "ClosedOrders"
         params = {
             "nonce": self.get_nonce(),
@@ -91,7 +91,6 @@ class KrakenApi:
         }
         headers = self.get_headers(command, params)
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        print(resp.text)
         orders = resp.json()["result"]["closed"]
         orders = {id: order for id, order in orders.items() if order["status"] == "closed"}
         return orders
@@ -106,8 +105,6 @@ class KrakenApi:
             if len(orders) >= len(volumes):
                 break
             since -= timedelta(days=1)
-            print("Going back to", since)
-        print("orders", orders)
         orders = [order for order in orders.values() if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy"]
         return [
             PortfolioPosition(
