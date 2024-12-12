@@ -101,6 +101,7 @@ class Predictor:
             "orders": [o.to_json() for o in placed_orders],
         }
         agent_memory_bytes = pickle.dumps(agent_memory)
+        print("raw_portfolio", raw_portfolio)
         self.environment.model_registry.set_real_portfolio(raw_portfolio)
         self.environment.model_registry.set_real_memory(agent_memory_bytes)
         with open(self.environment.reports.real_portfolio_path, "w") as f:
