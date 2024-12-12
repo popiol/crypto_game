@@ -106,3 +106,9 @@ class ClosedTransaction:
             "cost": self.cost,
             "profit": self.profit,
         }
+
+
+@dataclass
+class AssetPrecision:
+    volume_precision: int = None
+    price_precision: int = None

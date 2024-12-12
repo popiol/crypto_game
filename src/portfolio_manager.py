@@ -1,8 +1,8 @@
-import math
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
 from src.portfolio import (
+    AssetPrecision,
     ClosedTransaction,
     Portfolio,
     PortfolioOrder,
@@ -19,7 +19,7 @@ class PortfolioManager:
         self.expiration_time_sec = expiration_time_sec
         self.min_transaction = min_transaction
         self.debug = False
-        self.n_decimals = {}
+        self.n_decimals: dict[str, AssetPrecision] = {}
         self.reset()
 
     def reset(self):
@@ -76,13 +76,12 @@ class PortfolioManager:
                 break
         return asset_index
 
-    def round(self, x: float, precision: int = 4):
+    def round(self, x: float, precision: int):
         if precision is None:
             return x
-        if x > pow(10, -precision + 1):
-            return int(x * pow(10, precision)) / pow(10, precision)
-        precision = math.pow(10, math.floor(math.log10(x)) - 1)
-        return int(x / precision) * precision
+        y = int(x * pow(10, precision)) / pow(10, precision)
+        print(x, "rounded to", y)
+        return y
 
     def buy_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, adjust_only: bool = False) -> bool:
         if order.order_type != PortfolioOrderType.buy:
@@ -104,8 +103,9 @@ class PortfolioManager:
                 print("Order too small", order.asset, cost, "<", self.min_transaction)
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
-        order.volume = self.round(order.volume, self.n_decimals.get(order.asset))
-        order.price = self.round(order.price)
+        precision = self.n_decimals.get(order.asset, AssetPrecision())
+        order.volume = self.round(order.volume, precision.volume_precision)
+        order.price = self.round(order.price, precision.price_precision)
         cost = order.price * order.volume * (1 + self.transaction_fee)
         assert cost <= self.portfolio.cash
         if adjust_only:
@@ -149,8 +149,9 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
-        order.volume = self.round(order.volume, self.n_decimals.get(order.asset))
-        order.price = self.round(order.price)
+        precision = self.n_decimals.get(order.asset, AssetPrecision())
+        order.volume = self.round(order.volume, precision.volume_precision)
+        order.price = self.round(order.price, precision.price_precision)
         assert order.price > 0
         assert order.volume > 0
         if adjust_only:
