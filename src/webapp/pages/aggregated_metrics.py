@@ -19,12 +19,16 @@ groups = set()
 suffixes = ["_min", "_max", "_mean"]
 head = ["evaluation_score"]
 ignore = ["leader_value", "baseline_value", "real_portfolio_value"]
+ignore_prefix = ["n_layers_", "version_", "merge_"]
 
 for col in df.columns:
     group = re.sub("|".join([s + "$" for s in suffixes]), "", col)
     print(group)
-    if col == "datetime" or group in ignore or group in head or group.startswith("n_layers_"):
+    if col == "datetime" or group in ignore or group in head:
         continue
+    for prefix in ignore_prefix:
+        if group.startswith(prefix):
+            continue
     groups.add(group)
 
 groups = head + sorted(groups)
