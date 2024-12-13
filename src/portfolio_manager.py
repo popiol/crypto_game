@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 
 from src.data_transformer import QuotesSnapshot
@@ -19,7 +20,7 @@ class PortfolioManager:
         self.expiration_time_sec = expiration_time_sec
         self.min_transaction = min_transaction
         self.debug = False
-        self.n_decimals: dict[str, AssetPrecision] = {}
+        self.precision: dict[str, AssetPrecision] = {}
         self.reset()
 
     def reset(self):
@@ -78,7 +79,7 @@ class PortfolioManager:
 
     def round(self, x: float, precision: int):
         if precision is None:
-            return x
+            precision = 4 - math.floor(math.log10(x))
         y = int(x * pow(10, precision)) / pow(10, precision)
         print(x, "rounded to", y)
         return y
@@ -103,7 +104,7 @@ class PortfolioManager:
                 print("Order too small", order.asset, cost, "<", self.min_transaction)
             return True
         order.volume = cost / order.price / (1 + self.transaction_fee)
-        precision = self.n_decimals.get(order.asset, AssetPrecision())
+        precision = self.precision.get(order.asset, AssetPrecision())
         order.volume = self.round(order.volume, precision.volume_precision)
         order.price = self.round(order.price, precision.price_precision)
         cost = order.price * order.volume * (1 + self.transaction_fee)
@@ -149,7 +150,7 @@ class PortfolioManager:
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
-        precision = self.n_decimals.get(order.asset, AssetPrecision())
+        precision = self.precision.get(order.asset, AssetPrecision())
         order.volume = self.round(order.volume, precision.volume_precision)
         order.price = self.round(order.price, precision.price_precision)
         assert order.price > 0

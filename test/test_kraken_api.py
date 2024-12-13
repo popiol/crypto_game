@@ -43,7 +43,7 @@ class TestKrakenApi:
         orders = api.get_closed_orders(datetime.strptime("2024-12-07 00:00:00", "%Y-%m-%d %H:%M:%S"))
         print(orders)
 
-    def test_get_n_decimals(self):
+    def test_get_precision(self):
         api = KrakenApi()
-        n_decimals = api.get_n_decimals(["SPELLUSD", "AAVEUSD"])
-        print(n_decimals)
+        precision = api.get_precision(["SPELLUSD", "AAVEUSD"])
+        print(precision)

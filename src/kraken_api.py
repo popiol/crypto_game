@@ -163,10 +163,10 @@ class KrakenApi:
             for order in orders
         ]
 
-    def get_volume_decimals(self, assets: list[str]):
+    def get_volume_precision(self, assets: list[str]):
         if not assets:
             return {}
-        print("get number of volume decimals for", assets)
+        print("get volume precision for", assets)
         command = "Assets"
         assets = [asset[:-3] for asset in assets]
         params = {"asset": ",".join(assets)}
@@ -174,22 +174,22 @@ class KrakenApi:
         print(resp.text)
         return {f"{asset}USD": resp.json()["result"][asset]["decimals"] for asset in assets}
 
-    def get_price_decimals(self, assets: list[str]):
+    def get_price_precision(self, assets: list[str]):
         if not assets:
             return {}
-        print("get number of price decimals for", assets)
+        print("get price precision for", assets)
         command = "AssetPairs"
         params = {"pair": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         print(resp.text)
         return {asset: resp.json()["result"][asset]["pair_decimals"] for asset in assets}
 
-    def get_n_decimals(self, assets: list[str]):
+    def get_precision(self, assets: list[str]):
         if not assets:
             return {}
-        volume_decimals = self.get_volume_decimals(assets)
-        price_decimals = self.get_price_decimals(assets)
+        volume_precision = self.get_volume_precision(assets)
+        price_precision = self.get_price_precision(assets)
         return {
-            asset: AssetPrecision(volume_decimals.get(asset), price_decimals.get(asset))
-            for asset in set(volume_decimals.keys()).union(price_decimals.keys())
+            asset: AssetPrecision(volume_precision.get(asset), price_precision.get(asset))
+            for asset in set(volume_precision.keys()).union(price_precision.keys())
         }

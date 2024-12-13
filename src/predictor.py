@@ -91,7 +91,7 @@ class Predictor:
         portfolio_manager.orders = portfolio_api.get_orders()
         timestamp = datetime.now()
         portfolio_manager.place_orders(timestamp, orders)
-        portfolio_manager.n_decimals = portfolio_api.get_n_decimals([o.asset for o in portfolio_manager.orders])
+        portfolio_manager.precision = portfolio_api.get_precision([o.asset for o in portfolio_manager.orders])
         portfolio_manager.adjust_orders(quotes)
         orders = [o for o in portfolio_manager.orders if o.place_dt == timestamp]
         for order in orders:
