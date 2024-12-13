@@ -26,9 +26,8 @@ for col in df.columns:
     print(group)
     if col == "datetime" or group in ignore or group in head:
         continue
-    for prefix in ignore_prefix:
-        if group.startswith(prefix):
-            continue
+    if any(group.startswith(prefix) for prefix in ignore_prefix):
+        continue
     groups.add(group)
 
 groups = head + sorted(groups)
