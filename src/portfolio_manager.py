@@ -81,7 +81,6 @@ class PortfolioManager:
         if precision is None:
             precision = 4 - math.floor(math.log10(x))
         y = int(x * pow(10, precision)) / pow(10, precision)
-        print(x, "rounded to", y)
         return y
 
     def buy_asset(self, order: PortfolioOrder, quotes: QuotesSnapshot, asset_index: int, adjust_only: bool = False) -> bool:
