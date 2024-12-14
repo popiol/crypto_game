@@ -83,8 +83,10 @@ class ModelBuilder:
     def compile_model(self, model):
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
 
-    @staticmethod
-    def adjust_array_shape(array: np.ndarray, dim: int, size: int) -> np.ndarray:
+    def most_important_dims(self, array: np.ndarray, dim: int, size: int):
+        return np.argsort([np.abs(x).sum() for x in np.rollaxis(array, dim)])[-size:]
+
+    def adjust_array_shape(self, array: np.ndarray, dim: int, size: int) -> np.ndarray:
         assert size > 0
         old_shape = np.shape(array)
         assert 0 <= dim < len(old_shape)
@@ -93,7 +95,7 @@ class ModelBuilder:
             return array
         if size < old_size:
             index = [slice(x) for x in old_shape]
-            index[dim] = slice(size)
+            index[dim] = self.most_important_dims(array, dim, size)
             array = array[*index]
         elif size > old_size:
             add_shape = list(old_shape)
