@@ -103,9 +103,10 @@ class EvolutionHandler:
                 prev_n_layers = len(model.get_layers())
                 model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
                 if not self.model_builder.last_failed:
-                    n_layers_diff += len(model.get_layers()) - prev_n_layers
+                    n_removed = prev_n_layers - len(model.get_layers())
+                    n_layers_diff -= n_removed
                     skip = offset
-                    mutations["remove_layer"] = mutations.get("remove_layer", 0) + 1
+                    mutations["remove_layer"] = mutations.get("remove_layer", 0) + n_removed
                     continue
             resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
             resize_action = self.evolution_randomizer.resize_layer()

@@ -40,8 +40,8 @@ class AggregatedMetrics:
             if key in df:
                 for mutations in df[key]:
                     if type(mutations) == dict:
-                        for key, val in mutations.items():
-                            aggregated_key = prefix + key.lower()
+                        for key2, val in mutations.items():
+                            aggregated_key = prefix + key2.lower()
                             aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
                             aggregated[aggregated_key].append(val)
         for key, val in aggregated.items():
