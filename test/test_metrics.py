@@ -23,14 +23,6 @@ class TestMetrics:
         model.name = "agent_2024_12345"
         return model
 
-    @pytest.fixture
-    def complex_model(self, builder: ModelBuilder):
-        model_1 = builder.build_model(asset_dependent=True)
-        model_1.name = "agent_2024_23456"
-        model_2 = builder.build_model(asset_dependent=False)
-        model_2.name = "agent_2024_34567"
-        return builder.merge_models(model_1, model_2)
-
     def create_agent(self, model):
         data_transformer = MagicMock()
         data_transformer.get_shared_input_stats = MagicMock()
@@ -45,13 +37,21 @@ class TestMetrics:
     def metrics(self, agent: Agent):
         return Metrics(agent)
 
-    def test_get_n_merge_ancestors(self, simple_model, complex_model):
+    def test_get_n_merge_ancestors(self, simple_model):
         agent = self.create_agent(simple_model)
         metrics = Metrics(agent)
         assert metrics.get_n_merge_ancestors() == 0
-        agent = self.create_agent(complex_model)
-        metrics = Metrics(agent)
-        assert metrics.get_n_merge_ancestors() == 2
+        metrics.metrics["parents"] = {
+            "Isabella_20241205145936_81eae": {
+                "Amelia_20241101213524_a96a8": None,
+                "Benjamin_20241105180526_7a83d": None,
+            },
+            "Luna_20241029080525_dd5aa": {
+                "Olivia_20241022222526_806af": {"Emma_20241017052524_076e7": None},
+                "Benjamin_20241107113528_16a28": {"William_20241101090522_9bb9e": None},
+            },
+        }
+        assert metrics.get_n_merge_ancestors() == 6
 
     def test_get_n_ancestors(self, simple_model):
         agent = self.create_agent(simple_model)

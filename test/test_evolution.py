@@ -253,7 +253,6 @@ class TestEvolution:
         evolution_handler = environment.evolution_handler
         model_builder = environment.model_builder
         model, metrics = evolution_handler.create_new_model()
-        metrics["mutations"] = {}
         with patch("src.model_builder.ModelBuilder.add_conv_layer", wraps=model_builder.add_conv_layer) as add_conv_layer:
             for _ in range(100):
                 model, metrics = evolution_handler.mutate(model, metrics)
@@ -261,6 +260,17 @@ class TestEvolution:
                     break
         print("mutations:", metrics["mutations"])
         print("call count:", add_conv_layer.call_count)
+
+    def test_all_mutations(self):
+        environment = Environment("config/config.yml")
+        evolution_handler = environment.evolution_handler
+        model, metrics = evolution_handler.create_new_model()
+        for index, layer in enumerate(model.get_layers()[:-1]):
+            if layer.shape:
+                model = environment.model_builder.add_relu(model, index)
+        for _ in range(100):
+            model, metrics = evolution_handler.mutate(model, metrics)
+        print("mutations:", metrics["mutations"])
 
     def test_create_new_model(self):
         environment = Environment("config/config.yml")

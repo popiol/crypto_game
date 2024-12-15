@@ -14,13 +14,17 @@ class ModificationInput:
     index: int
     config: dict
     tensor: keras.KerasTensor
-    layer_names: list[str]
+    layer_names: set[str]
 
 
 @dataclass
 class ModificationOutput:
     skip: bool = False
     tensor: keras.KerasTensor = None
+
+
+class ModificationError(Exception):
+    pass
 
 
 @dataclass
@@ -138,45 +142,55 @@ class ModelBuilder:
             output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
             config["target_shape"] = output_shape
 
-    def fix_layer_name(self, layer_name: str, layer_names: list[str] = None) -> str:
+    def fix_layer_name(self, layer_name: str, layer_names: set[str], add: bool = True) -> str:
         parts = layer_name.split("_")
         layer_name = "_".join(parts[:1] + parts[max(1, len(parts) - 30) :])
-        if layer_names is not None:
-            while layer_name in layer_names:
-                parts = layer_name.split("_")
-                if len(parts[-1]) <= 3 and re.match("^[0-9]+$", parts[-1]):
-                    parts[-1] = str(int(parts[-1]) + 1)
-                else:
-                    parts[-1] = parts[-1] + "_1"
-                layer_name = "_".join(parts)
-            layer_names.append(layer_name)
+        while layer_name in layer_names:
+            parts = layer_name.split("_")
+            if re.match("^[0-9]+$", parts[-1]):
+                parts[-1] = str(int(parts[-1]) + 1)
+            else:
+                parts[-1] = parts[-1] + "_1"
+            layer_name = "_".join(parts)
+        if add:
+            layer_names.add(layer_name)
         return layer_name
 
-    def modify_model(self, model: MlModel, modification: Callable[[ModificationInput], ModificationOutput]) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
+    def get_model_tensor(
+        self,
+        model: MlModel,
+        inputs: keras.layers.Input,
+        layer_names: set,
+        modification: Callable[[ModificationInput], ModificationOutput],
+    ):
         tensors = {inputs.name: inputs}
-        layer_names = []
-        self.last_failed = False
         for index, l in enumerate(model.model.layers[1:]):
             parent_layers = model.get_parent_layer_names(index)
             tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
             config = l.get_config()
-            try:
-                resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names))
-                if resp and resp.skip:
-                    tensors[l.name] = tensor
-                    continue
-                if resp and resp.tensor is not None:
-                    tensor = resp.tensor
-                self.fix_reshape(config, tensor)
-                config["name"] = self.fix_layer_name(config["name"], layer_names)
-                new_layer = l.from_config(config)
-                tensor = new_layer(tensor)
-            except (ValueError, TypeError, AttributeError):
-                self.last_failed = True
-                print("Modification failed")
-                return model
+            resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names))
+            if resp and resp.skip:
+                tensors[l.name] = tensor
+                continue
+            if resp and resp.tensor is not None:
+                tensor = resp.tensor
+            self.fix_reshape(config, tensor)
+            config["name"] = self.fix_layer_name(config["name"], layer_names)
+            new_layer = l.from_config(config)
+            tensor = new_layer(tensor)
             tensors[l.name] = tensor
+        return tensor
+
+    def modify_model(self, model: MlModel, modification: Callable[[ModificationInput], ModificationOutput]) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
+        self.last_failed = False
+        layer_names = set()
+        try:
+            tensor = self.get_model_tensor(model, inputs, layer_names, modification)
+        except (ValueError, TypeError, AttributeError, ModificationError):
+            self.last_failed = True
+            print("Modification failed")
+            return model
         if tensor.shape != (None, self.n_assets, self.n_outputs):
             self.last_failed = True
             print("Modification failed")
@@ -239,7 +253,9 @@ class ModelBuilder:
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
-            if input.index == before_index and isinstance(input.tensor, keras.KerasTensor):
+            if input.index == before_index:
+                if not isinstance(input.tensor, keras.KerasTensor):
+                    raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
                 layer_name = self.fix_layer_name("dense", input.layer_names)
                 return ModificationOutput(tensor=keras.layers.Dense(size, name=layer_name)(input.tensor))
 
@@ -250,7 +266,9 @@ class ModelBuilder:
         assert 0 <= before_index < len(model.model.layers) - 1
 
         def modification(input: ModificationInput):
-            if input.index == before_index and isinstance(input.tensor, keras.KerasTensor):
+            if input.index == before_index:
+                if not isinstance(input.tensor, keras.KerasTensor):
+                    raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
                 if len(input.tensor.shape) == 3:
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute((2, 1), name=layer_name)(input.tensor)
@@ -263,6 +281,7 @@ class ModelBuilder:
                     layer_name = self.fix_layer_name("conv2d", input.layer_names)
                     tensor = keras.layers.Conv2D(input.tensor.shape[-1], 3, name=layer_name)(input.tensor)
                     return ModificationOutput(tensor=tensor)
+                raise ModificationError(f"Invalid tensor shape: {input.tensor.shape}")
 
         return self.modify_model(model, modification)
 
@@ -271,7 +290,10 @@ class ModelBuilder:
         assert 0 <= layer_index < len(model.model.layers) - 2
 
         def modification(input: ModificationInput):
-            if input.index == layer_index and input.config["name"].split("_")[0] == "dense":
+            if input.index == layer_index:
+                layer_type = input.config["name"].split("_")[0]
+                if layer_type != "dense":
+                    raise ModificationError(f"Can only resize Dense layer, {layer_type} given")
                 input.config["units"] = new_size
 
         return self.modify_model(model, modification)
@@ -282,6 +304,8 @@ class ModelBuilder:
 
         def modification(input: ModificationInput):
             if input.index == layer_index:
+                if input.config["activation"] == "relu":
+                    raise ModificationError("Already has RELU activation")
                 input.config["activation"] = "relu"
 
         return self.modify_model(model, modification)
@@ -293,7 +317,7 @@ class ModelBuilder:
         def modification(input: ModificationInput):
             if input.index == layer_index:
                 if input.config["activation"] == "linear":
-                    raise ValueError("No activation to remove")
+                    raise ModificationError("No activation to remove")
                 input.config["activation"] = "linear"
 
         return self.modify_model(model, modification)
@@ -301,35 +325,30 @@ class ModelBuilder:
     class MergeVersion(Enum):
         CONCAT = auto()
         TRANSFORM = auto()
+        SELECT = auto()
 
     def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
         model_2 = self.adjust_dimensions(model_2)
-        model_id_1 = model_1.name.split("_")[-1]
-        model_id_2 = model_2.name.split("_")[-1]
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        tensors = {model_1.model.layers[0].name: inputs}
-        for index, l in enumerate(model_1.model.layers[1:-1]):
-            parent_layers = model_1.get_parent_layer_names(index)
-            tensor_1 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
-            config = l.get_config()
-            config["name"] = self.fix_layer_name(config["name"] + "_" + model_id_1)
-            new_layer = l.from_config(config)
-            tensor_1 = new_layer(tensor_1)
-            tensors[l.name] = tensor_1
-        tensors = {model_2.model.layers[0].name: inputs}
-        for index, l in enumerate(model_2.model.layers[1:-1]):
-            parent_layers = model_2.get_parent_layer_names(index)
-            tensor_2 = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
-            config = l.get_config()
-            config["name"] = self.fix_layer_name(config["name"] + "_" + model_id_2)
-            new_layer = l.from_config(config)
-            tensor_2 = new_layer(tensor_2)
-            tensors[l.name] = tensor_2
+        names_map = {}
+        layer_names = set()
+
+        def modification(input: ModificationInput):
+            names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
+            if input.index == n_layers - 2:
+                return ModificationOutput(skip=True)
+
+        n_layers = len(model_1.model.layers)
+        inputs.name = model_1.model.layers[0].name
+        tensor_1 = self.get_model_tensor(model_1, inputs, layer_names, modification)
+        n_layers = len(model_2.model.layers)
+        inputs.name = model_2.model.layers[0].name
+        tensor_2 = self.get_model_tensor(model_2, inputs, layer_names, modification)
         tensor = keras.layers.Concatenate()([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
-            tensor = keras.layers.Dense(100)(tensor)
-        tensor = keras.layers.Dense(self.n_outputs)(tensor)
+            tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
+        tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
         for l in new_model.layers[1:-2]:
@@ -337,12 +356,12 @@ class ModelBuilder:
                 continue
             from_layer = None
             for l_1 in model_1.model.layers[1:]:
-                if l.name == l_1.name + "_" + model_id_1:
+                if l.name == names_map[l_1.name]:
                     from_layer = l_1
                     break
             if from_layer is None:
                 for l_2 in model_2.model.layers[1:]:
-                    if l.name == l_2.name + "_" + model_id_2:
+                    if l.name == names_map[l_2.name]:
                         from_layer = l_2
                         break
             if from_layer is not None:

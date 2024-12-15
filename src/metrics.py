@@ -35,15 +35,6 @@ class Metrics:
             return None
         return price_2 / price_1 - 1
 
-    def get_n_merge_ancestors(self) -> int:
-        if self.model is None:
-            return 0
-        return len(
-            set.union(
-                *[set([x for x in l.name.split("_")[1:] if len(x) == self.agent.model_id_len]) for l in self.model.get_layers()]
-            )
-        )
-
     def get_n_params(self) -> int:
         if self.model is None:
             return 0
@@ -76,6 +67,20 @@ class Metrics:
 
     def get_n_ancestors(self) -> int:
         return len(self.parents_as_list(self.metrics.get("parents")))
+
+    def get_n_merge_ancestors(self) -> int:
+        if self.model is None or "parents" not in self.metrics:
+            return 0
+        n_merge_ancestors = 0
+        stack = [self.metrics["parents"]]
+        while stack:
+            parents = stack.pop()
+            if not parents:
+                continue
+            if len(parents.values()) > 1:
+                n_merge_ancestors += len(parents.values())
+            stack.extend(parents.values())
+        return n_merge_ancestors
 
     def get_n_trainings(self) -> int:
         if self.model is None:
