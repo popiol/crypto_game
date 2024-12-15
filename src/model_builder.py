@@ -1,3 +1,4 @@
+import random
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -15,11 +16,13 @@ class ModificationInput:
     config: dict
     tensor: keras.KerasTensor
     layer_names: set[str]
+    parents: list[str]
 
 
 @dataclass
 class ModificationOutput:
     skip: bool = False
+    skip_branch: bool = False
     tensor: keras.KerasTensor = None
 
 
@@ -166,11 +169,19 @@ class ModelBuilder:
         tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
             parent_layers = model.get_parent_layer_names(index)
-            tensor = tensors[parent_layers[0]] if len(parent_layers) == 1 else [tensors[x] for x in parent_layers]
+            tensor = [tensors[x] for x in parent_layers if x in tensors]
+            if not tensor:
+                continue
             config = l.get_config()
-            resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names))
+            if len(tensor) == 1:
+                if config["name"].split("_")[0] == "concatenate":
+                    continue
+                tensor = tensor[0]
+            resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names, parent_layers))
             if resp and resp.skip:
                 tensors[l.name] = tensor
+                continue
+            if resp and resp.skip_branch:
                 continue
             if resp and resp.tensor is not None:
                 tensor = resp.tensor
@@ -338,6 +349,10 @@ class ModelBuilder:
             names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
             if input.index == n_layers - 2:
                 return ModificationOutput(skip=True)
+            if merge_version == self.MergeVersion.SELECT:
+                if input.parents[0].split("_")[0] == "input":
+                    if random.random() < 0.5:
+                        return ModificationOutput(skip_branch=True)
 
         n_layers = len(model_1.model.layers)
         inputs.name = model_1.model.layers[0].name
@@ -345,7 +360,7 @@ class ModelBuilder:
         n_layers = len(model_2.model.layers)
         inputs.name = model_2.model.layers[0].name
         tensor_2 = self.get_model_tensor(model_2, inputs, layer_names, modification)
-        tensor = keras.layers.Concatenate()([tensor_1, tensor_2])
+        tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)

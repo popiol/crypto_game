@@ -236,6 +236,9 @@ class TestEvolution:
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
+        model_5 = builder.merge_models(model_3, model_4, builder.MergeVersion.CONCAT)
+        print(model_5)
+        print(len(model_5.get_layers()))
 
     def test_merge_real_models(self):
         builder = ModelBuilder(10, 309, 23, 4)
@@ -268,6 +271,7 @@ class TestEvolution:
         for index, layer in enumerate(model.get_layers()[:-1]):
             if layer.shape:
                 model = environment.model_builder.add_relu(model, index)
+                break
         for _ in range(100):
             model, metrics = evolution_handler.mutate(model, metrics)
         print("mutations:", metrics["mutations"])
