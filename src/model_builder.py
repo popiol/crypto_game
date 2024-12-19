@@ -366,7 +366,7 @@ class ModelBuilder:
             first_layers = []
             for index, l in enumerate(model.model.layers[1:]):
                 parent_layers = model.get_parent_layer_names(index)
-                if [x for x in parent_layers if x.startswith("input_")]:
+                if [x for x in parent_layers if x.startswith("input")]:
                     first_layers.append(l.name)
             chosen_branch = random.choice(first_layers)
 

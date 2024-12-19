@@ -98,3 +98,28 @@ class TestMetrics:
         score = reports.get_leader_portfolio_value()
         print(score)
         assert type(score) == float
+
+    def test_get_model_length(self, builder: ModelBuilder):
+        model = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V1)
+        metrics = Metrics(self.create_agent(model))
+        assert metrics.get_model_length() == 5
+        model = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
+        metrics = Metrics(self.create_agent(model))
+        assert metrics.get_model_length() == 8
+        model = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V2)
+        metrics = Metrics(self.create_agent(model))
+        assert metrics.get_model_length() == 8
+        model = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V2)
+        metrics = Metrics(self.create_agent(model))
+        assert metrics.get_model_length() == 11
+
+    def test_get_model_width(self, builder: ModelBuilder):
+        model_1 = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V1)
+        metrics = Metrics(self.create_agent(model_1))
+        assert metrics.get_model_width() == 1
+        model_2 = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
+        metrics = Metrics(self.create_agent(model_2))
+        assert metrics.get_model_width() == 1
+        model_3 = builder.merge_models(model_1, model_2)
+        metrics = Metrics(self.create_agent(model_3))
+        assert metrics.get_model_width() == 2

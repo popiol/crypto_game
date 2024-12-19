@@ -70,8 +70,19 @@ class MlModel:
         return layers
 
     def get_model_length(self):
+        lengths: dict[str, int] = {}
         for index, l in enumerate(self.model.layers[1:]):
             parent_layers = self.get_parent_layer_names(index)
+            lengths[l.name] = max(lengths.get(parent, 0) + 1 for parent in parent_layers)
+        return max(lengths.values())
+
+    def get_model_width(self):
+        width = 0
+        for index, l in enumerate(self.model.layers[1:]):
+            parent_layers = self.get_parent_layer_names(index)
+            if parent_layers[0].startswith("input"):
+                width += 1
+        return width
 
     def get_n_params(self):
         return np.sum([np.prod(v.shape) for v in self.model.trainable_weights])

@@ -140,9 +140,15 @@ class Metrics:
         timestamp = datetime.strptime(self.agent.model_name.split("_")[1], "%Y%m%d%H%M%S")
         return (datetime.now() - timestamp).total_seconds() / 3600
 
-    def get_model_length(self) -> float:
+    def get_model_length(self):
         if self.model is None:
             return 0
+        return self.model.get_model_length()
+
+    def get_model_width(self):
+        if self.model is None:
+            return 0
+        return self.model.get_model_width()
 
     def get_metrics(self):
         return {
@@ -163,4 +169,6 @@ class Metrics:
             "output_stats": self.get_output_stats(),
             "weight_stats": self.get_weight_stats(),
             "available_memory": self.get_available_memory(),
+            "model_length": self.get_model_length(),
+            "model_width": self.get_model_width(),
         }
