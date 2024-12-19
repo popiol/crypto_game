@@ -242,26 +242,36 @@ class DataTransformer:
         np.nan_to_num(features, copy=False, posinf=0.0, neginf=0.0)
         return features
 
+    def fix_n_assets(self, memory: np.ndarray, n_assets: int):
+        memory_n_assets = np.shape(memory)[1]
+        if memory_n_assets < n_assets:
+            shape = list(np.shape(memory))
+            shape[1] = n_assets - memory_n_assets
+            return np.concatenate([memory, np.zeros(shape)], axis=1)
+        return memory
+
     def add_to_memory(self, features: np.ndarray):
         if self.memory is None:
             self.memory = np.zeros((self.memory_length, *np.shape(features)))
+        self.memory = self.fix_n_assets(self.memory, len(features))
         for index in range(self.memory_length - 1):
             self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
         self.memory = np.concatenate((self.memory[:-1], np.expand_dims(features, 0)))
         self.shared_input_stats.add_to_stats(np.swapaxes(self.memory, 0, 1))
 
     def add_portfolio_to_memory(self, agent: str, portfolio: list[str], asset_list: list[str]):
+        n_assets = len(asset_list)
         if self.per_agent_memory.get(agent) is None:
-            self.per_agent_memory[agent] = np.zeros((self.memory_length, len(asset_list), 1))
+            self.per_agent_memory[agent] = np.zeros((self.memory_length, n_assets, 1))
+        agent_memory = self.per_agent_memory[agent]
+        agent_memory = self.fix_n_assets(agent_memory, n_assets)
         for index in range(self.memory_length - 1):
-            self.per_agent_memory[agent][index] = (
-                self.per_agent_memory[agent][index] * 0.1 + self.per_agent_memory[agent][index + 1] * 0.9
-            )
-        self.per_agent_memory[agent][-1, :, 0] = 0.0
+            agent_memory[index] = agent_memory[index] * 0.1 + agent_memory[index + 1] * 0.9
+        agent_memory[-1, :, 0] = 0.0
         for asset in portfolio:
             asset_index = asset_list.index(asset)
-            self.per_agent_memory[agent][-1, asset_index, 0] = 1.0
-        self.agent_input_stats.add_to_stats(np.swapaxes(self.per_agent_memory[agent], 0, 1))
+            agent_memory[-1, asset_index, 0] = 1.0
+        self.agent_input_stats.add_to_stats(np.swapaxes(agent_memory, 0, 1))
 
     def get_shared_memory(self) -> np.ndarray:
         return self.memory[:, :, :-1]
@@ -273,14 +283,8 @@ class DataTransformer:
         shared_n_assets = np.shape(shared_memory)[1]
         agent_n_assets = np.shape(agent_memory)[1]
         n_assets = max(shared_n_assets, agent_n_assets)
-        if shared_n_assets < n_assets:
-            shape = list(np.shape(shared_memory))
-            shape[1] = n_assets - shared_n_assets
-            shared_memory = np.concatenate([shared_memory, np.zeros(shape)], axis=1)
-        if agent_n_assets < n_assets:
-            shape = list(np.shape(agent_memory))
-            shape[1] = n_assets - agent_n_assets
-            agent_memory = np.concatenate([agent_memory, np.zeros(shape)], axis=1)
+        shared_memory = self.fix_n_assets(shared_memory, n_assets)
+        agent_memory = self.fix_n_assets(agent_memory, n_assets)
         return np.concatenate([shared_memory, agent_memory], axis=-1)
 
     def get_memory(self, agent: str) -> np.ndarray:
