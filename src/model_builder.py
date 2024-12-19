@@ -175,6 +175,7 @@ class ModelBuilder:
             config = l.get_config()
             if len(tensor) == 1:
                 if config["name"].split("_")[0] == "concatenate":
+                    tensors[l.name] = tensor[0]
                     continue
                 tensor = tensor[0]
             resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names, parent_layers))
@@ -351,14 +352,14 @@ class ModelBuilder:
 
         def modification(input: ModificationInput):
             names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
-            if input.index == n_layers - 2:
+            if input.index == n_layers - 1:
                 return ModificationOutput(skip=True)
             if merge_version == self.MergeVersion.SELECT:
                 if input.parents[0].split("_")[0] == "input":
                     if input.config["name"] != chosen_branch:
                         return ModificationOutput(skip_branch=True)
 
-        n_layers = len(model.model.layers)
+        n_layers = len(model.model.layers) - 1
         inputs.name = model.model.layers[0].name
         return self.get_model_tensor(model, inputs, layer_names, modification)
 
@@ -381,12 +382,12 @@ class ModelBuilder:
                 continue
             from_layer = None
             for l_1 in model_1.model.layers[1:]:
-                if l.name == names_map[l_1.name]:
+                if l.name == names_map.get(l_1.name):
                     from_layer = l_1
                     break
             if from_layer is None:
                 for l_2 in model_2.model.layers[1:]:
-                    if l.name == names_map[l_2.name]:
+                    if l.name == names_map.get(l_2.name):
                         from_layer = l_2
                         break
             if from_layer is not None:

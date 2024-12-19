@@ -228,17 +228,24 @@ class TestEvolution:
 
     def test_merge_models(self, builder: ModelBuilder):
         model_1 = builder.build_model(asset_dependent=True)
+        print("model 1 n layers:", len(model_1.get_layers()))
         model_2 = builder.build_model(asset_dependent=False)
+        print("model 2 n layers:", len(model_2.get_layers()))
         model_3 = builder.merge_models(model_1, model_2)
+        print("model 3 n layers:", len(model_3.get_layers()))
         model_4 = builder.merge_models(model_2, model_3, builder.MergeVersion.TRANSFORM)
+        print("model 4 n layers:", len(model_4.get_layers()))
         assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 1
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
         model_5 = builder.merge_models(model_3, model_4, builder.MergeVersion.SELECT)
+        assert len(model_1.get_layers()) < len(model_5.get_layers()) < len(model_3.get_layers()) + len(model_4.get_layers())
+        output_5 = model_5.predict(input)
+        assert np.shape(output_5) == np.shape(output_4)
         print(model_5)
-        print(len(model_5.get_layers()))
+        print("model 5 n layers:", len(model_5.get_layers()))
 
     def test_merge_real_models(self):
         builder = ModelBuilder(10, 309, 23, 4)
