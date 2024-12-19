@@ -69,6 +69,10 @@ class MlModel:
             input_shapes[l.name] = l.compute_output_shape(input_shape)
         return layers
 
+    def get_model_length(self):
+        for index, l in enumerate(self.model.layers[1:]):
+            parent_layers = self.get_parent_layer_names(index)
+
     def get_n_params(self):
         return np.sum([np.prod(v.shape) for v in self.model.trainable_weights])
 
