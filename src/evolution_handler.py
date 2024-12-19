@@ -31,7 +31,7 @@ class EvolutionHandler:
         return model, metrics
 
     def create_new_model(self) -> tuple[MlModel, dict]:
-        version = list(self.model_builder.ModelVersion)[random.randrange(len(self.model_builder.ModelVersion))]
+        version = random.choice(list(self.model_builder.ModelVersion))
         asset_dependent = bool(random.randint(0, 1))
         print("create model, asset_dependent:", asset_dependent, ", version:", version.name)
         metrics = {
@@ -79,7 +79,7 @@ class EvolutionHandler:
         for metric_name in metrics_1:
             if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
                 metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
-        merge_version = list(self.model_builder.MergeVersion)[random.randrange(len(self.model_builder.MergeVersion))]
+        merge_version = random.choice(list(self.model_builder.MergeVersion))
         merge_version_metrics: dict = metrics.get("merge_version", {})
         merge_version_metrics[merge_version.name] = merge_version_metrics.get(merge_version.name, 0) + 1
         metrics["merge_version"] = merge_version_metrics

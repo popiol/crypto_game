@@ -236,7 +236,7 @@ class TestEvolution:
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
-        model_5 = builder.merge_models(model_3, model_4, builder.MergeVersion.CONCAT)
+        model_5 = builder.merge_models(model_3, model_4, builder.MergeVersion.SELECT)
         print(model_5)
         print(len(model_5.get_layers()))
 

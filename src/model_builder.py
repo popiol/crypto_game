@@ -165,7 +165,7 @@ class ModelBuilder:
         inputs: keras.layers.Input,
         layer_names: set,
         modification: Callable[[ModificationInput], ModificationOutput],
-    ):
+    ) -> keras.KerasTensor:
         tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
             parent_layers = model.get_parent_layer_names(index)
@@ -338,12 +338,16 @@ class ModelBuilder:
         TRANSFORM = auto()
         SELECT = auto()
 
-    def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
-        model_1 = self.adjust_dimensions(model_1)
-        model_2 = self.adjust_dimensions(model_2)
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        names_map = {}
-        layer_names = set()
+    def prepare_for_merge(
+        self, model: MlModel, inputs: keras.layers.Input, merge_version: MergeVersion, names_map: dict, layer_names: dict
+    ) -> keras.KerasTensor:
+        if merge_version == self.MergeVersion.SELECT:
+            first_layers = []
+            for index, l in enumerate(model.model.layers[1:]):
+                parent_layers = model.get_parent_layer_names(index)
+                if [x for x in parent_layers if x.startswith("input_")]:
+                    first_layers.append(l.name)
+            chosen_branch = random.choice(first_layers)
 
         def modification(input: ModificationInput):
             names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
@@ -351,15 +355,21 @@ class ModelBuilder:
                 return ModificationOutput(skip=True)
             if merge_version == self.MergeVersion.SELECT:
                 if input.parents[0].split("_")[0] == "input":
-                    if random.random() < 0.5:
+                    if input.config["name"] != chosen_branch:
                         return ModificationOutput(skip_branch=True)
 
-        n_layers = len(model_1.model.layers)
-        inputs.name = model_1.model.layers[0].name
-        tensor_1 = self.get_model_tensor(model_1, inputs, layer_names, modification)
-        n_layers = len(model_2.model.layers)
-        inputs.name = model_2.model.layers[0].name
-        tensor_2 = self.get_model_tensor(model_2, inputs, layer_names, modification)
+        n_layers = len(model.model.layers)
+        inputs.name = model.model.layers[0].name
+        return self.get_model_tensor(model, inputs, layer_names, modification)
+
+    def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
+        model_1 = self.adjust_dimensions(model_1)
+        model_2 = self.adjust_dimensions(model_2)
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        names_map = {}
+        layer_names = set()
+        tensor_1 = self.prepare_for_merge(model_1, inputs, merge_version, names_map, layer_names)
+        tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names)
         tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)

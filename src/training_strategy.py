@@ -68,5 +68,4 @@ class StrategyPicker:
         self.strategies = [LearnOnMistakes, LearnOnSuccess]
 
     def pick(self, model: MlModel) -> TrainingStrategy:
-        index = random.randrange(len(self.strategies))
-        return self.strategies[index](model)
+        return random.choice(self.strategies)(model)
