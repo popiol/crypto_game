@@ -70,7 +70,7 @@ class CustomMetrics:
                 ("model_version", "version_"),
             ]:
                 if col not in df and col.startswith(prefix):
-                    df[col] = df[key].apply(lambda x: x.get(col[len(prefix) :], 0))
+                    df[col] = df[key].apply(lambda x: x.get(col[len(prefix) :], 0) if type(x) == dict else 0)
             df["grouping"] = df[col].apply(
                 lambda x: (
                     round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val
