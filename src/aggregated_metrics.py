@@ -38,9 +38,9 @@ class AggregatedMetrics:
                 aggregated[aggregated_key].append(val)
         for key, prefix in [("mutations", "n_mutations_"), ("merge_version", "merge_"), ("model_version", "version_")]:
             if key in df:
-                for mutations in df[key]:
-                    if type(mutations) == dict:
-                        for key2, val in mutations.items():
+                for values in df[key]:
+                    if type(values) == dict:
+                        for key2, val in values.items():
                             aggregated_key = prefix + key2.lower()
                             aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
                             aggregated[aggregated_key].append(val)

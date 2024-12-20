@@ -31,6 +31,7 @@ class CustomMetrics:
             "n_ancestors",
             "merge_concat",
             "merge_transform",
+            "merge_select",
             "version_v1",
             "version_v2",
             "version_v3",
