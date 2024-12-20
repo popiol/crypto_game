@@ -54,7 +54,7 @@ class CustomMetrics:
             "n_transactions",
             "n_params",
         ]:
-            if col not in self.aggregated or col not in df:
+            if col not in self.aggregated:
                 continue
             min_val = self.aggregated[col]["min"]
             max_val = self.aggregated[col]["max"]
@@ -63,10 +63,14 @@ class CustomMetrics:
             n_buckets = 10
             if max_val - min_val < 10:
                 n_buckets = round(max_val - min_val + 1)
-            if col not in df and col.startswith("n_layers_"):
-                df[col] = df["n_layers_per_type"].apply(lambda x: x.get(col[len("n_layers_") :], 0))
-            if col not in df and col.startswith("n_mutations_"):
-                df[col] = df["mutations"].apply(lambda x: x.get(col[len("n_mutations_") :], 0) if type(x) == dict else 0)
+            for key, prefix in [
+                ("n_layers_per_type", "n_layers_"),
+                ("mutations", "n_mutations_"),
+                ("merge_version", "merge_"),
+                ("model_version", "version_"),
+            ]:
+                if col not in df and col.startswith(prefix):
+                    df[col] = df[key].apply(lambda x: x.get(col[len(prefix) :], 0))
             df["grouping"] = df[col].apply(
                 lambda x: (
                     round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val

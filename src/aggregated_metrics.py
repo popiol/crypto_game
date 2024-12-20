@@ -31,12 +31,12 @@ class AggregatedMetrics:
             col_type = df[col][~df[col].isna()].iloc[0].__class__.__name__
             if col_type.startswith("int") or col_type.startswith("float"):
                 aggregated[col] = self.stats(df[col].tolist())
-        for n_layers_per_type in df["n_layers_per_type"]:
-            for key, val in n_layers_per_type.items():
-                aggregated_key = "n_layers_" + key
-                aggregated[aggregated_key] = aggregated.get(aggregated_key, [])
-                aggregated[aggregated_key].append(val)
-        for key, prefix in [("mutations", "n_mutations_"), ("merge_version", "merge_"), ("model_version", "version_")]:
+        for key, prefix in [
+            ("n_layers_per_type", "n_layers_"),
+            ("mutations", "n_mutations_"),
+            ("merge_version", "merge_"),
+            ("model_version", "version_"),
+        ]:
             if key in df:
                 for values in df[key]:
                     if type(values) == dict:
