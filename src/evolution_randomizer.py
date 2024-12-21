@@ -11,6 +11,7 @@ class EvolutionRandomizer:
     add_layer_prob: float
     resize_prob: float
     relu_prob: float
+    reuse_prob: float
 
     class ModelCreationMethod(Enum):
         NEW_MODEL = auto()
@@ -50,3 +51,6 @@ class EvolutionRandomizer:
         if random.random() > self.add_layer_prob:
             return self.AddLayerAction.NO_ACTION
         return random.choice(list(self.AddLayerAction)[1:])
+
+    def reuse_layer(self):
+        return random.random() < self.reuse_prob

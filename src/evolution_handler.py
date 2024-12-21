@@ -97,11 +97,12 @@ class EvolutionHandler:
             if skip > 0:
                 skip -= 1
                 continue
+            index += n_layers_diff
             if self.evolution_randomizer.remove_layer():
                 offset = abs(round(random.gauss(0, 2)))
                 offset = min(offset, n_layers - index - 2)
                 prev_n_layers = len(model.get_layers())
-                model = self.model_builder.remove_layer(model, index + n_layers_diff, index + offset + n_layers_diff)
+                model = self.model_builder.remove_layer(model, index, index + offset)
                 if not self.model_builder.last_failed:
                     n_removed = prev_n_layers - len(model.get_layers())
                     n_layers_diff -= n_removed
