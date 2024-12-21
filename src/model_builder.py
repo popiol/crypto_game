@@ -347,6 +347,8 @@ class ModelBuilder:
 
         def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
+                if "activation" not in input.config:
+                    raise ModificationError("Layer does not have activation attribute")
                 if input.config["activation"] == "relu":
                     raise ModificationError("Already has RELU activation")
                 input.config["activation"] = "relu"
@@ -359,6 +361,8 @@ class ModelBuilder:
 
         def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
+                if "activation" not in input.config:
+                    raise ModificationError("Layer does not have activation attribute")
                 if input.config["activation"] == "linear":
                     raise ModificationError("No activation to remove")
                 input.config["activation"] = "linear"
