@@ -23,6 +23,9 @@ class EvolutionRandomizer:
             return self.ModelCreationMethod.NEW_MODEL
         return random.choice(list(self.ModelCreationMethod)[1:])
 
+    def asset_dependent(self):
+        return bool(random.randint(0, 1))
+
     def remove_layer(self):
         return random.random() < self.remove_layer_prob
 
@@ -54,3 +57,9 @@ class EvolutionRandomizer:
 
     def reuse_layer(self):
         return random.random() < self.reuse_prob
+
+    def version(self, versions: type[Enum]):
+        return random.choice(list(versions))
+
+    def model_version(self, versions: Enum):
+        return self.version(versions)

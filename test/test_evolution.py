@@ -12,7 +12,7 @@ from src.model_serializer import ModelSerializer
 
 class TestEvolution:
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def builder(self):
         return ModelBuilder(10, 11, 12, 13)
 
@@ -40,7 +40,7 @@ class TestEvolution:
         y = builder.adjust_array_shape(x, 0, 2)
         assert np.array_equal(y, [2, 3])
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def complex_model(self, builder):
         model_1 = builder.build_model(asset_dependent=True)
         model_2 = builder.build_model(asset_dependent=False)
@@ -258,33 +258,58 @@ class TestEvolution:
         model_3 = builder.merge_models(model_1, model_2)
         print(model_3)
 
-    def test_mutations_conv(self):
-        environment = Environment("config/config.yml")
+    @pytest.fixture(scope="class")
+    def environment(self):
+        return Environment("config/config.yml")
+
+    @pytest.fixture(scope="class")
+    def complex_model2(self, environment: Environment):
+        builder = environment.model_builder
+        model_1 = builder.build_model(False, builder.ModelVersion.V1)
+        model_2 = builder.build_model(True, builder.ModelVersion.V2)
+        return builder.merge_models(model_1, model_2)
+
+    def test_mutations_conv(self, environment: Environment, complex_model2: MlModel):
         evolution_handler = environment.evolution_handler
         model_builder = environment.model_builder
-        model, metrics = evolution_handler.create_new_model()
+        model = complex_model2
+        metrics = {}
         with patch("src.model_builder.ModelBuilder.add_conv_layer", wraps=model_builder.add_conv_layer) as add_conv_layer:
             for _ in range(100):
                 model, metrics = evolution_handler.mutate(model, metrics)
                 if metrics["mutations"].get("add_conv_layer"):
                     break
+        print(model)
         print("mutations:", metrics["mutations"])
         print("call count:", add_conv_layer.call_count)
 
-    def test_all_mutations(self):
-        environment = Environment("config/config.yml")
+    def test_mutations_reuse(self, environment: Environment, complex_model2: MlModel):
         evolution_handler = environment.evolution_handler
-        model, metrics = evolution_handler.create_new_model()
+        model_builder = environment.model_builder
+        model = complex_model2
+        metrics = {}
+        with patch("src.model_builder.ModelBuilder.reuse_layer", wraps=model_builder.reuse_layer) as reuse_layer:
+            for _ in range(100):
+                model, metrics = evolution_handler.mutate(model, metrics)
+        print(model)
+        print("mutations:", metrics["mutations"])
+        print("call count:", reuse_layer.call_count)
+
+    def test_all_mutations(self, environment: Environment, complex_model2: MlModel):
+        evolution_handler = environment.evolution_handler
+        model_builder = environment.model_builder
+        model = complex_model2
+        metrics = {}
         for index, layer in enumerate(model.get_layers()[:-1]):
             if layer.shape:
-                model = environment.model_builder.add_relu(model, index)
+                model = model_builder.add_relu(model, index)
                 break
         for _ in range(100):
             model, metrics = evolution_handler.mutate(model, metrics)
+        print(model)
         print("mutations:", metrics["mutations"])
 
-    def test_create_new_model(self):
-        environment = Environment("config/config.yml")
+    def test_create_new_model(self, environment: Environment):
         evolution_handler = environment.evolution_handler
         model_1, metrics_1 = evolution_handler.create_new_model()
         input = np.zeros([*model_1.get_layers()[0].input_shape])

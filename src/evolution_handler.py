@@ -31,8 +31,8 @@ class EvolutionHandler:
         return model, metrics
 
     def create_new_model(self) -> tuple[MlModel, dict]:
-        version = random.choice(list(self.model_builder.ModelVersion))
-        asset_dependent = bool(random.randint(0, 1))
+        version = self.evolution_randomizer.model_version(self.model_builder.ModelVersion)
+        asset_dependent = self.evolution_randomizer.asset_dependent()
         print("create model, asset_dependent:", asset_dependent, ", version:", version.name)
         metrics = {
             "n_asset_dependent": int(asset_dependent),
@@ -89,7 +89,6 @@ class EvolutionHandler:
 
     def mutate(self, model: MlModel, metrics: dict) -> tuple[MlModel, dict]:
         skip = 0
-        n_layers = len(model.get_layers())
         n_layers_diff = 0
         mutations = metrics.get("mutations", {})
         metrics["mutations"] = mutations
@@ -99,9 +98,9 @@ class EvolutionHandler:
                 continue
             index += n_layers_diff
             if self.evolution_randomizer.remove_layer():
-                offset = abs(round(random.gauss(0, 2)))
-                offset = min(offset, n_layers - index - 2)
                 prev_n_layers = len(model.get_layers())
+                offset = abs(round(random.gauss(0, 2)))
+                offset = min(offset, prev_n_layers - index - 2)
                 model = self.model_builder.remove_layer(model, index, index + offset)
                 if not self.model_builder.last_failed:
                     n_removed = prev_n_layers - len(model.get_layers())
@@ -140,4 +139,10 @@ class EvolutionHandler:
                     if not self.model_builder.last_failed:
                         mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
                 n_layers_diff += len(model.get_layers()) - prev_n_layers
+            if self.evolution_randomizer.reuse_layer() and index < len(model.get_layers()) - 3:
+                prev_n_layers = len(model.get_layers())
+                model = self.model_builder.reuse_layer(model, index)
+                if not self.model_builder.last_failed:
+                    mutations["reuse_layer"] = mutations.get("reuse_layer", 0) + 1
+                    n_layers_diff += len(model.get_layers()) - prev_n_layers
         return model, metrics

@@ -184,7 +184,8 @@ class ModelBuilder:
         model: MlModel,
         inputs: keras.layers.Input,
         layer_names: set,
-        modification: Callable[[ModificationInput], ModificationOutput],
+        on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
+        on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
     ) -> keras.KerasTensor:
         tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
@@ -198,27 +199,37 @@ class ModelBuilder:
                     tensors[l.name] = tensor[0]
                     continue
                 tensor = tensor[0]
-            resp: ModificationOutput = modification(ModificationInput(index, config, tensor, layer_names, parent_layers))
-            if resp and resp.skip:
-                tensors[l.name] = tensor
-                continue
-            if resp and resp.skip_branch:
-                continue
-            if resp and resp.tensor is not None:
-                tensor = resp.tensor
+            if on_layer_start:
+                resp: ModificationOutput = on_layer_start(ModificationInput(index, config, tensor, layer_names, parent_layers))
+                if resp and resp.skip:
+                    tensors[l.name] = tensor
+                    continue
+                if resp and resp.skip_branch:
+                    continue
+                if resp and resp.tensor is not None:
+                    tensor = resp.tensor
             self.fix_reshape(config, tensor)
             config["name"] = self.fix_layer_name(config["name"], layer_names)
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
+            if on_layer_end:
+                resp: ModificationOutput = on_layer_end(ModificationInput(index, config, tensor, layer_names, parent_layers))
+                if resp and resp.tensor is not None:
+                    tensor = resp.tensor
             tensors[l.name] = tensor
         return tensor
 
-    def modify_model(self, model: MlModel, modification: Callable[[ModificationInput], ModificationOutput]) -> MlModel:
+    def modify_model(
+        self,
+        model: MlModel,
+        on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
+        on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
+    ) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         self.last_failed = False
         layer_names = set()
         try:
-            tensor = self.get_model_tensor(model, inputs, layer_names, modification)
+            tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
         except (ValueError, TypeError, AttributeError, ModificationError):
             self.last_failed = True
             print("Modification failed")
@@ -246,13 +257,13 @@ class ModelBuilder:
 
         print("Adjust n_assets")
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
                 input.config["units"] = self.n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def adjust_n_features(self, model: MlModel) -> MlModel:
         n_features = model.model.layers[0].batch_shape[3]
@@ -262,42 +273,42 @@ class ModelBuilder:
 
         print("Adjust n_features")
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.config["name"].startswith("dense") and input.config["units"] == n_features:
                 input.config["units"] = self.n_features
             elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_features:
                 input.config["filters"] = self.n_features
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
         print("Remove layers", start_index, end_index)
         assert 0 <= start_index <= end_index < len(model.model.layers) - 2
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if start_index <= input.index <= end_index:
                 return ModificationOutput(skip=True)
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def add_dense_layer(self, model: MlModel, before_index: int, size: int):
         print("Add dense layer", before_index, size)
         assert 0 <= before_index < len(model.model.layers) - 1
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.index == before_index:
                 if not isinstance(input.tensor, keras.KerasTensor):
                     raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
                 layer_name = self.fix_layer_name("dense", input.layer_names)
                 return ModificationOutput(tensor=keras.layers.Dense(size, name=layer_name)(input.tensor))
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def add_conv_layer(self, model: MlModel, before_index: int):
         print("Add conv layer", before_index)
         assert 0 <= before_index < len(model.model.layers) - 1
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.index == before_index:
                 if not isinstance(input.tensor, keras.KerasTensor):
                     raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
@@ -315,44 +326,68 @@ class ModelBuilder:
                     return ModificationOutput(tensor=tensor)
                 raise ModificationError(f"Invalid tensor shape: {input.tensor.shape}")
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("Resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
                 layer_type = input.config["name"].split("_")[0]
                 if layer_type != "dense":
                     raise ModificationError(f"Can only resize Dense layer, {layer_type} given")
                 input.config["units"] = new_size
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def add_relu(self, model: MlModel, layer_index: int):
         print("Add relu", layer_index)
         assert 0 <= layer_index < len(model.model.layers) - 2
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
                 if input.config["activation"] == "relu":
                     raise ModificationError("Already has RELU activation")
                 input.config["activation"] = "relu"
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
 
     def remove_relu(self, model: MlModel, layer_index: int):
         print("Remove relu", layer_index)
         assert 0 <= layer_index < len(model.model.layers) - 2
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
                 if input.config["activation"] == "linear":
                     raise ModificationError("No activation to remove")
                 input.config["activation"] = "linear"
 
-        return self.modify_model(model, modification)
+        return self.modify_model(model, on_layer_start)
+
+    def reuse_layer(self, model: MlModel, layer_index: int):
+        print("Reuse layer", layer_index)
+        assert 0 <= layer_index < len(model.model.layers) - 3
+        tensor_to_reuse = None
+        n_layers = len(model.model.layers) - 1
+
+        def on_layer_end(input: ModificationInput):
+            nonlocal tensor_to_reuse
+            if input.index == layer_index:
+                if not isinstance(input.tensor, keras.KerasTensor):
+                    raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
+                if len(input.tensor.shape) != 3 or input.tensor.shape[1] != self.n_assets:
+                    raise ModificationError("Cannot reuse the layer")
+                tensor_to_reuse = input.tensor
+
+        def on_layer_start(input: ModificationInput):
+            if input.index == n_layers - 1:
+                if tensor_to_reuse is None:
+                    raise ModificationError("No tensor to reuse")
+                layer_name = self.fix_layer_name("concatenate", input.layer_names)
+                return ModificationOutput(tensor=keras.layers.Concatenate(name=layer_name)([input.tensor, tensor_to_reuse]))
+
+        return self.modify_model(model, on_layer_start, on_layer_end)
 
     class MergeVersion(Enum):
         CONCAT = auto()
