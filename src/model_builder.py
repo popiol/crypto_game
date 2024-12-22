@@ -146,12 +146,12 @@ class ModelBuilder:
             new_weights.append(w1)
         return new_weights
 
-    def copy_weights(self, from_model: keras.Model, to_model: keras.Model):
+    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, names_map: dict = None):
         for l in to_model.layers[1:]:
             if not l.get_weights():
                 continue
             for from_l in from_model.layers[1:]:
-                if from_l.name == l.name:
+                if l.name == (names_map.get(from_l.name) if names_map else from_l.name):
                     weights = from_l.get_weights()
                     new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
                     l.set_weights(new_weights)
@@ -397,6 +397,7 @@ class ModelBuilder:
         CONCAT = auto()
         TRANSFORM = auto()
         SELECT = auto()
+        MULTIPLY = auto()
 
     def prepare_for_merge(
         self, model: MlModel, inputs: keras.layers.Input, merge_version: MergeVersion, names_map: dict, layer_names: dict
@@ -436,21 +437,6 @@ class ModelBuilder:
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        for l in new_model.layers[1:-2]:
-            if not l.get_weights():
-                continue
-            from_layer = None
-            for l_1 in model_1.model.layers[1:]:
-                if l.name == names_map.get(l_1.name):
-                    from_layer = l_1
-                    break
-            if from_layer is None:
-                for l_2 in model_2.model.layers[1:]:
-                    if l.name == names_map.get(l_2.name):
-                        from_layer = l_2
-                        break
-            if from_layer is not None:
-                weights = from_layer.get_weights()
-                new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
-                l.set_weights(new_weights)
+        self.copy_weights(model_1.model, new_model, names_map)
+        self.copy_weights(model_2.model, new_model, names_map)
         return MlModel(new_model)
