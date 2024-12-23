@@ -53,7 +53,7 @@ class KrakenApi:
         }
 
     def place_order(self, order: PortfolioOrder):
-        print("place real order")
+        print("place real order", order)
         command = "AddOrder"
         params = {
             "nonce": self.get_nonce(),
