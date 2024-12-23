@@ -101,16 +101,18 @@ class KrakenApi:
         balance = self.get_balance()
         volumes = {asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0 and asset != "ZUSD"}
         print("volumes", volumes)
+        jump = 1
         for _ in range(10):
             orders = self.get_closed_orders(since)
             if len(orders) >= len(volumes):
                 break
-            since -= timedelta(days=1)
+            since -= timedelta(days=jump)
+            jump *= 2
         orders = [order for order in orders.values() if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy"]
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
-                volume=float(order["vol"]),
+                volume=float(volumes[order["descr"]["pair"]]),
                 buy_price=float(order["price"]),
                 cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),

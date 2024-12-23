@@ -143,15 +143,15 @@ class PortfolioManager:
             if self.debug:
                 print("Sell price too high", order.asset, order.price, ">=", quotes.closing_price(order.asset))
             return False
+        precision = self.precision.get(order.asset, AssetPrecision())
+        order.volume = self.round(order.volume, precision.volume_precision)
+        order.price = self.round(order.price, precision.price_precision)
         position: PortfolioPosition = self.portfolio.positions[asset_index]
         prev_volume = position.volume
         position.volume = max(0, prev_volume - order.volume)
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
         order.volume = prev_volume - position.volume
-        precision = self.precision.get(order.asset, AssetPrecision())
-        order.volume = self.round(order.volume, precision.volume_precision)
-        order.price = self.round(order.price, precision.price_precision)
         assert order.price > 0
         assert order.volume > 0
         if adjust_only:
