@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 
+from src.constants import RlTrainset
 from src.data_transformer import DataTransformer, OutputFeatures, QuotesSnapshot
 from src.portfolio import (
     ClosedTransaction,
@@ -99,6 +100,7 @@ class Agent:
         return input, output
 
     def train(self, transactions: list[ClosedTransaction] = None, positions: list[PortfolioPosition] = None):
+        rl_trainset: RlTrainset = []
         if transactions:
             for transaction in transactions:
                 buy_input, buy_output = self.get_input_output(transaction.place_buy_dt)
@@ -107,6 +109,7 @@ class Agent:
                 output = np.array([buy_output, sell_output])
                 reward = (transaction.sell_price - transaction.buy_price) * transaction.volume
                 self.training_strategy.train(input, output, reward)
+                rl_trainset.append((input, output, reward))
         if positions:
             for position in positions:
                 buy_input, buy_output = self.get_input_output(position.place_dt)
@@ -114,3 +117,5 @@ class Agent:
                 output = np.array([buy_output])
                 reward = position.value - position.buy_price * position.volume
                 self.training_strategy.train(input, output, reward)
+                rl_trainset.append((input, output, reward))
+        return rl_trainset

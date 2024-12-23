@@ -104,7 +104,7 @@ class KrakenApi:
         }
         print("volumes", volumes)
         jump = 1
-        for _ in range(10):
+        for _ in range(5):
             orders = self.get_closed_orders(since)
             if len(orders) >= len(volumes):
                 break

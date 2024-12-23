@@ -14,6 +14,7 @@ data_registry:
   quotes_local_path: data/quotes
   config_remote_path: s3://popiol-crypto/config
   retention_days: 21
+  trainset_remote_path: s3://popiol-crypto/trainset
 
 agent_builder:
   n_agents: 1

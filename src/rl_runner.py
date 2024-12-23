@@ -91,7 +91,8 @@ class RlRunner:
     ):
         closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
         if not self.environment.eval_mode:
-            agent.train(transactions=closed_transactions)
+            rl_trainset = agent.train(transactions=closed_transactions)
+            self.data_registry.add_to_trainset(rl_trainset)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.model_name, closed_transactions)
@@ -118,7 +119,8 @@ class RlRunner:
 
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
-            agent.train(positions=portfolio_manager.portfolio.positions)
+            rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
+            self.data_registry.add_to_trainset(rl_trainset)
 
     def save_models(self):
         for agent in self.agents:

@@ -1,9 +1,12 @@
 import glob
 import json
 import os
+import pickle
+import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from src.constants import RlTrainset
 from src.s3_utils import S3Utils
 
 
@@ -16,11 +19,13 @@ class DataRegistry:
         quotes_local_path: str,
         config_remote_path: str,
         retention_days: int,
+        trainset_remote_path: str,
     ):
         self.remote_quotes = S3Utils(quotes_remote_path)
         self.quotes_local_path = quotes_local_path
         self.remote_config = S3Utils(config_remote_path)
         self.retention_days = retention_days
+        self.remote_trainset = S3Utils(trainset_remote_path)
         self.asset_list_file = "asset_list.csv"
         self.stats_file = "stats.json"
         self._files_and_timestamps = None
@@ -112,3 +117,16 @@ class DataRegistry:
         remote_path = f"{self.remote_config.path}/{self.stats_file}"
         contents = json.dumps(stats).encode()
         self.remote_config.upload_bytes(remote_path, contents)
+
+    def add_to_trainset(self, trainset: RlTrainset):
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        trainset_bytes = pickle.dumps(trainset)
+        self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{timestamp}.pickle", trainset_bytes)
+
+    def get_random_trainset(self) -> RlTrainset:
+        keys = list(self.remote_trainset.list_files(self.remote_trainset.path + "/"))
+        if not keys:
+            return []
+        key = random.choice(keys)
+        trainset_bytes = self.remote_trainset.download_bytes(key)
+        return pickle.loads(trainset_bytes)
