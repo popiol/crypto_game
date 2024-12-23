@@ -32,6 +32,7 @@ class CustomMetrics:
             "merge_concat",
             "merge_transform",
             "merge_select",
+            "merge_multiply",
             "version_v1",
             "version_v2",
             "version_v3",
