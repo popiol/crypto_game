@@ -174,7 +174,9 @@ class KrakenApi:
         params = {"asset": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         print(resp.text)
-        return {f"{asset}USD": resp.json()["result"][asset]["decimals"] for asset in assets}
+        map_1 = {key: val["decimals"] for key, val in resp.json()["result"].items()}
+        map_2 = {val["altname"]: val["decimals"] for key, val in resp.json()["result"].items()}
+        return {f"{asset}USD": map_1.get(asset, map_2.get(asset)) for asset in assets}
 
     def get_price_precision(self, assets: list[str]):
         if not assets:
