@@ -72,7 +72,10 @@ class Predictor:
         print("old positions", positions)
         last_update = self.environment.model_registry.get_real_portfolio_last_update() or datetime.now() - timedelta(hours=1)
         since = last_update - timedelta(minutes=1)
-        new_positions = portfolio_api.get_positions(since)
+        portfolio_manager = self.environment.get_portfolio_managers(1)[0]
+        new_positions = [
+            p for p in portfolio_api.get_positions(since) if p.buy_price * p.volume >= portfolio_manager.min_transaction
+        ]
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
         positions = self.update_positions_and_transactions(positions, new_positions, transactions)
@@ -85,7 +88,6 @@ class Predictor:
         agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
         input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
-        portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         portfolio_manager.debug = True
         portfolio_manager.portfolio = deepcopy(portfolio)
         portfolio_manager.orders = portfolio_api.get_orders()
