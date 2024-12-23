@@ -6,7 +6,7 @@ from typing import Callable
 
 import numpy as np
 
-from src.keras import keras
+from src.keras import keras, tf
 from src.ml_model import MlModel
 
 
@@ -179,6 +179,9 @@ class ModelBuilder:
             layer_names.add(layer_name)
         return layer_name
 
+    def expects_list_of_tensors(self, config: dict):
+        return config["name"].split("_")[0] in ["concatenate", "outer"]
+
     def get_model_tensor(
         self,
         model: MlModel,
@@ -195,7 +198,7 @@ class ModelBuilder:
                 continue
             config = l.get_config()
             if len(tensor) == 1:
-                if config["name"].split("_")[0] == "concatenate":
+                if self.expects_list_of_tensors(config):
                     tensors[l.name] = tensor[0]
                     continue
                 tensor = tensor[0]
@@ -399,6 +402,26 @@ class ModelBuilder:
         SELECT = auto()
         MULTIPLY = auto()
 
+    class OuterProduct(keras.layers.Layer):
+        def __init__(self, name: str):
+            name = name or "outer_product"
+            super().__init__(name=name)
+
+        def build(self, input_shape):
+            assert type(input_shape) == list
+            assert len(input_shape) == 2
+            shape_1, shape_2 = input_shape
+            assert shape_1[:-1] == shape_2[:-1]
+
+        def call(self, inputs):
+            x, y = inputs
+            result = tf.expand_dims(x, axis=-1) * tf.expand_dims(y, axis=-2)
+            return keras.layers.Reshape((*x.shape[1:-1], x.shape[-1] * y.shape[-1]))(result)
+
+        def compute_output_shape(self, input_shape):
+            shape_1, shape_2 = input_shape
+            return (*shape_1[:-1], shape_1[-1] * shape_2[-1])
+
     def prepare_for_merge(
         self, model: MlModel, inputs: keras.layers.Input, merge_version: MergeVersion, names_map: dict, layer_names: dict
     ) -> keras.KerasTensor:
@@ -410,7 +433,7 @@ class ModelBuilder:
                     first_layers.append(l.name)
             chosen_branch = random.choice(first_layers)
 
-        def modification(input: ModificationInput):
+        def on_layer_start(input: ModificationInput):
             names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
             if input.index == n_layers - 1:
                 return ModificationOutput(skip=True)
@@ -421,7 +444,7 @@ class ModelBuilder:
 
         n_layers = len(model.model.layers) - 1
         inputs.name = model.model.layers[0].name
-        return self.get_model_tensor(model, inputs, layer_names, modification)
+        return self.get_model_tensor(model, inputs, layer_names, on_layer_start)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
@@ -431,7 +454,14 @@ class ModelBuilder:
         layer_names = set()
         tensor_1 = self.prepare_for_merge(model_1, inputs, merge_version, names_map, layer_names)
         tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names)
-        tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
+        if merge_version == self.MergeVersion.MULTIPLY:
+            tensor_1 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
+            tensor_2 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
+            tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1, tensor_2])
+            tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2, tensor])
+            tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
+        else:
+            tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)

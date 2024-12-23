@@ -240,12 +240,24 @@ class TestEvolution:
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
         assert np.shape(output_1) == np.shape(output_4)
-        model_5 = builder.merge_models(model_3, model_4, builder.MergeVersion.SELECT)
-        assert len(model_1.get_layers()) < len(model_5.get_layers()) < len(model_3.get_layers()) + len(model_4.get_layers())
+        model_5 = builder.merge_models(model_2, model_3, builder.MergeVersion.MULTIPLY)
         output_5 = model_5.predict(input)
         assert np.shape(output_5) == np.shape(output_4)
-        print(model_5)
-        print("model 5 n layers:", len(model_5.get_layers()))
+        model_6 = builder.merge_models(model_3, model_5, builder.MergeVersion.SELECT)
+        assert len(model_1.get_layers()) < len(model_6.get_layers()) < len(model_3.get_layers()) + len(model_5.get_layers())
+        output_6 = model_6.predict(input)
+        assert np.shape(output_6) == np.shape(output_4)
+        print(model_6)
+        print("model 6 n layers:", len(model_6.get_layers()))
+
+    def test_merge_multiply(self, builder: ModelBuilder):
+        model_1 = builder.build_model()
+        model_2 = builder.merge_models(model_1, model_1, builder.MergeVersion.MULTIPLY)
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        output_2 = model_2.predict(input)
+        assert np.shape(output_1) == np.shape(output_2)
+        print(model_2)
 
     def test_merge_real_models(self, environment: Environment):
         builder = environment.model_builder
