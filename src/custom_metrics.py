@@ -61,7 +61,7 @@ class CustomMetrics:
             if min_val == max_val:
                 continue
             n_buckets = 10
-            if max_val - min_val < 10:
+            if type(max_val) == int and max_val - min_val < 10:
                 n_buckets = round(max_val - min_val + 1)
             for key, prefix in [
                 ("n_layers_per_type", "n_layers_"),
@@ -70,7 +70,9 @@ class CustomMetrics:
                 ("model_version", "version_"),
             ]:
                 if col not in df and col.startswith(prefix):
-                    df[col] = df[key].apply(lambda x: x.get(col[len(prefix) :], 0) if type(x) == dict else 0)
+                    df[col] = df[key].apply(
+                        lambda x: x.get(col[len(prefix) :], x.get(col[len(prefix) :].upper(), 0)) if type(x) == dict else 0
+                    )
             df["grouping"] = df[col].apply(
                 lambda x: (
                     round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val
