@@ -99,7 +99,15 @@ class Agent:
         input = self.data_transformer.join_memory(shared_input, agent_input)
         return input, output
 
-    def train(self, transactions: list[ClosedTransaction] = None, positions: list[PortfolioPosition] = None):
+    def train(
+        self,
+        transactions: list[ClosedTransaction] = None,
+        positions: list[PortfolioPosition] = None,
+        historical: RlTrainset = None,
+    ):
+        if historical:
+            for record in historical:
+                self.training_strategy.train(*record)
         rl_trainset: RlTrainset = []
         if transactions:
             for transaction in transactions:

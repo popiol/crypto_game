@@ -117,6 +117,11 @@ class RlRunner:
             agent.reset()
             portfolio_manager.reset()
 
+    def train_on_historical(self):
+        for agent in self.agents:
+            rl_trainset = self.data_registry.get_random_trainset()
+            agent.train(historical=rl_trainset)
+
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
@@ -132,6 +137,7 @@ class RlRunner:
     def main_loop(self):
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
+            self.train_on_historical()
             self.reset_simulation()
             for timestamp, quotes, features, preprocess in self.quotes_iterator():
                 if features is None:
