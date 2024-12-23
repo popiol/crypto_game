@@ -88,11 +88,13 @@ class Predictor:
         agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
         input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
+        print("orders", orders)
         portfolio_manager.debug = True
         portfolio_manager.portfolio = deepcopy(portfolio)
         portfolio_manager.orders = portfolio_api.get_orders()
         timestamp = datetime.now()
         portfolio_manager.place_orders(timestamp, orders)
+        print("portfolio_manager.orders", portfolio_manager.orders)
         portfolio_manager.precision = portfolio_api.get_precision([o.asset for o in portfolio_manager.orders])
         portfolio_manager.adjust_orders(quotes)
         orders = [o for o in portfolio_manager.orders if o.place_dt == timestamp]
