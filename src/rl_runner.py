@@ -24,6 +24,7 @@ class RlRunner:
         self.environment = environment
         self.training_time_min: int = environment.config["rl_runner"]["training_time_min"]
         self.start_dt = datetime.now()
+        self.rl_trainset = []
 
     def prepare(self):
         self.logger = Logger()
@@ -92,7 +93,7 @@ class RlRunner:
         closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
         if not self.environment.eval_mode:
             rl_trainset = agent.train(transactions=closed_transactions)
-            self.data_registry.add_to_trainset(rl_trainset)
+            self.rl_trainset.extend(rl_trainset)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.model_name, closed_transactions)
@@ -125,7 +126,10 @@ class RlRunner:
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
-            self.data_registry.add_to_trainset(rl_trainset)
+            self.rl_trainset.extend(rl_trainset)
+
+    def save_rl_trainset(self):
+        self.data_registry.add_to_trainset(self.rl_trainset)
 
     def save_models(self):
         for agent in self.agents:
@@ -135,9 +139,9 @@ class RlRunner:
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def main_loop(self):
+        self.train_on_historical()
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
-            self.train_on_historical()
             self.reset_simulation()
             for timestamp, quotes, features, preprocess in self.quotes_iterator():
                 if features is None:
@@ -148,6 +152,7 @@ class RlRunner:
             self.train_on_open_positions()
             if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
+        self.save_rl_trainset()
 
     def save_current_input(self, quotes: QuotesSnapshot):
         current_input_path = self.environment.config["predictor"]["current_input_path"]
