@@ -30,7 +30,7 @@ class TestKrakenApi:
 
     def test_get_positions(self):
         api = KrakenApi()
-        positions = api.get_positions(datetime.strptime("2024-12-07", "%Y-%m-%d"))
+        positions = api.get_positions(datetime.strptime("2024-12-23", "%Y-%m-%d"))
         print(positions)
 
     def test_get_closed_transactions(self):
@@ -45,5 +45,5 @@ class TestKrakenApi:
 
     def test_get_precision(self):
         api = KrakenApi()
-        precision = api.get_precision(["SPELLUSD", "AAVEUSD"])
+        precision = api.get_precision(["SPELLUSD", "AUDUSD"])
         print(precision)

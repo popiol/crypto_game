@@ -99,7 +99,9 @@ class KrakenApi:
     def get_positions(self, since: datetime):
         print("get real positions")
         balance = self.get_balance()
-        volumes = {asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0 and asset != "ZUSD"}
+        volumes = {
+            asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0.00001 and asset != "ZUSD"
+        }
         print("volumes", volumes)
         jump = 1
         for _ in range(10):
