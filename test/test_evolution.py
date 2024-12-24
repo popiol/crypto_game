@@ -331,3 +331,11 @@ class TestEvolution:
         assert np.shape(output_1) == np.shape(output_2)
         print(metrics_1, len(model_1.get_layers()), model_1.get_n_params())
         print(metrics_2, len(model_2.get_layers()), model_2.get_n_params())
+
+    def test_clone_model(self, environment: Environment):
+        builder = environment.model_builder
+        model_1 = builder.build_model(False, builder.ModelVersion.V1)
+        model_2 = builder.build_model(True, builder.ModelVersion.V2)
+        model_3 = builder.merge_models(model_1, model_2, builder.MergeVersion.MULTIPLY)
+        model_4 = model_3.copy()
+        print(model_4)

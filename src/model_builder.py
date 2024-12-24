@@ -403,9 +403,9 @@ class ModelBuilder:
         MULTIPLY = auto()
 
     class OuterProduct(keras.layers.Layer):
-        def __init__(self, name: str):
+        def __init__(self, name: str, **kwargs):
             name = name or "outer_product"
-            super().__init__(name=name)
+            super().__init__(name=name, **kwargs)
 
         def build(self, input_shape):
             assert type(input_shape) == list

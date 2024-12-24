@@ -12,7 +12,7 @@ class TestPrediction:
     def test_predict(self, add_transactions, set_leader_memory, set_leader_portfolio):
         environment = Environment("config/config.yml")
         predictor = Predictor(environment)
-        predictor.predict()
+        predictor.simulate()
         portfolio = set_leader_portfolio.call_args.args[0]
         transactions = add_transactions.call_args.args[0]
         print("portfolio", portfolio)
