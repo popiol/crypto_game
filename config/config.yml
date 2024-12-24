@@ -23,6 +23,7 @@ agent_builder:
 data_transformer:
   memory_length: 10
   expected_daily_change: 0.02
+  float_precision: 32
 
 portfolio_manager:
   init_cash: 1000

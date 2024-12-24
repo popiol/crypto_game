@@ -1,5 +1,6 @@
 import glob
 import json
+import lzma
 import os
 import pickle
 import random
@@ -119,9 +120,11 @@ class DataRegistry:
         self.remote_config.upload_bytes(remote_path, contents)
 
     def add_to_trainset(self, trainset: RlTrainset):
+        if not trainset:
+            return
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        trainset_bytes = pickle.dumps(trainset)
-        self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{timestamp}.pickle", trainset_bytes)
+        trainset_bytes = lzma.compress(pickle.dumps(trainset))
+        self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{timestamp}.pickle.lzma", trainset_bytes)
 
     def get_random_trainset(self) -> RlTrainset:
         keys = list(self.remote_trainset.list_files(self.remote_trainset.path + "/"))
@@ -129,4 +132,4 @@ class DataRegistry:
             return []
         key = random.choice(keys)
         trainset_bytes = self.remote_trainset.download_bytes(key)
-        return pickle.loads(trainset_bytes)
+        return pickle.loads(lzma.decompress(trainset_bytes))

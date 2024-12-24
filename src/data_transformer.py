@@ -176,7 +176,7 @@ class OutputFeatures(ModelFeatures):
 
 class DataTransformer:
 
-    def __init__(self, memory_length: int, expected_daily_change: float):
+    def __init__(self, memory_length: int, expected_daily_change: float, float_precision: int):
         self.memory_length = memory_length
         self.expected_daily_change = expected_daily_change
         self._stats = Stats()
@@ -184,11 +184,21 @@ class DataTransformer:
         self.shared_input_stats = Stats()
         self.agent_input_stats = Stats()
         self.output_stats = Stats()
+        self.float_type = self.get_float_type(float_precision)
         self.reset()
 
     def reset(self):
         self.memory = None
         self.last_features = None
+
+    def get_float_type(self, float_precision: int):
+        if float_precision == 16:
+            return np.float16
+        if float_precision == 32:
+            return np.float32
+        if float_precision == 64:
+            return np.float64
+        raise Exception("Invalid float precision", float_precision)
 
     @property
     def n_features(self):
@@ -212,7 +222,7 @@ class DataTransformer:
                 features.set_feature(feature_name, value)
             sparse_features.append((asset_index, features.to_vector()))
         n_assets = len(asset_list)
-        feature_matrix = np.zeros((n_assets, self.n_features))
+        feature_matrix = np.zeros((n_assets, self.n_features), dtype=self.float_type)
         for index, features in sparse_features:
             feature_matrix[index, :] = features
         return feature_matrix
@@ -247,12 +257,12 @@ class DataTransformer:
         if memory_n_assets < n_assets:
             shape = list(np.shape(memory))
             shape[1] = n_assets - memory_n_assets
-            return np.concatenate([memory, np.zeros(shape)], axis=1)
+            return np.concatenate([memory, np.zeros(shape, dtype=self.float_type)], axis=1)
         return memory
 
     def add_to_memory(self, features: np.ndarray):
         if self.memory is None:
-            self.memory = np.zeros((self.memory_length, *np.shape(features)))
+            self.memory = np.zeros((self.memory_length, *np.shape(features)), dtype=self.float_type)
         self.memory = self.fix_n_assets(self.memory, len(features))
         for index in range(self.memory_length - 1):
             self.memory[index] = self.memory[index] * 0.1 + self.memory[index + 1] * 0.9
@@ -262,7 +272,7 @@ class DataTransformer:
     def add_portfolio_to_memory(self, agent: str, portfolio: list[str], asset_list: list[str]):
         n_assets = len(asset_list)
         if self.per_agent_memory.get(agent) is None:
-            self.per_agent_memory[agent] = np.zeros((self.memory_length, n_assets, 1))
+            self.per_agent_memory[agent] = np.zeros((self.memory_length, n_assets, 1), dtype=self.float_type)
         agent_memory = self.per_agent_memory[agent]
         agent_memory = self.fix_n_assets(agent_memory, n_assets)
         for index in range(self.memory_length - 1):

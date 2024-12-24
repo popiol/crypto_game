@@ -106,6 +106,7 @@ class Agent:
         historical: RlTrainset = None,
     ):
         if historical:
+            print("train on historical", len(historical))
             for record in historical:
                 self.training_strategy.train(*record)
         rl_trainset: RlTrainset = []
