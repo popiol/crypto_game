@@ -167,6 +167,7 @@ class RlRunner:
         self.all_metrics = []
         model_builder = self.environment.model_builder
         for model_name, serialized_model in self.model_registry.iterate_models():
+            print(model_name)
             model = self.model_serializer.deserialize(serialized_model)
             model = model_builder.adjust_dimensions(model)
             metrics = self.model_registry.get_metrics(model_name)
