@@ -10,12 +10,15 @@ from src.rl_runner import RlRunner
 
 class TestSimulation:
 
+    @patch("src.data_registry.DataRegistry.add_to_trainset")
     @patch("src.evolution_randomizer.EvolutionRandomizer.model_creation_method")
     @patch("src.model_registry.ModelRegistry.set_metrics")
     @patch("src.model_registry.ModelRegistry.get_metrics")
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.save_model")
-    def test_simulation_one_iteration(self, save_model, iterate_models, get_metrics, set_metrics, model_creation_method):
+    def test_simulation_one_iteration(
+        self, save_model, iterate_models, get_metrics, set_metrics, model_creation_method, add_to_trainset
+    ):
         get_metrics.return_value = {"a": 1}
         model_creation_method.return_value = EvolutionRandomizer.ModelCreationMethod.NEW_MODEL
         environment = Environment("config/config.yml")

@@ -2,6 +2,7 @@ import src.check_running_master  # isort: skip
 import argparse
 import itertools
 import pickle
+import random
 import sys
 import time
 from datetime import datetime, timedelta
@@ -129,6 +130,8 @@ class RlRunner:
             self.rl_trainset.extend(rl_trainset)
 
     def save_rl_trainset(self):
+        if random.random() > 0.2:
+            return
         self.data_registry.add_to_trainset(self.rl_trainset)
 
     def save_models(self):
