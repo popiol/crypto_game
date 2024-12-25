@@ -402,6 +402,7 @@ class ModelBuilder:
         SELECT = auto()
         MULTIPLY = auto()
 
+    @keras.utils.register_keras_serializable()
     class OuterProduct(keras.layers.Layer):
         def __init__(self, name: str, **kwargs):
             name = name or "outer_product"

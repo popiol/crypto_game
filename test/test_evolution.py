@@ -41,9 +41,26 @@ class TestEvolution:
         assert np.array_equal(y, [2, 3])
 
     @pytest.fixture
-    def complex_model(self, builder):
+    def complex_model(self, builder: ModelBuilder):
+        model_1 = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
+        model_2 = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V2)
+        return builder.merge_models(model_1, model_2, builder.MergeVersion.MULTIPLY)
+
+    @pytest.fixture
+    def concat_model(self, builder: ModelBuilder):
         model_1 = builder.build_model(asset_dependent=True)
         model_2 = builder.build_model(asset_dependent=False)
+        return builder.merge_models(model_1, model_2)
+
+    @pytest.fixture(scope="class")
+    def environment(self):
+        return Environment("config/config.yml")
+
+    @pytest.fixture
+    def complex_model2(self, environment: Environment):
+        builder = environment.model_builder
+        model_1 = builder.build_model(False, builder.ModelVersion.V1)
+        model_2 = builder.build_model(True, builder.ModelVersion.V2)
         return builder.merge_models(model_1, model_2)
 
     def test_adjust_weights_shape(self, builder: ModelBuilder, complex_model: MlModel):
@@ -107,8 +124,8 @@ class TestEvolution:
         output = model2.predict(input)
         assert np.shape(output) == (11, 13)
 
-    def test_remove_layer(self, builder: ModelBuilder, complex_model: MlModel):
-        model = complex_model
+    def test_remove_layer(self, builder: ModelBuilder, concat_model: MlModel):
+        model = concat_model
         layers = model.get_layers()
         for index in range(len(layers) - 1):
             for length in range(1, 3):
@@ -130,8 +147,8 @@ class TestEvolution:
                 output = model2.predict(input)
                 assert np.shape(output) == (11, 13)
 
-    def test_add_dense_layer(self, builder: ModelBuilder, complex_model: MlModel):
-        model = complex_model
+    def test_add_dense_layer(self, builder: ModelBuilder, concat_model: MlModel):
+        model = concat_model
         layers = model.get_layers()
         for index in range(len(layers)):
             model2 = builder.add_dense_layer(model, index, 111)
@@ -149,8 +166,8 @@ class TestEvolution:
             output = model2.predict(input)
             assert np.shape(output) == (11, 13)
 
-    def test_add_conv_layer(self, builder: ModelBuilder, complex_model: MlModel):
-        model = complex_model
+    def test_add_conv_layer(self, builder: ModelBuilder, concat_model: MlModel):
+        model = concat_model
         model = builder.add_conv_layer(model, 0)
         layers = model.get_layers()
         for index in range(len(layers)):
@@ -174,8 +191,8 @@ class TestEvolution:
             output = model2.predict(input)
             assert np.shape(output) == (11, 13)
 
-    def test_resize_layer(self, builder: ModelBuilder, complex_model: MlModel):
-        model = complex_model
+    def test_resize_layer(self, builder: ModelBuilder, concat_model: MlModel):
+        model = concat_model
         layers = model.get_layers()
         for index in range(len(layers) - 1):
             for size in [50, 150]:
@@ -270,17 +287,6 @@ class TestEvolution:
         model_3 = builder.merge_models(model_1, model_2)
         print(model_3)
 
-    @pytest.fixture(scope="class")
-    def environment(self):
-        return Environment("config/config.yml")
-
-    @pytest.fixture
-    def complex_model2(self, environment: Environment):
-        builder = environment.model_builder
-        model_1 = builder.build_model(False, builder.ModelVersion.V1)
-        model_2 = builder.build_model(True, builder.ModelVersion.V2)
-        return builder.merge_models(model_1, model_2)
-
     def test_mutations_conv(self, environment: Environment, complex_model2: MlModel):
         evolution_handler = environment.evolution_handler
         model_builder = environment.model_builder
@@ -332,10 +338,18 @@ class TestEvolution:
         print(metrics_1, len(model_1.get_layers()), model_1.get_n_params())
         print(metrics_2, len(model_2.get_layers()), model_2.get_n_params())
 
-    def test_clone_model(self, environment: Environment):
-        builder = environment.model_builder
-        model_1 = builder.build_model(False, builder.ModelVersion.V1)
-        model_2 = builder.build_model(True, builder.ModelVersion.V2)
-        model_3 = builder.merge_models(model_1, model_2, builder.MergeVersion.MULTIPLY)
-        model_4 = model_3.copy()
-        print(model_4)
+    def test_clone_model(self, complex_model: MlModel):
+        model_1 = complex_model
+        model_2 = model_1.copy()
+        print(model_2)
+
+    def test_model_serialization(self, complex_model: MlModel):
+        model_1 = complex_model
+        serializer = ModelSerializer()
+        serialized = serializer.serialize(model_1)
+        model_2 = serializer.deserialize(serialized)
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        output_2 = model_2.predict(input)
+        assert np.array_equal(output_1, output_2)
+        print(model_2)
