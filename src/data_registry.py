@@ -21,12 +21,16 @@ class DataRegistry:
         config_remote_path: str,
         retention_days: int,
         trainset_remote_path: str,
+        trainset_keys_remote_path: str,
+        trainset_keys_local_path: str,
     ):
         self.remote_quotes = S3Utils(quotes_remote_path)
         self.quotes_local_path = quotes_local_path
         self.remote_config = S3Utils(config_remote_path)
         self.retention_days = retention_days
         self.remote_trainset = S3Utils(trainset_remote_path)
+        self.remote_trainset_keys = S3Utils(trainset_keys_remote_path)
+        self.trainset_keys_local_path = trainset_keys_local_path
         self.asset_list_file = "asset_list.csv"
         self.stats_file = "stats.json"
         self._files_and_timestamps = None
@@ -119,17 +123,53 @@ class DataRegistry:
         contents = json.dumps(stats).encode()
         self.remote_config.upload_bytes(remote_path, contents)
 
+    def update_local_trainset_keys(self, keys_timestamp: str, local_keys_path: str, last_trainset: str):
+        file_names = [last_trainset]
+        download_since = keys_timestamp + "01000000"
+        if os.path.exists(local_keys_path):
+            with open(local_keys_path) as f:
+                local_keys = f.read().splitlines()
+            if local_keys:
+                download_since = local_keys[-1].split(".")[0]
+        download_last_hours = (datetime.now() - datetime.strptime(download_since, "%Y%m%d%H%M%S")).total_seconds() / 3600
+        if download_last_hours > 24:
+            print("Update trainset keys with data from the last", int(download_last_hours), "hours")
+            remote_keys = self.remote_trainset.list_files(
+                self.remote_trainset.path + "/", younger_than_hours=int(download_last_hours)
+            )
+            file_names = [key.split("/")[-1] for key in remote_keys]
+            if last_trainset not in file_names:
+                file_names.append(last_trainset)
+        with open(local_keys_path, "a") as f:
+            for file_name in file_names:
+                f.write(file_name + "\n")
+
+    def add_trainset_key(self, trainset_file: str):
+        keys_timestamp = datetime.now().strftime("%Y%m")
+        local_keys_path = f"{self.trainset_keys_local_path}/{keys_timestamp}"
+        remote_keys_path = f"{self.remote_trainset_keys.path}/{keys_timestamp}"
+        self.remote_trainset_keys.download_file(remote_keys_path, local_keys_path, only_updated=True)
+        self.update_local_trainset_keys(keys_timestamp, local_keys_path, trainset_file)
+        self.remote_trainset_keys.upload_file(local_keys_path, remote_keys_path)
+
     def add_to_trainset(self, trainset: RlTrainset):
         if not trainset:
             return
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        trainset_file = f"{timestamp}.pickle.lzma"
+        self.add_trainset_key(trainset_file)
         trainset_bytes = lzma.compress(pickle.dumps(trainset))
-        self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{timestamp}.pickle.lzma", trainset_bytes)
+        self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)
 
     def get_random_trainset(self) -> RlTrainset:
-        keys = list(self.remote_trainset.list_files(self.remote_trainset.path + "/"))
-        if not keys:
+        trainset_keys_url = f"s3://{self.remote_trainset_keys.bucket_name}/{self.remote_trainset_keys.path}/"
+        self.remote_trainset_keys.sync(trainset_keys_url, self.trainset_keys_local_path)
+        files = glob.glob(self.trainset_keys_local_path + "/*")
+        if not files:
             return []
-        key = random.choice(keys)
-        trainset_bytes = self.remote_trainset.download_bytes(key)
+        file = random.choice(files)
+        with open(file) as f:
+            local_keys = f.read().splitlines()
+        trainset_file = random.choice(local_keys)
+        trainset_bytes = self.remote_trainset.download_bytes(f"{self.remote_trainset.path}/{trainset_file}")
         return pickle.loads(lzma.decompress(trainset_bytes))

@@ -17,7 +17,14 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.save_model")
     def test_simulation_one_iteration(
-        self, save_model, iterate_models, get_metrics, set_metrics, model_creation_method, add_to_trainset
+        self,
+        save_model,
+        iterate_models,
+        get_metrics,
+        set_metrics,
+        model_creation_method,
+        should_save_rl_trainset,
+        add_to_trainset,
     ):
         get_metrics.return_value = {"a": 1}
         model_creation_method.return_value = EvolutionRandomizer.ModelCreationMethod.NEW_MODEL

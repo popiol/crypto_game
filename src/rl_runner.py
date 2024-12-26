@@ -129,8 +129,11 @@ class RlRunner:
             rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
             self.rl_trainset.extend(rl_trainset)
 
+    def should_save_rl_trainset(self):
+        return random.random() < 0.2
+
     def save_rl_trainset(self):
-        if random.random() > 0.2:
+        if not self.should_save_rl_trainset():
             return
         self.data_registry.add_to_trainset(self.rl_trainset)
 
