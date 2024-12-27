@@ -53,6 +53,19 @@ def show_model(model_name: str):
     else:
         metrics = model_registry.get_metrics(model_name)
     print_dict(metrics)
+    if "edges" in metrics:
+        draw_structure(metrics["edges"])
+
+
+def draw_structure(edges: list[tuple[str, str]]):
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    G = nx.DiGraph(edges)
+    pos = nx.bfs_layout(G, list(G.nodes)[:1], align="horizontal", scale=-1)
+    nx.draw_networkx_edges(G, pos=pos, width=0.3, arrowsize=4)
+    nx.draw_networkx_labels(G, pos=pos, font_size=4, verticalalignment="top")
+    st.pyplot(plt.gcf())
 
 
 if model_name:

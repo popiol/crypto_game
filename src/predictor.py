@@ -74,7 +74,7 @@ class Predictor:
         since = last_update - timedelta(minutes=1)
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         new_positions = [
-            p for p in portfolio_api.get_positions(since) if p.buy_price * p.volume >= portfolio_manager.min_transaction
+            p for p in portfolio_api.get_positions(since) if p.buy_price * p.volume >= portfolio_manager.min_transaction * 0.5
         ]
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)

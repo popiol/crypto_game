@@ -69,6 +69,64 @@ class MlModel:
             input_shapes[l.name] = l.compute_output_shape(input_shape)
         return layers
 
+    def get_layer_short_desc(self, layer: keras.layers.Layer) -> str:
+        node = layer.name.split("_")[0]
+        if node == "input":
+            node = "INPUT"
+        if node == "dropout":
+            node = f"DR {layer.rate}"
+        if node == "dense":
+            node = f"D {layer.units}"
+        if node == "permute":
+            node = f"P {','.join([str(x) for x in layer.dims])}"
+        if node == "reshape":
+            node = f"R {','.join([str(x) for x in layer.target_shape])}"
+        if node == "unit":
+            node = "NORM"
+        if node == "outer":
+            node = "OP"
+        if node == "concatenate":
+            node = "C"
+        if self._layer_ids is not None:
+            node = f"{self._layer_ids[layer.name]}. {node}"
+        return node
+
+    def get_edges(self) -> list[tuple[str, str]]:
+        edges = []
+        layers = {self.model.layers[0].name: self.model.layers[0]}
+        self._layer_ids = {self.model.layers[0].name: 0}
+        for index, l in enumerate(self.model.layers[1:]):
+            layers[l.name] = l
+            self._layer_ids[l.name] = index + 1
+            parent_layers = self.get_parent_layer_names(index)
+            for parent in parent_layers:
+                edges.append((self.get_layer_short_desc(layers[parent]), self.get_layer_short_desc(l)))
+        return edges
+
+    def get_branches(self) -> list[list[str]]:
+        print(self)
+        branches = []
+        self._layer_ids = None
+        layer_to_branch = {}
+        input_node = self.get_layer_short_desc(self.model.layers[0])
+        for index, l in enumerate(self.model.layers[1:]):
+            parent_layers = self.get_parent_layer_names(index)
+            node = self.get_layer_short_desc(l)
+            if len(parent_layers) > 1:
+                layer_to_branch[l.name] = [node]
+                branches.append(layer_to_branch[l.name])
+                for parent in parent_layers:
+                    layer_to_branch[parent].append(f"LINK {len(branches)-1}")
+            else:
+                parent = parent_layers[0]
+                if parent not in layer_to_branch:
+                    layer_to_branch[l.name] = [input_node, node]
+                    branches.append(layer_to_branch[l.name])
+                else:
+                    layer_to_branch[parent].append(node)
+                    layer_to_branch[l.name] = layer_to_branch[parent]
+        return branches
+
     def get_model_length(self):
         lengths: dict[str, int] = {}
         for index, l in enumerate(self.model.layers[1:]):

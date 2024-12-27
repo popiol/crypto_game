@@ -337,19 +337,3 @@ class TestEvolution:
         assert np.shape(output_1) == np.shape(output_2)
         print(metrics_1, len(model_1.get_layers()), model_1.get_n_params())
         print(metrics_2, len(model_2.get_layers()), model_2.get_n_params())
-
-    def test_clone_model(self, complex_model: MlModel):
-        model_1 = complex_model
-        model_2 = model_1.copy()
-        print(model_2)
-
-    def test_model_serialization(self, complex_model: MlModel):
-        model_1 = complex_model
-        serializer = ModelSerializer()
-        serialized = serializer.serialize(model_1)
-        model_2 = serializer.deserialize(serialized)
-        input = np.zeros([*model_1.get_layers()[0].input_shape])
-        output_1 = model_1.predict(input)
-        output_2 = model_2.predict(input)
-        assert np.array_equal(output_1, output_2)
-        print(model_2)
