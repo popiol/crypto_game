@@ -110,17 +110,22 @@ class KrakenApi:
                 break
             since -= timedelta(days=jump)
             jump *= 2
-        orders = [order for order in orders.values() if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy"]
+        matched = {}
+        for order in orders.values():
+            if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy":
+                asset = order["descr"]["pair"]
+                if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
+                    matched[asset] = order
         return [
             PortfolioPosition(
-                asset=order["descr"]["pair"],
+                asset=asset,
                 volume=volumes[order["descr"]["pair"]],
                 buy_price=float(order["price"]),
                 cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),
                 value=None,
             )
-            for order in orders
+            for asset, order in matched.items()
         ]
 
     def get_cash(self) -> float:
