@@ -130,7 +130,7 @@ class RlRunner:
             self.rl_trainset.extend(rl_trainset)
 
     def should_save_rl_trainset(self):
-        return random.random() < 0.2
+        return random.random() < 0.05
 
     def save_rl_trainset(self):
         if not self.should_save_rl_trainset():
