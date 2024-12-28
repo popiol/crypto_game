@@ -104,7 +104,6 @@ class MlModel:
         return edges
 
     def get_branches(self) -> list[list[str]]:
-        print(self)
         branches = []
         self._layer_ids = None
         layer_to_branch = {}
