@@ -103,29 +103,6 @@ class MlModel:
                 edges.append((self.get_layer_short_desc(layers[parent]), self.get_layer_short_desc(l)))
         return edges
 
-    def get_branches(self) -> list[list[str]]:
-        branches = []
-        self._layer_ids = None
-        layer_to_branch = {}
-        input_node = self.get_layer_short_desc(self.model.layers[0])
-        for index, l in enumerate(self.model.layers[1:]):
-            parent_layers = self.get_parent_layer_names(index)
-            node = self.get_layer_short_desc(l)
-            if len(parent_layers) > 1:
-                layer_to_branch[l.name] = [node]
-                branches.append(layer_to_branch[l.name])
-                for parent in parent_layers:
-                    layer_to_branch[parent].append(f"LINK {len(branches)-1}")
-            else:
-                parent = parent_layers[0]
-                if parent not in layer_to_branch:
-                    layer_to_branch[l.name] = [input_node, node]
-                    branches.append(layer_to_branch[l.name])
-                else:
-                    layer_to_branch[parent].append(node)
-                    layer_to_branch[l.name] = layer_to_branch[parent]
-        return branches
-
     def get_model_length(self):
         lengths: dict[str, int] = {}
         for index, l in enumerate(self.model.layers[1:]):

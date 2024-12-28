@@ -55,34 +55,11 @@ def show_model(model_name: str):
     else:
         metrics = model_registry.get_metrics(model_name)
     print_dict(metrics)
-    if "branches" in metrics:
-        draw_structure(metrics["branches"])
     if "edges" in metrics:
-        draw_structure2(metrics["edges"])
+        draw_structure(metrics["edges"])
 
 
-def draw_structure(branches: list[list[str]]):
-    groups = [[]]
-    break_on = set()
-    for branch_i, branch in enumerate(branches):
-        if branch_i in break_on:
-            groups.append([])
-            break_on = set()
-        for node in branch:
-            if node.startswith("LINK"):
-                break_on.add(int(node.split(" ")[1]))
-        groups[-1].append(branch)
-    branch_count = 0
-    for group in groups:
-        max_len = max(len(branch) for branch in group)
-        for branch in group:
-            branch.extend([""] * (max_len - len(branch)))
-        df = pd.DataFrame({index + branch_count: branch for index, branch in enumerate(group)})
-        st.dataframe(df, hide_index=True, width=len(group) * 100, height=(max_len + 1) * 35 + 1)
-        branch_count += len(group)
-
-
-def draw_structure2(edges: list[tuple[str, str]]):
+def draw_structure(edges: list[tuple[str, str]]):
     import matplotlib.pyplot as plt
     import networkx as nx
 

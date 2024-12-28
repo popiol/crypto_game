@@ -37,7 +37,3 @@ class TestModel:
     def test_get_edges(self, model: MlModel):
         edges = model.get_edges()
         print(edges)
-
-    def test_get_branches(self, model: MlModel):
-        branches = model.get_branches()
-        print(branches)

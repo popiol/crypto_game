@@ -155,11 +155,6 @@ class Metrics:
             return []
         return self.model.get_edges()
 
-    def get_branches(self) -> list[list[str]]:
-        if self.model is None:
-            return []
-        return self.model.get_branches()
-
     def get_metrics(self):
         return {
             "reward_stats": self.get_reward_stats(),
@@ -182,5 +177,4 @@ class Metrics:
             "model_length": self.get_model_length(),
             "model_width": self.get_model_width(),
             "edges": self.get_edges(),
-            "branches": self.get_branches(),
         }
