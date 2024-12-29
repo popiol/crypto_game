@@ -48,6 +48,7 @@ class EvolutionHandler:
             model = self.model_serializer.deserialize(serialized_model)
         metrics = self.model_registry.get_metrics(model_name)
         metrics["parents"] = {model_name: metrics.get("parents")}
+        metrics["evaluation_score"] = None
         print("Existing model loaded:", model_name)
         return model, metrics
 

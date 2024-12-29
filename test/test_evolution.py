@@ -337,3 +337,15 @@ class TestEvolution:
         assert np.shape(output_1) == np.shape(output_2)
         print(metrics_1, len(model_1.get_layers()), model_1.get_n_params())
         print(metrics_2, len(model_2.get_layers()), model_2.get_n_params())
+
+    def test_clear_evaluation_score(self, environment: Environment):
+        evolution_handler = environment.evolution_handler
+        model_1, metrics_1 = evolution_handler.create_new_model()
+        with pytest.raises(KeyError):
+            float(metrics_1["evaluation_score"])
+        model_2, metrics_2 = evolution_handler.load_existing_model()
+        with pytest.raises((KeyError, TypeError)):
+            float(metrics_2["evaluation_score"])
+        model_3, metrics_3 = evolution_handler.merge_existing_models()
+        with pytest.raises((KeyError, TypeError)):
+            float(metrics_3["evaluation_score"])
