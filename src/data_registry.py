@@ -32,7 +32,7 @@ class DataRegistry:
         self.remote_trainset_keys = S3Utils(trainset_keys_remote_path)
         self.trainset_keys_local_path = trainset_keys_local_path
         self.asset_list_file = "asset_list.csv"
-        self.current_assets_file = "current_assets_file.csv"
+        self.current_assets_file = "current_assets.csv"
         self.stats_file = "stats.json"
         self._files_and_timestamps = None
 
