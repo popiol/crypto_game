@@ -3,14 +3,14 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from src.agent import Agent
-from src.data_transformer import OutputFeatures, QuotesSnapshot
+from src.data_transformer import DataTransformer, OutputFeatures, QuotesSnapshot
 from src.portfolio import ClosedTransaction, Portfolio, PortfolioPosition
 
 
 class BaselineAgent(Agent):
 
-    def __init__(self, agent_name: str, metrics: dict):
-        super().__init__(agent_name, None, None, None, metrics)
+    def __init__(self, agent_name: str, data_transformer: DataTransformer, metrics: dict):
+        super().__init__(agent_name, data_transformer, None, None, metrics)
 
     def reset(self):
         pass

@@ -23,7 +23,6 @@ class TestSimulation:
         get_metrics,
         set_metrics,
         model_creation_method,
-        should_save_rl_trainset,
         add_to_trainset,
     ):
         get_metrics.return_value = {"a": 1}

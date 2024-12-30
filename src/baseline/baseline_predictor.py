@@ -22,7 +22,7 @@ class BaselinePredictor:
         raw_portfolio = self.environment.model_registry.get_baseline_portfolio()
         metrics = self.environment.model_registry.get_baseline_metrics()
         asset_list = self.environment.data_registry.get_asset_list()
-        agent = BaselineAgent("Baseline", metrics)
+        agent = BaselineAgent("Baseline", self.environment.data_transformer, metrics)
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         portfolio_manager.debug = True
         if not raw_portfolio:

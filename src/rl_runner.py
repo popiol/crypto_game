@@ -186,7 +186,7 @@ class RlRunner:
         model = model_builder.adjust_dimensions(model)
         self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
         metrics = self.model_registry.get_baseline_metrics()
-        self.agents.append(BaselineAgent("Baseline", metrics))
+        self.agents.append(BaselineAgent("Baseline", self.data_transformer, metrics))
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
