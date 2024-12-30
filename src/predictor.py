@@ -82,11 +82,13 @@ class Predictor:
         print("updated positions", positions)
         portfolio = Portfolio(positions, cash, None)
         portfolio.update_value(quotes)
-        agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
-        self.environment.data_transformer.per_agent_memory[agent.agent_name] = agent_memory
-        self.environment.data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
-        agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
-        input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
+        data_transformer = self.environment.data_transformer
+        agent = Agent("Leader", data_transformer, None, TrainingStrategy(model), metrics)
+        data_transformer.per_agent_memory[agent.agent_name] = agent_memory
+        data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
+        agent_memory = data_transformer.get_agent_memory(agent.agent_name)
+        input = data_transformer.join_memory(shared_memory, agent_memory)
+        data_transformer.current_assets = self.environment.data_registry.get_current_assets()
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
         portfolio_manager.debug = True
         portfolio_manager.portfolio = deepcopy(portfolio)
@@ -139,10 +141,12 @@ class Predictor:
         portfolio_manager.portfolio = Portfolio(positions, raw_portfolio["cash"], raw_portfolio["value"])
         portfolio_manager.place_orders(datetime.now(), [PortfolioOrder.from_json(o) for o in raw_portfolio["orders"]])
         transactions = portfolio_manager.handle_orders(datetime.now(), quotes)
-        self.environment.data_transformer.per_agent_memory[agent.agent_name] = agent_memory
-        self.environment.data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
-        agent_memory = self.environment.data_transformer.get_agent_memory(agent.agent_name)
-        input = self.environment.data_transformer.join_memory(shared_memory, agent_memory)
+        data_transformer = self.environment.data_transformer
+        data_transformer.per_agent_memory[agent.agent_name] = agent_memory
+        data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
+        agent_memory = data_transformer.get_agent_memory(agent.agent_name)
+        input = data_transformer.join_memory(shared_memory, agent_memory)
+        data_transformer.current_assets = self.environment.data_registry.get_current_assets()
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list)
         raw_portfolio = {
             "positions": [p.to_json() for p in portfolio_manager.portfolio.positions],

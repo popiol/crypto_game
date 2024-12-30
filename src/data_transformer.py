@@ -190,6 +190,7 @@ class DataTransformer:
     def reset(self):
         self.memory = None
         self.last_features = None
+        self.current_assets = set()
 
     def get_float_type(self, float_precision: int):
         if float_precision == 16:
@@ -212,6 +213,7 @@ class DataTransformer:
         """Returns matrix of shape (n_assets, n_features)"""
         sparse_features = []
         for asset_name, asset_features in quotes.items():
+            self.current_assets.add(asset_name)
             try:
                 asset_index = asset_list.index(asset_name)
             except ValueError:

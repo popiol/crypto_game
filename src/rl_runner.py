@@ -75,6 +75,7 @@ class RlRunner:
             self.stats = self.data_transformer.stats
             self.data_registry.set_stats(self.stats)
         self.data_registry.set_asset_list(self.asset_list)
+        self.data_registry.set_current_assets(self.data_transformer.current_assets)
 
     def create_agents(self):
         self.logger.log("Create agents")

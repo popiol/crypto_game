@@ -66,6 +66,7 @@ class Agent:
                 and features.relative_buy_volume > 0
                 and not asset.startswith("USD")
                 and asset not in [p.asset for p in portfolio.positions]
+                and asset in self.data_transformer.current_assets
                 else np.nan
             )
             for asset, features in output.items()

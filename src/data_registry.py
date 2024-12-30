@@ -32,6 +32,7 @@ class DataRegistry:
         self.remote_trainset_keys = S3Utils(trainset_keys_remote_path)
         self.trainset_keys_local_path = trainset_keys_local_path
         self.asset_list_file = "asset_list.csv"
+        self.current_assets_file = "current_assets_file.csv"
         self.stats_file = "stats.json"
         self._files_and_timestamps = None
 
@@ -107,6 +108,18 @@ class DataRegistry:
 
     def set_asset_list(self, assets: list[str]):
         remote_path = f"{self.remote_config.path}/{self.asset_list_file}"
+        contents = "\n".join(assets).encode()
+        self.remote_config.upload_bytes(remote_path, contents)
+
+    def get_current_assets(self) -> set[str]:
+        remote_path = f"{self.remote_config.path}/{self.current_assets_file}"
+        contents = self.remote_config.download_bytes(remote_path)
+        if contents:
+            return set(contents.decode().splitlines())
+        return set()
+
+    def set_current_assets(self, assets: set[str]):
+        remote_path = f"{self.remote_config.path}/{self.current_assets_file}"
         contents = "\n".join(assets).encode()
         self.remote_config.upload_bytes(remote_path, contents)
 
