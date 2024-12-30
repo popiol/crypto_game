@@ -171,5 +171,6 @@ class DataRegistry:
         with open(file) as f:
             local_keys = f.read().splitlines()
         trainset_file = random.choice(local_keys)
+        print(trainset_file)
         trainset_bytes = self.remote_trainset.download_bytes(f"{self.remote_trainset.path}/{trainset_file}")
         return pickle.loads(lzma.decompress(trainset_bytes))
