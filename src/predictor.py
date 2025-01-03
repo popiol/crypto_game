@@ -73,19 +73,18 @@ class Predictor:
         last_update = self.environment.model_registry.get_real_portfolio_last_update() or datetime.now() - timedelta(hours=1)
         since = last_update - timedelta(minutes=1)
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
-        new_positions = [
-            p for p in portfolio_api.get_positions(since) if p.buy_price * p.volume >= portfolio_manager.min_transaction * 0.5
-        ]
+        new_positions = portfolio_api.get_positions(since)
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
         positions = self.update_positions_and_transactions(positions, new_positions, transactions)
         print("updated positions", positions)
         portfolio = Portfolio(positions, cash, None)
         portfolio.update_value(quotes)
+        portfolio.positions = [p for p in portfolio.positions if p.value >= portfolio_manager.min_transaction * 0.5]
         data_transformer = self.environment.data_transformer
         agent = Agent("Leader", data_transformer, None, TrainingStrategy(model), metrics)
         data_transformer.per_agent_memory[agent.agent_name] = agent_memory
-        data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
+        data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in portfolio.positions], asset_list)
         agent_memory = data_transformer.get_agent_memory(agent.agent_name)
         input = data_transformer.join_memory(shared_memory, agent_memory)
         data_transformer.current_assets = self.environment.data_registry.get_current_assets()
@@ -102,7 +101,7 @@ class Predictor:
             portfolio_api.place_order(order)
         placed_orders = portfolio_api.get_orders()
         raw_portfolio = {
-            "positions": [p.to_json() for p in positions],
+            "positions": [p.to_json() for p in portfolio.positions],
             "cash": cash,
             "value": portfolio.value,
             "orders": [o.to_json() for o in placed_orders],
