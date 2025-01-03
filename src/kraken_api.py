@@ -28,6 +28,7 @@ class KrakenApi:
         self.public_endpoint = f"{self.api_url}/{self.api_ver}/public"
         self.api_key = ""
         self.secret_key = ""
+        self.base_currency_map = {}
 
     def load_secret(self):
         with open("kraken_api_secret.json") as f:
@@ -177,18 +178,17 @@ class KrakenApi:
             return {}
         print("get volume precision for", assets)
         command = "Assets"
-        assets = [asset[:-3] for asset in assets]
-        while assets:
-            params = {"asset": ",".join(assets)}
-            resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
-            print(resp.text)
-            resp_json = resp.json()
-            if not resp_json["error"]:
-                map_1 = {key: val["decimals"] for key, val in resp_json["result"].items()}
-                map_2 = {val["altname"]: val["decimals"] for key, val in resp_json["result"].items()}
-                return {f"{asset}USD": map_1.get(asset, map_2.get(asset)) for asset in assets}
-            assets = assets[:-1]
-        return {}
+        assets = [self.base_currency_map[asset] for asset in assets]
+        pairs = {base: pair for pair, base in self.base_currency_map.items()}
+        params = {"asset": ",".join(assets)}
+        resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
+        print(resp.text)
+        resp_json = resp.json()
+        if not resp_json["error"]:
+            result = resp_json["result"]
+            map_1 = {key: val["decimals"] for key, val in result.items()}
+            map_2 = {val["altname"]: val["decimals"] for key, val in result.items()}
+            return {pairs[asset]: map_1.get(asset, map_2.get(asset)) for asset in assets}
 
     def get_price_precision(self, assets: list[str]):
         if not assets:
@@ -198,13 +198,15 @@ class KrakenApi:
         params = {"pair": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         print(resp.text)
-        return {asset: resp.json()["result"][asset]["pair_decimals"] for asset in assets}
+        result = resp.json()["result"]
+        self.base_currency_map = {asset: result[asset]["base"] for asset in assets}
+        return {asset: result[asset]["pair_decimals"] for asset in assets}
 
     def get_precision(self, assets: list[str]):
         if not assets:
             return {}
-        volume_precision = self.get_volume_precision(assets)
         price_precision = self.get_price_precision(assets)
+        volume_precision = self.get_volume_precision(assets)
         return {
             asset: AssetPrecision(volume_precision.get(asset), price_precision.get(asset))
             for asset in set(volume_precision.keys()).union(price_precision.keys())
