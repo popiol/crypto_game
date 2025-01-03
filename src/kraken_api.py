@@ -100,27 +100,26 @@ class KrakenApi:
     def get_positions(self, since: datetime):
         print("get real positions")
         balance = self.get_balance()
-        volumes = {
-            asset + "USD": float(volume) for asset, volume in balance.items() if float(volume) > 0.00001 and asset != "ZUSD"
-        }
-        print("volumes", volumes)
+        assets = set([asset for asset, volume in balance.items() if float(volume) > 0.00001 and asset != "ZUSD"])
+        print("assets", assets)
         jump = 1
         for _ in range(5):
             orders = self.get_closed_orders(since)
-            if len(orders) >= len(volumes):
+            matched = {}
+            for order in orders.values():
+                for asset in assets:
+                    if order["descr"]["pair"].startswith(asset) and order["descr"]["type"] == "buy":
+                        if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
+                            matched[asset] = order
+            if len(matched) >= len(assets):
                 break
             since -= timedelta(days=jump)
             jump *= 2
-        matched = {}
-        for order in orders.values():
-            if order["descr"]["pair"] in volumes and order["descr"]["type"] == "buy":
-                asset = order["descr"]["pair"]
-                if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
-                    matched[asset] = order
+        print(matched)
         return [
             PortfolioPosition(
-                asset=asset,
-                volume=volumes[order["descr"]["pair"]],
+                asset=order["descr"]["pair"],
+                volume=balance[asset],
                 buy_price=float(order["price"]),
                 cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),

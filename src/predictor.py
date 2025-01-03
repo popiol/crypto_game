@@ -77,6 +77,7 @@ class Predictor:
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
         positions = self.update_positions_and_transactions(positions, new_positions, transactions)
+        positions = [p for p in positions if p.asset != "HNTUSD"]
         print("updated positions", positions)
         portfolio = Portfolio(positions, cash, None)
         portfolio.update_value(quotes)
