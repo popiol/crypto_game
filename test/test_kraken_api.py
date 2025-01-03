@@ -15,10 +15,10 @@ class TestKrakenApi:
         api = KrakenApi()
         api.place_order(
             PortfolioOrder(
-                order_type=PortfolioOrderType.buy,
-                asset="POLISUSD",
-                volume=70,
-                price=0.301,
+                order_type=PortfolioOrderType.sell,
+                asset="SGBUSD",
+                volume=0,
+                price=0.00919,
                 place_dt=datetime.now(),
             )
         )

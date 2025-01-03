@@ -151,14 +151,12 @@ class PortfolioManager:
         position.volume -= order.volume
         if position.volume * quotes.closing_price(order.asset) < self.min_transaction:
             position.volume = 0
-            order.volume = 0
-        volume_change = prev_volume - position.volume
+        order.volume = prev_volume - position.volume
         assert order.price > 0
-        assert order.volume >= 0
-        assert volume_change > 0
+        assert order.volume > 0
         if adjust_only:
             return True
-        profit = order.price * volume_change * (1 - self.transaction_fee)
+        profit = order.price * order.volume * (1 - self.transaction_fee)
         self.portfolio.cash += profit
         self.portfolio.positions = [p for p in self.portfolio.positions if p.volume > 0]
         closed_transactions.append(
