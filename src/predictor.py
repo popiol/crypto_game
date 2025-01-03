@@ -50,7 +50,7 @@ class Predictor:
                 PortfolioOrder(
                     order_type=PortfolioOrderType.sell,
                     asset=position.asset,
-                    volume=position.volume,
+                    volume=0,
                     price=None,
                     place_dt=datetime.now(),
                 )
