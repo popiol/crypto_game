@@ -28,7 +28,6 @@ class KrakenApi:
         self.public_endpoint = f"{self.api_url}/{self.api_ver}/public"
         self.api_key = ""
         self.secret_key = ""
-        self.base_currency_map = {}
 
     def load_secret(self):
         with open("kraken_api_secret.json") as f:
@@ -109,8 +108,10 @@ class KrakenApi:
 
     def get_positions(self, since: datetime):
         print("get real positions")
-        balance = self.get_balance()
-        assets = set([asset for asset, volume in balance.items() if float(volume) > 0.00001 and asset != "ZUSD"])
+        balance = {asset: float(volume) for asset, volume in self.get_balance().items() if float(volume) > 0 and asset != "ZUSD"}
+        precision = self.get_base_volume_precision(list(balance))
+        print("precision", precision)
+        assets = [asset for asset, volume in balance.items() if volume > pow(10, 2 - precision[asset])]
         print("assets", assets)
         jump = 1
         for _ in range(5):
@@ -129,7 +130,7 @@ class KrakenApi:
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
-                volume=float(balance[asset]),
+                volume=balance[asset],
                 buy_price=float(order["price"]),
                 cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),
@@ -182,13 +183,11 @@ class KrakenApi:
             for order in orders
         ]
 
-    def get_volume_precision(self, assets: list[str]):
+    def get_base_volume_precision(self, assets: list[str]):
         if not assets:
             return {}
         print("get volume precision for", assets)
         command = "Assets"
-        assets = [self.base_currency_map[asset] for asset in assets]
-        pairs = {base: pair for pair, base in self.base_currency_map.items()}
         params = {"asset": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         print(resp.text)
@@ -197,26 +196,15 @@ class KrakenApi:
             result = resp_json["result"]
             map_1 = {key: val["decimals"] for key, val in result.items()}
             map_2 = {val["altname"]: val["decimals"] for key, val in result.items()}
-            return {pairs[asset]: map_1.get(asset, map_2.get(asset)) for asset in assets}
+            return {asset: map_1.get(asset, map_2.get(asset)) for asset in assets}
 
-    def get_price_precision(self, assets: list[str]):
+    def get_precision(self, assets: list[str]):
         if not assets:
             return {}
-        print("get price precision for", assets)
+        print("get precision for", assets)
         command = "AssetPairs"
         params = {"pair": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         print(resp.text)
         result = resp.json()["result"]
-        self.base_currency_map = {asset: result[asset]["base"] for asset in assets}
-        return {asset: result[asset]["pair_decimals"] for asset in assets}
-
-    def get_precision(self, assets: list[str]):
-        if not assets:
-            return {}
-        price_precision = self.get_price_precision(assets)
-        volume_precision = self.get_volume_precision(assets)
-        return {
-            asset: AssetPrecision(volume_precision.get(asset), price_precision.get(asset))
-            for asset in set(volume_precision.keys()).union(price_precision.keys())
-        }
+        return {asset: AssetPrecision(result[asset]["lot_decimals"], result[asset]["pair_decimals"]) for asset in assets}

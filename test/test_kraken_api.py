@@ -45,5 +45,10 @@ class TestKrakenApi:
 
     def test_get_precision(self):
         api = KrakenApi()
-        precision = api.get_precision(["SBRUSD", "BLURUSD", "XXBTZUSD", "CHZUSD"])
+        precision = api.get_precision(["HNTUSD", "BLURUSD", "XXBTZUSD", "CHZUSD"])
+        print(precision)
+
+    def test_get_base_volume_precision(self):
+        api = KrakenApi()
+        precision = api.get_base_volume_precision(["HNT", "BLUR", "XXBT", "CHZ"])
         print(precision)
