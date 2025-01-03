@@ -15,6 +15,7 @@ from src.portfolio import (
     ClosedTransaction,
     Portfolio,
     PortfolioOrder,
+    PortfolioOrderType,
     PortfolioPosition,
 )
 from src.training_strategy import TrainingStrategy
@@ -39,14 +40,22 @@ class Predictor:
                     transaction.cost = position.cost
             if not matched:
                 raise Exception("Unmatched closing transaction", transaction, "for positions", positions)
-        updated = new_positions.copy()
+        new_orders = []
         for position in positions:
             if position.volume == 0:
                 continue
-            if [p for p in updated if p.asset == position.asset]:
+            if [p for p in new_positions if p.asset == position.asset]:
                 continue
-            updated.append(position)
-        return updated
+            new_orders.append(
+                PortfolioOrder(
+                    order_type=PortfolioOrderType.sell,
+                    asset=position.asset,
+                    volume=position.volume,
+                    price=None,
+                    place_dt=datetime.now(),
+                )
+            )
+        return new_positions, new_orders
 
     def place_real_orders(self):
         current_input_path = self.environment.config["predictor"]["current_input_path"]
@@ -76,8 +85,11 @@ class Predictor:
         new_positions = portfolio_api.get_positions(since)
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
-        positions = self.update_positions_and_transactions(positions, new_positions, transactions)
+        positions, new_orders = self.update_positions_and_transactions(positions, new_positions, transactions)
         print("updated positions", positions)
+        print("new_orders", new_orders)
+        for order in new_orders:
+            portfolio_api.place_order(order)
         portfolio = Portfolio(positions, cash, None)
         portfolio.update_value(quotes)
         portfolio.positions = [p for p in portfolio.positions if p.value >= portfolio_manager.min_transaction * 0.5]

@@ -56,15 +56,25 @@ class KrakenApi:
     def place_order(self, order: PortfolioOrder):
         print("place real order", order)
         command = "AddOrder"
-        params = {
-            "nonce": self.get_nonce(),
-            "pair": order.asset,
-            "type": order.order_type.name,
-            "ordertype": "limit",
-            "price": order.price,
-            "volume": order.volume,
-            "expiretm": "+3540",
-        }
+        if order.price:
+            params = {
+                "nonce": self.get_nonce(),
+                "pair": order.asset,
+                "type": order.order_type.name,
+                "ordertype": "limit",
+                "price": order.price,
+                "volume": order.volume,
+                "expiretm": "+3540",
+            }
+        else:
+            params = {
+                "nonce": self.get_nonce(),
+                "pair": order.asset,
+                "type": order.order_type.name,
+                "ordertype": "market",
+                "volume": order.volume,
+                "expiretm": "+3540",
+            }
         headers = self.get_headers(command, params)
         resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
         print(resp.text)
