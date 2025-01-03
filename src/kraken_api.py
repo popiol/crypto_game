@@ -119,7 +119,7 @@ class KrakenApi:
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
-                volume=balance[asset],
+                volume=float(balance[asset]),
                 buy_price=float(order["price"]),
                 cost=float(order["cost"]) + float(order["fee"]),
                 place_dt=datetime.fromtimestamp(order["opentm"]),
