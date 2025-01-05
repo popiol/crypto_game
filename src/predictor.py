@@ -29,6 +29,7 @@ class Predictor:
     def update_positions_and_transactions(
         self, positions: list[PortfolioPosition], new_positions: list[PortfolioPosition], transactions: list[ClosedTransaction]
     ):
+        new_transactions = []
         for transaction in transactions:
             for position in positions:
                 if transaction.asset == position.asset:
@@ -36,6 +37,7 @@ class Predictor:
                     transaction.buy_price = position.buy_price
                     transaction.place_buy_dt = position.place_dt
                     transaction.cost = position.cost
+                    new_transactions.append(transaction)
         new_orders = []
         for position in positions:
             if position.volume == 0:
@@ -51,7 +53,7 @@ class Predictor:
                     place_dt=datetime.now(),
                 )
             )
-        return new_positions, new_orders
+        return new_positions, new_orders, new_transactions
 
     def place_real_orders(self):
         current_input_path = self.environment.config["predictor"]["current_input_path"]
@@ -81,7 +83,7 @@ class Predictor:
         new_positions = portfolio_api.get_positions(since)
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
-        positions, new_orders = self.update_positions_and_transactions(positions, new_positions, transactions)
+        positions, new_orders, transactions = self.update_positions_and_transactions(positions, new_positions, transactions)
         print("transactions", transactions)
         print("updated positions", positions)
         print("new_orders", new_orders)
