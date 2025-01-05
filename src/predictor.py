@@ -30,16 +30,12 @@ class Predictor:
         self, positions: list[PortfolioPosition], new_positions: list[PortfolioPosition], transactions: list[ClosedTransaction]
     ):
         for transaction in transactions:
-            matched = False
             for position in positions:
                 if transaction.asset == position.asset:
                     position.volume = 0
-                    matched = True
                     transaction.buy_price = position.buy_price
                     transaction.place_buy_dt = position.place_dt
                     transaction.cost = position.cost
-            if not matched:
-                raise Exception("Unmatched closing transaction", transaction, "for positions", positions)
         new_orders = []
         for position in positions:
             if position.volume == 0:
@@ -86,6 +82,7 @@ class Predictor:
         print("new_positions", new_positions)
         transactions = portfolio_api.get_closed_transactions(since)
         positions, new_orders = self.update_positions_and_transactions(positions, new_positions, transactions)
+        print("transactions", transactions)
         print("updated positions", positions)
         print("new_orders", new_orders)
         for order in new_orders:
