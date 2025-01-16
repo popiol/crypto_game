@@ -459,8 +459,8 @@ class ModelBuilder:
         tensor_1 = self.prepare_for_merge(model_1, inputs, merge_version, names_map, layer_names)
         tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names)
         if merge_version == self.MergeVersion.MULTIPLY:
-            tensor_1 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
-            tensor_2 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
+            tensor_1 = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor_1)
+            tensor_2 = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1, tensor_2])
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2, tensor])
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
