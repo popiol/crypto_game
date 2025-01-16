@@ -7,6 +7,8 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+import numpy as np
+
 from src.constants import RlTrainset
 from src.s3_utils import S3Utils
 
@@ -174,7 +176,7 @@ class DataRegistry:
         trainset_bytes = lzma.compress(pickle.dumps(trainset))
         self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)
 
-    def get_random_trainset(self) -> RlTrainset:
+    def get_random_trainset(self, n_assets: int) -> RlTrainset:
         trainset_keys_url = f"s3://{self.remote_trainset_keys.bucket_name}/{self.remote_trainset_keys.path}/"
         self.remote_trainset_keys.sync(trainset_keys_url, self.trainset_keys_local_path)
         files = glob.glob(self.trainset_keys_local_path + "/*")
@@ -186,4 +188,26 @@ class DataRegistry:
         trainset_file = random.choice(local_keys)
         print(trainset_file)
         trainset_bytes = self.remote_trainset.download_bytes(f"{self.remote_trainset.path}/{trainset_file}")
-        return pickle.loads(lzma.decompress(trainset_bytes))
+        trainset = pickle.loads(lzma.decompress(trainset_bytes))
+        trainset = self.fix_n_assets(trainset, n_assets)
+        return trainset
+
+    def fix_n_assets(self, trainset: RlTrainset, n_assets: int):
+        orig_n_assets = len(trainset[0][0][0][0])
+        if n_assets == orig_n_assets:
+            return trainset
+        assert n_assets > orig_n_assets
+        fixed = []
+        for input, output, reward in trainset:
+            input_shape = list(np.shape(input))
+            input_shape[2] = n_assets - orig_n_assets
+            output_shape = list(np.shape(output))
+            output_shape[1] = n_assets - orig_n_assets
+            fixed.append(
+                (
+                    np.concatenate([input, np.zeros(input_shape, dtype=input.dtype)], axis=2),
+                    np.concatenate([output, np.zeros(output_shape, dtype=output.dtype)], axis=1),
+                    reward,
+                )
+            )
+        return fixed

@@ -122,7 +122,7 @@ class RlRunner:
 
     def train_on_historical(self):
         for agent in self.agents:
-            rl_trainset = self.data_registry.get_random_trainset()
+            rl_trainset = self.data_registry.get_random_trainset(len(self.asset_list))
             agent.train(historical=rl_trainset)
 
     def train_on_open_positions(self):
