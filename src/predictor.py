@@ -39,21 +39,27 @@ class Predictor:
                     transaction.cost = position.cost
                     new_transactions.append(transaction)
         new_orders = []
-        for position in positions:
-            if position.volume == 0:
-                continue
-            if [p for p in new_positions if p.asset == position.asset]:
-                continue
-            new_orders.append(
-                PortfolioOrder(
-                    order_type=PortfolioOrderType.sell,
-                    asset=position.asset,
-                    volume=position.volume,
-                    price=None,
-                    place_dt=datetime.now(),
+        updated_positions = []
+        for new_position in new_positions:
+            found = False
+            for position in positions:
+                if position.asset == new_position.asset:
+                    found = True
+                    if new_position.place_dt is None:
+                        updated_positions.append(position)
+                    else:
+                        updated_positions.append(new_position)
+            if not found:
+                new_orders.append(
+                    PortfolioOrder(
+                        order_type=PortfolioOrderType.sell,
+                        asset=new_position.asset,
+                        volume=new_position.volume,
+                        price=None,
+                        place_dt=datetime.now(),
+                    )
                 )
-            )
-        return new_positions, new_orders, new_transactions
+        return updated_positions, new_orders, new_transactions
 
     def place_real_orders(self):
         current_input_path = self.environment.config["predictor"]["current_input_path"]

@@ -4,8 +4,9 @@ import hmac
 import json
 import time
 import urllib
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import cache
+from time import sleep
 
 import requests
 
@@ -94,39 +95,46 @@ class KrakenApi:
     def get_closed_orders(self, since: datetime):
         print("get closed orders since", since)
         command = "ClosedOrders"
-        params = {
-            "nonce": self.get_nonce(),
-            "trades": False,
-            "start": since.timestamp(),
-            "closetime": "close",
-        }
-        headers = self.get_headers(command, params)
-        resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
-        orders = resp.json()["result"]["closed"]
-        orders = {id: order for id, order in orders.items() if order["status"] == "closed"}
-        return orders
+        offset = 0
+        orders_all = {}
+        while True:
+            params = {
+                "nonce": self.get_nonce(),
+                "trades": False,
+                "start": since.timestamp(),
+                "closetime": "close",
+                "ofs": offset,
+            }
+            headers = self.get_headers(command, params)
+            resp = requests.post(f"{self.endpoint}/{command}", headers=headers, data=params)
+            resp.raise_for_status()
+            resp_json = resp.json()
+            if "result" not in resp_json:
+                break
+            orders = resp_json["result"]["closed"]
+            if not orders:
+                break
+            offset += len(orders)
+            orders = {id: order for id, order in orders.items() if order["status"] == "closed"}
+            orders_all = {**orders_all, **orders}
+            sleep(1)
+        return orders_all
 
     def get_positions(self, since: datetime):
         print("get real positions")
         balance = {asset: float(volume) for asset, volume in self.get_balance().items() if float(volume) > 0 and asset != "ZUSD"}
         precision = self.get_base_volume_precision(list(balance))
-        print("precision", precision)
         assets = [asset for asset, volume in balance.items() if volume > pow(10, 2 - precision[asset])]
         print("assets", assets)
-        jump = 1
-        for _ in range(5):
-            orders = self.get_closed_orders(since)
-            matched = {}
-            for order in orders.values():
-                for asset in assets:
-                    if order["descr"]["pair"].startswith(asset) and order["descr"]["type"] == "buy":
-                        if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
-                            matched[asset] = order
-            if len(matched) >= len(assets):
-                break
-            since -= timedelta(days=jump)
-            jump *= 2
+        orders = self.get_closed_orders(since)
+        matched = {}
+        for order in orders.values():
+            for asset in assets:
+                if order["descr"]["pair"].startswith(asset) and order["descr"]["type"] == "buy":
+                    if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
+                        matched[asset] = order
         print(matched)
+        pairs = self.find_asset_pairs(assets)
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
@@ -137,6 +145,17 @@ class KrakenApi:
                 value=None,
             )
             for asset, order in matched.items()
+        ] + [
+            PortfolioPosition(
+                asset=pairs[asset],
+                volume=balance[asset],
+                buy_price=None,
+                cost=None,
+                place_dt=None,
+                value=None,
+            )
+            for asset in assets
+            if asset not in matched
         ]
 
     def get_cash(self) -> float:
@@ -190,7 +209,6 @@ class KrakenApi:
         command = "Assets"
         params = {"asset": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
-        print(resp.text)
         resp_json = resp.json()
         if not resp_json["error"]:
             result = resp_json["result"]
@@ -205,6 +223,14 @@ class KrakenApi:
         command = "AssetPairs"
         params = {"pair": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
-        print(resp.text)
         result = resp.json()["result"]
         return {asset: AssetPrecision(result[asset]["lot_decimals"], result[asset]["pair_decimals"]) for asset in assets}
+
+    def find_asset_pairs(self, assets: list[str]):
+        if not assets:
+            return {}
+        print("find asset pairs for", assets)
+        command = "AssetPairs"
+        resp = requests.get(f"{self.public_endpoint}/{command}")
+        pairs = [pair for pair in resp.json()["result"] if pair.endswith("USD")]
+        return {asset: pair for asset in assets for pair in pairs if pair.startswith(asset)}

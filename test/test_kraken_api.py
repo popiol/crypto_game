@@ -52,3 +52,8 @@ class TestKrakenApi:
         api = KrakenApi()
         precision = api.get_base_volume_precision(["HNT", "BLUR", "XXBT", "CHZ"])
         print(precision)
+
+    def test_find_asset_pairs(self):
+        api = KrakenApi()
+        pairs = api.find_asset_pairs(["HNT", "BLUR", "XXBT", "CHZ"])
+        print(pairs)
