@@ -173,20 +173,32 @@ class TestEvolution:
         for index in range(len(layers)):
             model2 = builder.add_conv_layer(model, index)
             layers2 = model2.get_layers()
-            if index in [5, 6, 7, 12]:
+            if index in [4, 5, 6, 7]:
                 assert len(layers) == len(layers2)
                 assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
-            else:
+            elif index in [12]:
+                assert sorted(
+                    [x.layer_type for x in layers[:index]]
+                    + ["permute", "reshape", "conv2d", "reshape", "permute"]
+                    + [x.layer_type for x in layers[index:]]
+                ) == sorted([x.layer_type for x in layers2])
+            elif index in [0, 1]:
                 assert len(layers) + 1 == len(layers2) or len(layers) + 3 == len(layers2)
+                assert sorted(
+                    [x.layer_type for x in layers[:index]] + ["conv2d"] + [x.layer_type for x in layers[index:]]
+                ) == sorted([x.layer_type for x in layers2])
+            elif index in [2, 3]:
+                assert sorted(
+                    [x.layer_type for x in layers[:index]]
+                    + ["permute", "conv2d", "permute"]
+                    + [x.layer_type for x in layers[index:]]
+                ) == sorted([x.layer_type for x in layers2])
+            elif index in [13]:
                 assert sorted(
                     [x.layer_type for x in layers[:index]]
                     + ["permute", "conv1d", "permute"]
                     + [x.layer_type for x in layers[index:]]
-                ) == sorted([x.layer_type for x in layers2]) or sorted(
-                    [x.layer_type for x in layers[:index]] + ["conv2d"] + [x.layer_type for x in layers[index:]]
-                ) == sorted(
-                    [x.layer_type for x in layers2]
-                )
+                ) == sorted([x.layer_type for x in layers2])
             input = np.zeros([*layers2[0].input_shape])
             output = model2.predict(input)
             assert np.shape(output) == (11, 13)
