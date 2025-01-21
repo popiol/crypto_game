@@ -45,10 +45,6 @@ class ModelBuilder:
     def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
         if version == self.ModelVersion.V1:
             return self.build_model_v1(asset_dependent)
-        if version == self.ModelVersion.V2:
-            return self.build_model_v2(asset_dependent)
-        if version == self.ModelVersion.V3:
-            return self.build_model_v3(asset_dependent)
 
     def build_model_v1(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
