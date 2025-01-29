@@ -168,13 +168,13 @@ class ModelBuilder:
                 tensor = tensor[0]
             if on_layer_start:
                 resp: ModificationOutput = on_layer_start(ModificationInput(index, config, tensor, layer_names, parent_layers))
+                if resp and resp.tensor is not None:
+                    tensor = resp.tensor
                 if resp and resp.skip:
                     tensors[l.name] = tensor
                     continue
                 if resp and resp.skip_branch:
                     continue
-                if resp and resp.tensor is not None:
-                    tensor = resp.tensor
             self.fix_reshape(config, tensor)
             config["name"] = self.fix_layer_name(config["name"], layer_names)
             new_layer = l.from_config(config)
@@ -251,6 +251,7 @@ class ModelBuilder:
         return self.modify_model(model, on_layer_start)
 
     def filter_assets(self, model: MlModel, asset_list: list[str], current_assets: set[str]):
+        print("Filter assets")
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         n_assets = len(indices)
 
@@ -259,12 +260,31 @@ class ModelBuilder:
                 input.config["units"] = n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == self.n_assets:
                 input.config["filters"] = n_assets
+            skip = input.config["name"].startswith("gather")
+            tensor = None
             if input.parents[0].split("_")[0] == "input":
                 layer_name = self.fix_layer_name("gather", input.layer_names)
-                tensor = keras.layers.Lambda(lambda x: tf.gather(x, indices, axis=2), name=layer_name)(input.tensor)
-                return ModificationOutput(tensor=tensor)
+                tensor = self.Gather(indices, axis=2, name=layer_name)(input.tensor)
+            return ModificationOutput(tensor=tensor, skip=skip)
 
         return self.modify_model(model, on_layer_start, filter_indices=indices)
+
+    @keras.utils.register_keras_serializable()
+    class Gather(keras.layers.Layer):
+        def __init__(self, indices: list[int], axis: int, name: str, **kwargs):
+            self.indices = indices
+            self.axis = axis
+            name = name or "gather"
+            super().__init__(name=name, **kwargs)
+
+        def build(self, input_shape):
+            pass
+
+        def call(self, inputs):
+            return tf.gather(inputs, self.indices, axis=2)
+
+        def compute_output_shape(self, input_shape):
+            return (*input_shape[:-2], len(self.indices), input_shape[-1])
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
         print("Remove layers", start_index, end_index)
