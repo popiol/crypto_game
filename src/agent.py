@@ -58,6 +58,7 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
+        print("output", output)
         scores = [
             (
                 features.score
@@ -71,6 +72,7 @@ class Agent:
             )
             for asset, features in output.items()
         ]
+        print("scores", scores)
         if not np.isnan(scores).all():
             best_asset_index = np.nanargmax(scores)
             best_asset = asset_list[best_asset_index]
