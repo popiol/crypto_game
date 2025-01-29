@@ -46,3 +46,7 @@ class Logger:
         for model in self.transactions:
             self.transactions[model] = []
         print(flush=True)
+
+    def log_reward(self, agents: list[Agent]):
+        for agent in agents:
+            print(agent.agent_name, agent.training_strategy.stats)

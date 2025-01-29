@@ -176,7 +176,7 @@ class DataRegistry:
         trainset_bytes = lzma.compress(pickle.dumps(trainset))
         self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)
 
-    def get_random_trainset(self, n_assets: int) -> RlTrainset:
+    def get_random_trainset(self, asset_list: list[str], current_assets: set[str]) -> RlTrainset:
         trainset_keys_url = f"s3://{self.remote_trainset_keys.bucket_name}/{self.remote_trainset_keys.path}/"
         self.remote_trainset_keys.sync(trainset_keys_url, self.trainset_keys_local_path)
         files = glob.glob(self.trainset_keys_local_path + "/*")
@@ -188,8 +188,13 @@ class DataRegistry:
         trainset_file = random.choice(local_keys)
         print(trainset_file)
         trainset_bytes = self.remote_trainset.download_bytes(f"{self.remote_trainset.path}/{trainset_file}")
+        if not trainset_bytes:
+            return []
         trainset = pickle.loads(lzma.decompress(trainset_bytes))
+        n_assets = len(asset_list)
         trainset = self.fix_n_assets(trainset, n_assets)
+        indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
+        trainset = self.filter_assets(trainset, indices)
         return trainset
 
     def fix_n_assets(self, trainset: RlTrainset, n_assets: int):
@@ -211,3 +216,6 @@ class DataRegistry:
                 )
             )
         return fixed
+
+    def filter_assets(self, trainset: RlTrainset, indices: list[int]):
+        return [(input, output[:, indices], reward) for input, output, reward in trainset]

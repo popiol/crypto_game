@@ -122,7 +122,7 @@ class RlRunner:
 
     def train_on_historical(self):
         for agent in self.agents:
-            rl_trainset = self.data_registry.get_random_trainset(len(self.asset_list))
+            rl_trainset = self.data_registry.get_random_trainset(self.asset_list, self.data_transformer.current_assets)
             agent.train(historical=rl_trainset)
 
     def train_on_open_positions(self):
@@ -146,7 +146,7 @@ class RlRunner:
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def main_loop(self):
-        # self.train_on_historical()
+        self.train_on_historical()
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
             self.reset_simulation()
@@ -157,6 +157,7 @@ class RlRunner:
                 if not preprocess:
                     self.run_agents(timestamp, quotes)
             self.train_on_open_positions()
+            self.logger.log_reward(self.agents)
             if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
         self.save_rl_trainset()
