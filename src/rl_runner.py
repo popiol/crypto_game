@@ -33,7 +33,7 @@ class RlRunner:
         self.data_registry = self.environment.data_registry
         self.data_registry.sync()
         self.data_transformer = self.environment.data_transformer
-        self.asset_list = self.data_registry.get_asset_list()
+        self.asset_list = self.environment.asset_list
         self.stats = self.data_registry.get_stats()
         if self.stats and len(self.stats["mean"]) != self.data_transformer.n_features:
             self.stats = None
@@ -177,6 +177,7 @@ class RlRunner:
             print(model_name)
             model = self.model_serializer.deserialize(serialized_model)
             model = model_builder.adjust_dimensions(model)
+            model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
             metrics = self.model_registry.get_metrics(model_name)
             agent = Agent(model_name.split("_")[0], self.data_transformer, None, TrainingStrategy(model), metrics)
             agent.model_name = model_name
@@ -184,6 +185,7 @@ class RlRunner:
         serialized_model, metrics = self.model_registry.get_leader()
         model = self.model_serializer.deserialize(serialized_model)
         model = model_builder.adjust_dimensions(model)
+        model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
         self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
         metrics = self.model_registry.get_baseline_metrics()
         self.agents.append(BaselineAgent("Baseline", self.data_transformer, metrics))

@@ -37,8 +37,12 @@ class Environment:
         return DataRegistry(**self.config["data_registry"])
 
     @cached_property
+    def asset_list(self):
+        return self.data_registry.get_asset_list()
+
+    @cached_property
     def n_assets(self):
-        return len(self.data_registry.get_asset_list())
+        return len(self.asset_list)
 
     @cached_property
     def data_transformer(self):
@@ -71,6 +75,8 @@ class Environment:
             self.model_serializer,
             self.model_builder,
             self.evolution_randomizer,
+            self.asset_list,
+            self.data_transformer.current_assets,
             **self.config["evolution_handler"]
         )
 

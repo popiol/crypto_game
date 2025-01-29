@@ -70,7 +70,7 @@ class ModelBuilder:
     def most_important_dims(self, array: np.ndarray, dim: int, size: int):
         return np.argsort([np.abs(x).sum() for x in np.rollaxis(array, dim)])[-size:]
 
-    def adjust_array_shape(self, array: np.ndarray, dim: int, size: int) -> np.ndarray:
+    def adjust_array_shape(self, array: np.ndarray, dim: int, size: int, filter_indices: list[int] = None) -> np.ndarray:
         assert size > 0
         old_shape = np.shape(array)
         assert 0 <= dim < len(old_shape)
@@ -79,15 +79,20 @@ class ModelBuilder:
             return array
         if size < old_size:
             index = [slice(x) for x in old_shape]
-            index[dim] = self.most_important_dims(array, dim, size)
+            if filter_indices and len(filter_indices) == size:
+                index[dim] = filter_indices
+            else:
+                index[dim] = self.most_important_dims(array, dim, size)
             array = array[*index]
         elif size > old_size:
             add_shape = list(old_shape)
             add_shape[dim] = size - old_size
-            array = np.concatenate((array, np.random.normal(0, array.std(), add_shape)), axis=dim)
+            array = np.concatenate((array, np.random.normal(array.mean(), array.std(), add_shape)), axis=dim)
         return array
 
-    def adjust_weights_shape(self, weights: list[np.ndarray], target_shape: tuple[int]) -> list[np.ndarray]:
+    def adjust_weights_shape(
+        self, weights: list[np.ndarray], target_shape: tuple[int], filter_indices: list[int] = None
+    ) -> list[np.ndarray]:
         new_weights = []
         if not weights:
             return new_weights
@@ -96,21 +101,23 @@ class ModelBuilder:
             assert x > 0
         w0 = weights[0]
         for dim, size in enumerate(target_shape):
-            w0 = self.adjust_array_shape(w0, dim, size)
+            w0 = self.adjust_array_shape(w0, dim, size, filter_indices)
         new_weights.append(w0)
         if len(weights) > 1:
-            w1 = self.adjust_array_shape(weights[1], 0, target_shape[-1])
+            w1 = self.adjust_array_shape(weights[1], 0, target_shape[-1], filter_indices)
             new_weights.append(w1)
         return new_weights
 
-    def copy_weights(self, from_model: keras.Model, to_model: keras.Model, names_map: dict = None):
+    def copy_weights(
+        self, from_model: keras.Model, to_model: keras.Model, names_map: dict = None, filter_indices: list[int] = None
+    ):
         for l in to_model.layers[1:]:
             if not l.get_weights():
                 continue
             for from_l in from_model.layers[1:]:
                 if l.name == (names_map.get(from_l.name) if names_map else from_l.name):
                     weights = from_l.get_weights()
-                    new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]))
+                    new_weights = self.adjust_weights_shape(weights, np.shape(l.get_weights()[0]), filter_indices)
                     l.set_weights(new_weights)
                     break
 
@@ -184,6 +191,7 @@ class ModelBuilder:
         model: MlModel,
         on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
         on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
+        filter_indices: list[int] = None,
     ) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         self.last_failed = False
@@ -194,13 +202,14 @@ class ModelBuilder:
             self.last_failed = True
             print("Modification failed")
             return model
-        if tensor.shape != (None, self.n_assets, self.n_outputs):
+        n_assets = self.n_assets if not filter_indices else len(filter_indices)
+        if tensor.shape != (None, n_assets, self.n_outputs):
             self.last_failed = True
             print("Modification failed")
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
-        self.copy_weights(model.model, new_model)
+        self.copy_weights(model.model, new_model, filter_indices=filter_indices)
         print("Modification succeeded")
         return MlModel(new_model)
 
@@ -240,6 +249,22 @@ class ModelBuilder:
                 input.config["filters"] = self.n_features
 
         return self.modify_model(model, on_layer_start)
+
+    def filter_assets(self, model: MlModel, asset_list: list[str], current_assets: set[str]):
+        indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
+        n_assets = len(indices)
+
+        def on_layer_start(input: ModificationInput):
+            if input.config["name"].startswith("dense") and input.config["units"] == self.n_assets:
+                input.config["units"] = n_assets
+            elif input.config["name"].startswith("conv") and input.config["filters"] == self.n_assets:
+                input.config["filters"] = n_assets
+            if input.parents[0].split("_")[0] == "input":
+                layer_name = self.fix_layer_name("gather", input.layer_names)
+                tensor = keras.layers.Lambda(lambda x: tf.gather(x, indices, axis=2), name=layer_name)(input.tensor)
+                return ModificationOutput(tensor=tensor)
+
+        return self.modify_model(model, on_layer_start, filter_indices=indices)
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
         print("Remove layers", start_index, end_index)

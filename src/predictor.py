@@ -68,9 +68,11 @@ class Predictor:
         serialized_model, metrics = self.environment.model_registry.get_leader()
         agent_memory_bytes = self.environment.model_registry.get_real_memory()
         agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
-        asset_list = self.environment.data_registry.get_asset_list()
+        asset_list = self.environment.asset_list
+        current_assets = self.environment.data_registry.get_current_assets()
         model = self.environment.model_serializer.deserialize(serialized_model)
         model = self.environment.model_builder.adjust_dimensions(model)
+        model = self.environment.model_builder.filter_assets(model, asset_list, current_assets)
         raw_portfolio = self.environment.model_registry.get_real_portfolio()
         portfolio_api = KrakenApi()
         cash = portfolio_api.get_cash()
@@ -104,7 +106,7 @@ class Predictor:
         data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in portfolio.positions], asset_list)
         agent_memory = data_transformer.get_agent_memory(agent.agent_name)
         input = data_transformer.join_memory(shared_memory, agent_memory)
-        data_transformer.current_assets = self.environment.data_registry.get_current_assets()
+        data_transformer.current_assets = current_assets
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio, asset_list)
         portfolio_manager.debug = True
         portfolio_manager.portfolio = deepcopy(portfolio)
@@ -140,9 +142,11 @@ class Predictor:
         raw_portfolio = self.environment.model_registry.get_leader_portfolio()
         agent_memory_bytes = self.environment.model_registry.get_leader_memory()
         agent_memory = pickle.loads(agent_memory_bytes) if agent_memory_bytes is not None else None
-        asset_list = self.environment.data_registry.get_asset_list()
+        asset_list = self.environment.asset_list
+        current_assets = self.environment.data_registry.get_current_assets()
         model = self.environment.model_serializer.deserialize(serialized_model)
         model = self.environment.model_builder.adjust_dimensions(model)
+        model = self.environment.model_builder.filter_assets(model, asset_list, current_assets)
         agent = Agent("Leader", self.environment.data_transformer, None, TrainingStrategy(model), metrics)
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         portfolio_manager.debug = True
@@ -162,7 +166,7 @@ class Predictor:
         data_transformer.add_portfolio_to_memory(agent.agent_name, [p.asset for p in positions], asset_list)
         agent_memory = data_transformer.get_agent_memory(agent.agent_name)
         input = data_transformer.join_memory(shared_memory, agent_memory)
-        data_transformer.current_assets = self.environment.data_registry.get_current_assets()
+        data_transformer.current_assets = current_assets
         orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list)
         raw_portfolio = {
             "positions": [p.to_json() for p in portfolio_manager.portfolio.positions],

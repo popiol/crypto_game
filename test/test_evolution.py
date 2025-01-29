@@ -1,3 +1,4 @@
+from string import ascii_uppercase
 from unittest.mock import patch
 
 import numpy as np
@@ -43,7 +44,7 @@ class TestEvolution:
     @pytest.fixture
     def complex_model(self, builder: ModelBuilder):
         model_1 = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
-        model_2 = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V2)
+        model_2 = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V1)
         return builder.merge_models(model_1, model_2, builder.MergeVersion.MULTIPLY)
 
     @pytest.fixture
@@ -60,7 +61,7 @@ class TestEvolution:
     def complex_model2(self, environment: Environment):
         builder = environment.model_builder
         model_1 = builder.build_model(False, builder.ModelVersion.V1)
-        model_2 = builder.build_model(True, builder.ModelVersion.V2)
+        model_2 = builder.build_model(True, builder.ModelVersion.V1)
         return builder.merge_models(model_1, model_2)
 
     def test_adjust_weights_shape(self, builder: ModelBuilder, complex_model: MlModel):
@@ -361,3 +362,17 @@ class TestEvolution:
         model_3, metrics_3 = evolution_handler.merge_existing_models()
         with pytest.raises((KeyError, TypeError)):
             float(metrics_3["evaluation_score"])
+
+    def test_filter_assets(self, builder: ModelBuilder, complex_model: MlModel):
+        model = complex_model
+        layers = model.get_layers()
+        asset_list = [letter * 3 for letter in ascii_uppercase[: builder.n_assets]]
+        indices = list(range(1, len(asset_list), 2))
+        current_assets = set([asset for index, asset in enumerate(asset_list) if index in indices])
+        model2 = builder.filter_assets(model, asset_list, current_assets)
+        print(model2)
+        input = np.zeros([*layers[0].input_shape])
+        output_1 = model.predict(input)
+        output_2 = model2.predict(input)
+        assert np.shape(output_1) == (11, 13)
+        assert np.shape(output_2) == (5, 13)

@@ -15,6 +15,8 @@ class EvolutionHandler:
     model_serializer: ModelSerializer
     model_builder: ModelBuilder
     evolution_randomizer: EvolutionRandomizer
+    asset_list: list[str]
+    current_assets: set[str]
     resize_by: int
     max_n_params: int
 
@@ -27,6 +29,7 @@ class EvolutionHandler:
         elif method == self.evolution_randomizer.ModelCreationMethod.MERGE_MODELS:
             model, metrics = self.merge_existing_models()
         model = self.model_builder.adjust_dimensions(model)
+        model = self.model_builder.filter_assets(model, self.asset_list, self.current_assets)
         model, metrics = self.mutate(model, metrics)
         return model, metrics
 

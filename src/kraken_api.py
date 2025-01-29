@@ -125,7 +125,6 @@ class KrakenApi:
         balance = {asset: float(volume) for asset, volume in self.get_balance().items() if float(volume) > 0 and asset != "ZUSD"}
         precision = self.get_base_volume_precision(list(balance))
         assets = [asset for asset, volume in balance.items() if volume > pow(10, 2 - precision[asset])]
-        print("assets", assets)
         orders = self.get_closed_orders(since)
         matched = {}
         for order in orders.values():
@@ -133,7 +132,6 @@ class KrakenApi:
                 if order["descr"]["pair"].startswith(asset) and order["descr"]["type"] == "buy":
                     if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
                         matched[asset] = order
-        print(matched)
         pairs = self.find_asset_pairs(assets)
         return [
             PortfolioPosition(

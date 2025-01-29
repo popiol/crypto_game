@@ -190,7 +190,7 @@ class DataTransformer:
     def reset(self):
         self.memory = None
         self.last_features = None
-        self.current_assets = set()
+        self.current_assets: set[str] = set()
 
     def get_float_type(self, float_precision: int):
         if float_precision == 16:
