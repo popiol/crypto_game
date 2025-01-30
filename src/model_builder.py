@@ -202,11 +202,6 @@ class ModelBuilder:
             self.last_failed = True
             print("Modification failed")
             return model
-        n_assets = self.n_assets if not filter_indices else len(filter_indices)
-        if tensor.shape != (None, n_assets, self.n_outputs):
-            self.last_failed = True
-            print("Modification failed")
-            return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
         self.copy_weights(model.model, new_model, filter_indices=filter_indices)
@@ -224,7 +219,7 @@ class ModelBuilder:
         if self.n_assets == n_assets:
             return model
 
-        print("Adjust n_assets")
+        print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
         def on_layer_start(input: ModificationInput):
             if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
@@ -251,9 +246,9 @@ class ModelBuilder:
         return self.modify_model(model, on_layer_start)
 
     def filter_assets(self, model: MlModel, asset_list: list[str], current_assets: set[str]):
-        print("Filter assets")
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         n_assets = len(indices)
+        print("Filter assets from", len(asset_list), "to", n_assets)
 
         def on_layer_start(input: ModificationInput):
             if input.config["name"].startswith("dense") and input.config["units"] == self.n_assets:
