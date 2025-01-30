@@ -66,7 +66,6 @@ class Agent:
                 and features.relative_buy_volume > 0
                 and not asset.startswith("USD")
                 and asset not in [p.asset for p in portfolio.positions]
-                and asset in self.data_transformer.current_assets
                 else np.nan
             )
             for asset, features in output.items()
@@ -91,10 +90,11 @@ class Agent:
         self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ):
         output_matrix = self.training_strategy.predict(input)
+        current_asset_list = self.data_transformer.get_current_asset_list(asset_list)
         if self.trainset:
             self.trainset.store_output(timestamp, output_matrix, self.agent_name)
-        output = self.data_transformer.transform_output(output_matrix, asset_list)
-        return self._make_decision(timestamp, output, quotes, portfolio, asset_list)
+        output = self.data_transformer.transform_output(output_matrix, current_asset_list)
+        return self._make_decision(timestamp, output, quotes, portfolio, current_asset_list)
 
     def get_input_output(self, timestamp: datetime) -> tuple[np.ndarray, np.ndarray]:
         shared_input, agent_input, output = self.trainset.get_by_timestamp(timestamp, self.agent_name)

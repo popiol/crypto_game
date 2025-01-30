@@ -302,6 +302,9 @@ class DataTransformer:
     def get_memory(self, agent: str) -> np.ndarray:
         return self.join_memory(self.get_shared_memory(), self.get_agent_memory(agent))
 
+    def get_current_asset_list(self, asset_list: list[str]):
+        return [asset for asset in asset_list if asset in self.current_assets]
+
     def transform_output(self, output_matrix: np.ndarray, asset_list: list[str]) -> dict[str, OutputFeatures]:
         score = output_matrix[:, 0]
         relative_buy_volume = np.clip(2 * output_matrix[:, 0] - 1, 0, 1)
