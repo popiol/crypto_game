@@ -261,8 +261,6 @@ class ModelBuilder:
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
-        if self.n_assets == n_assets:
-            return model
 
         print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
@@ -271,6 +269,8 @@ class ModelBuilder:
                 input.config["units"] = self.n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
+            elif input.config["name"].startswith("gather"):
+                return ModificationOutput(skip=True)
 
         return self.modify_model(model, on_layer_start)
 
