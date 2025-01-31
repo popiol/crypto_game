@@ -70,7 +70,6 @@ class Agent:
             )
             for asset, features in output.items()
         ]
-        print("all scores are nan:", np.isnan(scores).all())
         if not np.isnan(scores).all():
             best_asset_index = np.nanargmax(scores)
             best_asset = asset_list[best_asset_index]
