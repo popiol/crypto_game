@@ -212,7 +212,8 @@ class KrakenApi:
             result = resp_json["result"]
             map_1 = {key: val["decimals"] for key, val in result.items()}
             map_2 = {val["altname"]: val["decimals"] for key, val in result.items()}
-            return {asset: map_1.get(asset, map_2.get(asset)) for asset in assets}
+            map = {**map_1, **map_2}
+            return {asset: map[asset] for asset in assets}
 
     def get_precision(self, assets: list[str]):
         if not assets:
@@ -221,7 +222,9 @@ class KrakenApi:
         command = "AssetPairs"
         params = {"pair": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
-        result = resp.json()["result"]
+        map_1: dict = resp.json()["result"]
+        map_2 = {val["altname"]: val for _, val in map_1.items()}
+        result = {**map_1, **map_2}
         return {asset: AssetPrecision(result[asset]["lot_decimals"], result[asset]["pair_decimals"]) for asset in assets}
 
     def find_asset_pairs(self, assets: list[str]):
