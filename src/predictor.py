@@ -41,15 +41,13 @@ class Predictor:
         new_orders = []
         updated_positions = []
         for new_position in new_positions:
-            found = False
-            for position in positions:
-                if position.asset == new_position.asset:
-                    found = True
-                    if new_position.place_dt is None:
-                        updated_positions.append(position)
-                    else:
-                        updated_positions.append(new_position)
-            if not found:
+            if new_position.place_dt is not None:
+                updated_positions.append(new_position)
+                continue
+            matched = [position for position in positions if position.asset == new_position.asset]
+            if matched:
+                updated_positions.append(matched[0])
+            else:
                 new_orders.append(
                     PortfolioOrder(
                         order_type=PortfolioOrderType.sell,
