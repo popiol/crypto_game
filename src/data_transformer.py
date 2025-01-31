@@ -185,12 +185,12 @@ class DataTransformer:
         self.agent_input_stats = Stats()
         self.output_stats = Stats()
         self.float_type = self.get_float_type(float_precision)
+        self.current_assets: set[str] = set()
         self.reset()
 
     def reset(self):
         self.memory = None
         self.last_features = None
-        self.current_assets: set[str] = set()
 
     def get_float_type(self, float_precision: int):
         if float_precision == 16:
