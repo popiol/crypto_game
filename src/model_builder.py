@@ -265,11 +265,13 @@ class ModelBuilder:
         print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
         def on_layer_start(input: ModificationInput):
+            nonlocal n_assets
             if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
                 input.config["units"] = self.n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
             elif input.config["name"].startswith("gather"):
+                n_assets = len(input.config["indices"])
                 return ModificationOutput(skip=True)
 
         return self.modify_model(model, on_layer_start)
