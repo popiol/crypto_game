@@ -1,7 +1,8 @@
+import glob
 import os
 import random
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -18,6 +19,8 @@ class ModelRegistry:
         max_immature_models: int,
         retirement_min_days: int,
         archive_retention_days: int,
+        local_path: str,
+        local_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
         self.maturity_min_hours = maturity_min_hours
@@ -25,6 +28,8 @@ class ModelRegistry:
         self.max_immature_models = max_immature_models
         self.retirement_min_days = retirement_min_days
         self.archive_retention_days = archive_retention_days
+        self.local_path = local_path
+        self.local_retention_days = local_retention_days
         self.current_prefix = os.path.join(self.s3_utils.path, "models")
         self.archived_prefix = os.path.join(self.s3_utils.path, "archived")
         self.metrics_prefix = os.path.join(self.s3_utils.path, "metrics")
@@ -44,15 +49,20 @@ class ModelRegistry:
             return None, None
         key = random.choice(keys)
         model_name = key.split("/")[-1]
-        return model_name, self.s3_utils.download_bytes(key)
+        return model_name, self.get_model(model_name)
 
     def get_model(self, model_name: str) -> bytes:
-        return self.s3_utils.download_bytes(f"{self.current_prefix}/{model_name}")
+        os.makedirs(self.local_path, exist_ok=True)
+        local_path = f"{self.local_path}/{model_name}"
+        if not os.path.exists(local_path):
+            self.s3_utils.download_file(f"{self.current_prefix}/{model_name}", local_path)
+        with open(local_path, "rb") as f:
+            return f.read()
 
     def iterate_models(self):
         for key in self.s3_utils.list_files(self.current_prefix + "/"):
             model_name = key.split("/")[-1]
-            yield model_name, self.s3_utils.download_bytes(key)
+            yield model_name, self.get_model(model_name)
 
     def get_metrics(self, model_name: str) -> dict:
         return self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
@@ -65,6 +75,7 @@ class ModelRegistry:
         self.archive_weak_models(mature=True)
         self.archive_weak_models(mature=False)
         self.clean_archive()
+        self.clean_local_cache()
 
     def archive_old_models(self):
         files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_days * 24)
@@ -110,6 +121,12 @@ class ModelRegistry:
         files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)
         for file in files:
             self.s3_utils.delete_file(file)
+
+    def clean_local_cache(self):
+        for file in glob.iglob(self.local_path + "/*"):
+            local_mtime = datetime.fromtimestamp(os.path.getmtime(file))
+            if datetime.now() - local_mtime > timedelta(days=self.local_retention_days):
+                os.remove(file)
 
     def set_aggregated_metrics(self, metrics: dict):
         file_name = re.sub("[^0-9]", "", metrics["datetime"])[:10] + ".json"

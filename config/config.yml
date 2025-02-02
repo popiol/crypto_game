@@ -8,6 +8,8 @@ model_registry:
   max_immature_models: 10
   retirement_min_days: 7
   archive_retention_days: 1
+  local_path: data/models
+  local_retention_days: 10
 
 data_registry:
   quotes_remote_path: s3://popiol-crypto/kraken
