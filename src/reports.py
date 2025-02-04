@@ -3,6 +3,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -89,6 +90,7 @@ class Reports:
         df = pd.DataFrame()
         if os.path.exists(self.change_in_time_path):
             df = pd.read_csv(self.change_in_time_path)
+            df = df[df.datetime > (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d %H:%M:%S")]
             last_dt = df.datetime.max()
             last_dt = re.sub("[^0-9]", "", last_dt)[:10]
             files = [file for file in files if file.split("/")[-1][:10] > last_dt]
