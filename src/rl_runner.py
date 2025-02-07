@@ -123,7 +123,10 @@ class RlRunner:
 
     def train_on_historical(self):
         for agent in self.agents:
-            rl_trainset = self.data_registry.get_random_trainset(self.asset_list, self.data_transformer.current_assets)
+            try:
+                rl_trainset = self.data_registry.get_random_trainset(self.asset_list, self.data_transformer.current_assets)
+            except IndexError:
+                continue
             agent.train(historical=rl_trainset)
 
     def train_on_open_positions(self):
