@@ -137,8 +137,8 @@ class RlRunner:
     def extend_rl_trainset(self, rl_trainset: RlTrainset):
         indices = [index for index, asset in enumerate(self.asset_list) if asset in self.data_transformer.current_assets]
         for input, output, reward in rl_trainset:
-            wide_output = np.zeros((len(self.asset_list), output.shape[1]))
-            wide_output[indices] = output
+            wide_output = np.zeros((output.shape[0], len(self.asset_list), output.shape[2]))
+            wide_output[:, indices] = output
             self.rl_trainset.append((input, wide_output, reward))
 
     def save_rl_trainset(self):
