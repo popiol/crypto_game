@@ -202,6 +202,8 @@ class DataRegistry:
         if n_assets == orig_n_assets:
             return trainset
         print("Fix n_assets", orig_n_assets, "->", n_assets)
+        print("input:", np.shape(trainset[0][0]))
+        print("output:", np.shape(trainset[0][1]))
         assert n_assets > orig_n_assets
         fixed = []
         for input, output, reward in trainset:
@@ -221,4 +223,6 @@ class DataRegistry:
     def filter_assets(self, trainset: RlTrainset, indices: list[int]):
         orig_n_assets = len(trainset[0][1][0])
         print("Filter assets from", orig_n_assets, "to", len(indices))
+        print("input:", np.shape(trainset[0][0]))
+        print("output:", np.shape(trainset[0][1]))
         return [(input, output[:, indices], reward) for input, output, reward in trainset]

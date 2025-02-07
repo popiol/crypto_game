@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import numpy as np
+
 from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
 from src.environment import Environment
@@ -130,3 +132,16 @@ class TestSimulation:
         evolution_handler = environment.evolution_handler
         model, metrics = evolution_handler.merge_existing_models()
         print(metrics)
+
+    def test_fix_n_assets(self):
+        environment = Environment("config/config.yml")
+        n_steps = environment.model_builder.n_steps
+        n_assets = environment.model_builder.n_assets
+        n_features = environment.model_builder.n_features
+        n_outputs = environment.model_builder.n_outputs
+        input = np.zeros((1, n_steps, n_assets, n_features))
+        output = np.zeros((1, n_assets, n_outputs))
+        rl_trainset = [(input, output, [0.0])]
+        fixed = environment.data_registry.fix_n_assets(rl_trainset, n_assets + 10)
+        assert np.shape(fixed[0][0]) == (1, n_steps, n_assets + 10, n_features)
+        assert np.shape(fixed[0][1]) == (1, n_assets + 10, n_outputs)
