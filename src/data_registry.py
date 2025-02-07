@@ -219,5 +219,6 @@ class DataRegistry:
         return fixed
 
     def filter_assets(self, trainset: RlTrainset, indices: list[int]):
-        print("Filter assets to", len(indices))
+        orig_n_assets = len(trainset[0][1][0])
+        print("Filter assets from", orig_n_assets, "to", len(indices))
         return [(input, output[:, indices], reward) for input, output, reward in trainset]

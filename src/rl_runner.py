@@ -11,6 +11,7 @@ import numpy as np
 
 from src.agent import Agent
 from src.baseline.baseline_agent import BaselineAgent
+from src.constants import RlTrainset
 from src.data_transformer import QuotesSnapshot
 from src.environment import Environment
 from src.logger import Logger
@@ -95,7 +96,7 @@ class RlRunner:
         closed_transactions = portfolio_manager.handle_orders(timestamp, quotes)
         if not self.environment.eval_mode:
             rl_trainset = agent.train(transactions=closed_transactions)
-            self.rl_trainset.extend(rl_trainset)
+            self.extend_rl_trainset(rl_trainset)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
         self.logger.log_transactions(agent.model_name, closed_transactions)
@@ -128,10 +129,17 @@ class RlRunner:
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
-            self.rl_trainset.extend(rl_trainset)
+            self.extend_rl_trainset(rl_trainset)
 
     def should_save_rl_trainset(self):
         return random.random() < 0.05
+
+    def extend_rl_trainset(self, rl_trainset: RlTrainset):
+        indices = [index for index, asset in enumerate(self.asset_list) if asset in self.data_transformer.current_assets]
+        for input, output, reward in rl_trainset:
+            wide_output = np.zeros((len(self.asset_list), output.shape[1]))
+            wide_output[indices] = output
+            self.rl_trainset.append((input, wide_output, reward))
 
     def save_rl_trainset(self):
         if not self.should_save_rl_trainset():
