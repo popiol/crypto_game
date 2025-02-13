@@ -166,14 +166,6 @@ class ModelBuilder:
                     l.set_weights(new_weights)
                     break
 
-    def fix_reshape(self, config: dict, tensor: keras.KerasTensor):
-        if config["name"].split("_")[0] == "reshape":
-            target_n_dim = len(config["target_shape"])
-            input_shape = tensor.shape[1:]
-            assert 0 < target_n_dim <= len(input_shape)
-            output_shape = input_shape[: target_n_dim - 1] + tuple([np.prod(input_shape[target_n_dim - 1 :])])
-            config["target_shape"] = output_shape
-
     def fix_layer_name(self, layer_name: str, layer_names: set[str], add: bool = True) -> str:
         parts = layer_name.split("_")
         layer_name = "_".join(parts[:1] + parts[max(1, len(parts) - 30) :])
@@ -220,7 +212,6 @@ class ModelBuilder:
                     continue
                 if resp and resp.skip_branch:
                     continue
-            self.fix_reshape(config, tensor)
             config["name"] = self.fix_layer_name(config["name"], layer_names)
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
@@ -237,6 +228,7 @@ class ModelBuilder:
         on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
         on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
         filter_indices: list[int] = None,
+        raise_on_failure: bool = False,
     ) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         self.last_failed = False
@@ -246,6 +238,9 @@ class ModelBuilder:
         except (ValueError, TypeError, AttributeError, ModificationError):
             self.last_failed = True
             print("Modification failed")
+            if raise_on_failure:
+                print(model)
+                raise
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
@@ -270,11 +265,15 @@ class ModelBuilder:
                 input.config["units"] = self.n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
+            elif input.config["name"].startswith("reshape") and n_assets in input.config["target_shape"]:
+                shape = list(input.config["target_shape"])
+                shape[shape.index(n_assets)] = self.n_assets
+                input.config["target_shape"] = shape
             elif input.config["name"].startswith("gather"):
                 n_assets = len(input.config["indices"])
                 return ModificationOutput(skip=True)
 
-        return self.modify_model(model, on_layer_start)
+        return self.modify_model(model, on_layer_start, raise_on_failure=True)
 
     def adjust_n_features(self, model: MlModel) -> MlModel:
         n_features = model.model.layers[0].batch_shape[3]
@@ -289,8 +288,12 @@ class ModelBuilder:
                 input.config["units"] = self.n_features
             elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_features:
                 input.config["filters"] = self.n_features
+            elif input.config["name"].startswith("reshape") and n_features in input.config["target_shape"]:
+                shape = list(input.config["target_shape"])
+                shape[shape.index(n_features)] = self.n_features
+                input.config["target_shape"] = shape
 
-        return self.modify_model(model, on_layer_start)
+        return self.modify_model(model, on_layer_start, raise_on_failure=True)
 
     def filter_assets(self, model: MlModel, asset_list: list[str], current_assets: set[str]):
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
@@ -302,6 +305,10 @@ class ModelBuilder:
                 input.config["units"] = n_assets
             elif input.config["name"].startswith("conv") and input.config["filters"] == self.n_assets:
                 input.config["filters"] = n_assets
+            elif input.config["name"].startswith("reshape") and self.n_assets in input.config["target_shape"]:
+                shape = list(input.config["target_shape"])
+                shape[shape.index(self.n_assets)] = n_assets
+                input.config["target_shape"] = shape
             skip = input.config["name"].startswith("gather")
             tensor = None
             if input.parents[0].split("_")[0] == "input":
@@ -309,7 +316,7 @@ class ModelBuilder:
                 tensor = self.Gather(indices, axis=2, name=layer_name)(input.tensor)
             return ModificationOutput(tensor=tensor, skip=skip)
 
-        return self.modify_model(model, on_layer_start, filter_indices=indices)
+        return self.modify_model(model, on_layer_start, filter_indices=indices, raise_on_failure=True)
 
     @keras.utils.register_keras_serializable()
     class Gather(keras.layers.Layer):
