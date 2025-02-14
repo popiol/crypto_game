@@ -187,13 +187,16 @@ class RlRunner:
         model_builder = self.environment.model_builder
         for model_name, serialized_model in self.model_registry.iterate_models():
             print(model_name)
-            model = self.model_serializer.deserialize(serialized_model)
-            model = model_builder.adjust_dimensions(model)
-            model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
-            metrics = self.model_registry.get_metrics(model_name)
-            agent = Agent(model_name.split("_")[0], self.data_transformer, None, TrainingStrategy(model), metrics)
-            agent.model_name = model_name
-            self.agents.append(agent)
+            try:
+                model = self.model_serializer.deserialize(serialized_model)
+                model = model_builder.adjust_dimensions(model)
+                model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
+                metrics = self.model_registry.get_metrics(model_name)
+                agent = Agent(model_name.split("_")[0], self.data_transformer, None, TrainingStrategy(model), metrics)
+                agent.model_name = model_name
+                self.agents.append(agent)
+            except:
+                self.model_registry.archive_model(model_name)
         serialized_model, metrics = self.model_registry.get_leader()
         model = self.model_serializer.deserialize(serialized_model)
         model = model_builder.adjust_dimensions(model)

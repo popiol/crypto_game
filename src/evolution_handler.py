@@ -97,6 +97,8 @@ class EvolutionHandler:
         mutations = metrics.get("mutations", {})
         metrics["mutations"] = mutations
         for index, layer in enumerate(model.get_layers()[:-1]):
+            if layer.layer_type == "gather":
+                continue
             if skip > 0:
                 skip -= 1
                 continue

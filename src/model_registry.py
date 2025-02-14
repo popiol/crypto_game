@@ -77,13 +77,16 @@ class ModelRegistry:
         self.clean_archive()
         self.clean_local_cache()
 
+    def archive_model(self, model_name: str):
+        self.s3_utils.move_file(f"{self.current_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}")
+        self.s3_utils.move_file(f"{self.metrics_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}.json")
+
     def archive_old_models(self):
         files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_days * 24)
         for file in files:
             model = file.split("/")[-1]
             print("archive old", model)
-            self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
-            self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
+            self.archive_model(model)
 
     def get_weak_models(self, mature: bool) -> list[str]:
         older_than = self.maturity_min_hours if mature else None
@@ -114,8 +117,7 @@ class ModelRegistry:
         models = self.get_weak_models(mature)
         for model in models:
             print("archive weak", "mature" if mature else "immature", model)
-            self.s3_utils.move_file(f"{self.current_prefix}/{model}", f"{self.archived_prefix}/{model}")
-            self.s3_utils.move_file(f"{self.metrics_prefix}/{model}", f"{self.archived_prefix}/{model}.json")
+            self.archive_model(model)
 
     def clean_archive(self):
         files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)
