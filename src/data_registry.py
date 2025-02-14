@@ -199,6 +199,7 @@ class DataRegistry:
 
     def fix_n_assets(self, trainset: RlTrainset, n_assets: int):
         orig_n_assets = len(trainset[0][0][0][0])
+        orig_n_assets_output = len(trainset[0][1][0])
         if n_assets == orig_n_assets:
             return trainset
         print("Fix n_assets", orig_n_assets, "->", n_assets)
@@ -210,7 +211,7 @@ class DataRegistry:
             input_shape = list(np.shape(input))
             input_shape[2] = n_assets - orig_n_assets
             output_shape = list(np.shape(output))
-            output_shape[1] = n_assets - orig_n_assets
+            output_shape[1] = n_assets - orig_n_assets_output
             fixed.append(
                 (
                     np.concatenate([input, np.zeros(input_shape, dtype=input.dtype)], axis=2),
