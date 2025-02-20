@@ -109,6 +109,24 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
+    def build_model_v4(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        if asset_dependent:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Conv2D(100, 9)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 1, 2))(l)
+        else:
+            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
     def compile_model(self, model):
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
 
@@ -330,7 +348,7 @@ class ModelBuilder:
             pass
 
         def call(self, inputs):
-            return tf.gather(inputs, self.indices, axis=2)
+            return tf.gather(inputs, self.indices, axis=self.axis)
 
         def compute_output_shape(self, input_shape):
             return (*input_shape[:-2], len(self.indices), input_shape[-1])

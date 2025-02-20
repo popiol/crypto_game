@@ -171,7 +171,6 @@ class RlRunner:
             self.logger.log_reward(self.agents)
             if datetime.now() - self.start_dt > timedelta(minutes=self.training_time_min):
                 break
-        self.save_rl_trainset()
 
     def save_current_input(self, quotes: QuotesSnapshot):
         current_input_path = self.environment.config["predictor"]["current_input_path"]
@@ -246,6 +245,7 @@ class RlRunner:
         self.initial_run()
         self.create_agents()
         self.main_loop()
+        self.save_rl_trainset()
         self.save_models()
 
     def evaluate(self):
