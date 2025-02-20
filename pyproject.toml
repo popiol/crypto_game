@@ -3,3 +3,6 @@ line-length = 130
 
 [tool.isort]
 profile = "black"
+
+[tool.ruff]
+line-length = 130

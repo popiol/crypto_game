@@ -48,7 +48,6 @@ class EvolutionRandomizer:
     class AddLayerAction(Enum):
         NO_ACTION = auto()
         DENSE = auto()
-        CONV = auto()
 
     def add_layer(self):
         if random.random() > self.add_layer_prob:

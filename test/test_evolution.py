@@ -167,43 +167,6 @@ class TestEvolution:
             output = model2.predict(input)
             assert np.shape(output) == (11, 13)
 
-    def test_add_conv_layer(self, builder: ModelBuilder, concat_model: MlModel):
-        model = concat_model
-        model = builder.add_conv_layer(model, 0)
-        layers = model.get_layers()
-        for index in range(len(layers)):
-            model2 = builder.add_conv_layer(model, index)
-            layers2 = model2.get_layers()
-            if index in [4, 5, 6, 7]:
-                assert len(layers) == len(layers2)
-                assert [x.layer_type for x in layers] == [x.layer_type for x in layers2]
-            elif index in [12]:
-                assert sorted(
-                    [x.layer_type for x in layers[:index]]
-                    + ["permute", "reshape", "conv2d", "reshape", "permute"]
-                    + [x.layer_type for x in layers[index:]]
-                ) == sorted([x.layer_type for x in layers2])
-            elif index in [0, 1]:
-                assert len(layers) + 1 == len(layers2) or len(layers) + 3 == len(layers2)
-                assert sorted(
-                    [x.layer_type for x in layers[:index]] + ["conv2d"] + [x.layer_type for x in layers[index:]]
-                ) == sorted([x.layer_type for x in layers2])
-            elif index in [2, 3]:
-                assert sorted(
-                    [x.layer_type for x in layers[:index]]
-                    + ["permute", "conv2d", "permute"]
-                    + [x.layer_type for x in layers[index:]]
-                ) == sorted([x.layer_type for x in layers2])
-            elif index in [13]:
-                assert sorted(
-                    [x.layer_type for x in layers[:index]]
-                    + ["permute", "conv1d", "permute"]
-                    + [x.layer_type for x in layers[index:]]
-                ) == sorted([x.layer_type for x in layers2])
-            input = np.zeros([*layers2[0].input_shape])
-            output = model2.predict(input)
-            assert np.shape(output) == (11, 13)
-
     def test_resize_layer(self, builder: ModelBuilder, concat_model: MlModel):
         model = concat_model
         layers = model.get_layers()
@@ -221,7 +184,6 @@ class TestEvolution:
 
     def test_add_relu(self, builder: ModelBuilder, complex_model: MlModel):
         model = complex_model
-        model = builder.add_conv_layer(model, 0)
         layers = model.get_layers()
         input = np.zeros([*layers[0].input_shape])
         output = model.predict(input)
@@ -238,7 +200,6 @@ class TestEvolution:
 
     def test_remove_relu(self, builder: ModelBuilder, complex_model: MlModel):
         model = complex_model
-        model = builder.add_conv_layer(model, 0)
         layers = model.get_layers()
         input = np.zeros([*layers[0].input_shape])
         output = model.predict(input)
@@ -299,20 +260,6 @@ class TestEvolution:
         model_2 = model_serializer.deserialize(model_registry.get_model(model_name_2))
         model_3 = builder.merge_models(model_1, model_2)
         print(model_3)
-
-    def test_mutations_conv(self, environment: Environment, complex_model2: MlModel):
-        evolution_handler = environment.evolution_handler
-        model_builder = environment.model_builder
-        model = complex_model2
-        metrics = {}
-        with patch("src.model_builder.ModelBuilder.add_conv_layer", wraps=model_builder.add_conv_layer) as add_conv_layer:
-            for _ in range(100):
-                model, metrics = evolution_handler.mutate(model, metrics)
-                if metrics["mutations"].get("add_conv_layer"):
-                    break
-        print(model)
-        print("mutations:", metrics["mutations"])
-        print("call count:", add_conv_layer.call_count)
 
     def test_mutations_reuse(self, environment: Environment, complex_model2: MlModel):
         evolution_handler = environment.evolution_handler

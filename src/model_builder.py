@@ -358,63 +358,6 @@ class ModelBuilder:
 
         return self.modify_model(model, on_layer_start)
 
-    def add_conv_layer(self, model: MlModel, before_index: int):
-        print("Add conv layer", before_index)
-        assert 0 <= before_index < len(model.model.layers) - 1
-
-        def on_layer_start(input: ModificationInput):
-            if input.index == before_index:
-                tensor = input.tensor
-                if type(tensor) == list:
-                    tensor = tensor[0]
-                if not isinstance(tensor, keras.KerasTensor):
-                    raise ModificationError(f"Invalid tensor type: {type(tensor)}")
-                shape = tensor.shape
-                if len(shape) == 3:
-                    layer_name = self.fix_layer_name("permute", input.layer_names)
-                    tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
-                    if math.isqrt(shape[2]) == math.sqrt(shape[2]):
-                        new_size = math.isqrt(shape[2])
-                        layer_name = self.fix_layer_name("reshape", input.layer_names)
-                        tensor = keras.layers.Reshape((new_size, new_size, shape[1]), name=layer_name)(tensor)
-                        layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                        tensor = keras.layers.Conv2D(shape[1], 3, name=layer_name)(tensor)
-                        layer_name = self.fix_layer_name("reshape", input.layer_names)
-                        tensor = keras.layers.Reshape((-1, shape[1]), name=layer_name)(tensor)
-                    elif int(math.pow(shape[2], 1 / 3)) == math.pow(shape[2], 1 / 3):
-                        new_size = int(math.pow(shape[2], 1 / 3))
-                        layer_name = self.fix_layer_name("reshape", input.layer_names)
-                        tensor = keras.layers.Reshape((new_size, new_size, new_size, shape[1]), name=layer_name)(tensor)
-                        layer_name = self.fix_layer_name("conv3d", input.layer_names)
-                        tensor = keras.layers.Conv3D(shape[1], 3, name=layer_name)(tensor)
-                        layer_name = self.fix_layer_name("reshape", input.layer_names)
-                        tensor = keras.layers.Reshape((-1, shape[1]), name=layer_name)(tensor)
-                    else:
-                        layer_name = self.fix_layer_name("conv1d", input.layer_names)
-                        tensor = keras.layers.Conv1D(shape[1], 3, name=layer_name)(tensor)
-                    layer_name = self.fix_layer_name("permute", input.layer_names)
-                    tensor = keras.layers.Permute((2, 1), name=layer_name)(tensor)
-                    if type(input.tensor) == list:
-                        tensor = [tensor, *input.tensor[1:]]
-                    return ModificationOutput(tensor=tensor)
-                if len(shape) == 4:
-                    filters = shape[-1]
-                    if shape[-1] != self.n_features:
-                        layer_name = self.fix_layer_name("permute", input.layer_names)
-                        tensor = keras.layers.Permute((1, 3, 2), name=layer_name)(tensor)
-                        filters = shape[-2]
-                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(filters, 3, name=layer_name)(tensor)
-                    if shape[-1] != self.n_features:
-                        layer_name = self.fix_layer_name("permute", input.layer_names)
-                        tensor = keras.layers.Permute((1, 3, 2), name=layer_name)(tensor)
-                    if type(input.tensor) == list:
-                        tensor = [tensor, *input.tensor[1:]]
-                    return ModificationOutput(tensor=tensor)
-                raise ModificationError(f"Invalid tensor shape: {shape}")
-
-        return self.modify_model(model, on_layer_start)
-
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("Resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2

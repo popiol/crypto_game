@@ -36,7 +36,6 @@ class CustomMetrics:
             "version_v1",
             "version_v2",
             "version_v3",
-            "n_mutations_add_conv_layer",
             "n_mutations_add_dense_layer",
             "n_mutations_remove_layer",
             "n_mutations_extend_layer",
