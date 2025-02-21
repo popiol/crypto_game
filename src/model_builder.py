@@ -253,12 +253,14 @@ class ModelBuilder:
         layer_names = set()
         try:
             tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
-        except (ValueError, TypeError, AttributeError, ModificationError):
+            assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs
+        except Exception as e:
             self.last_failed = True
             print("Modification failed")
+            print(e)
             if raise_on_failure:
                 print(model)
-                raise
+                raise e
             return model
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
