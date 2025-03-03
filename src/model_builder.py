@@ -43,6 +43,7 @@ class ModelBuilder:
         V1 = auto()
         V2 = auto()
         V3 = auto()
+        V4 = auto()
 
     def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
         if version == self.ModelVersion.V1:
@@ -51,6 +52,8 @@ class ModelBuilder:
             return self.build_model_v2(asset_dependent)
         if version == self.ModelVersion.V3:
             return self.build_model_v3(asset_dependent)
+        if version == self.ModelVersion.V4:
+            return self.build_model_v4(asset_dependent)
 
     def build_model_v1(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
