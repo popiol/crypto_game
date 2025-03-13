@@ -307,9 +307,9 @@ class DataTransformer:
 
     def transform_output(self, output_matrix: np.ndarray, asset_list: list[str]) -> dict[str, OutputFeatures]:
         score = output_matrix[:, 0]
-        relative_buy_volume = np.clip(2 * output_matrix[:, 0] - 1, 0, 1)
-        relative_buy_price = np.clip(1 - output_matrix[:, 1] * self.expected_daily_change, 0, 2)
-        relative_sell_price = np.clip(1 + output_matrix[:, 2] * self.expected_daily_change, 0, 2)
+        relative_buy_volume = np.clip(output_matrix[:, 0], 0, 1)
+        relative_buy_price = np.clip(1 - output_matrix[:, 1] * self.expected_daily_change, 0, 1)
+        relative_sell_price = np.clip(1 + output_matrix[:, 2] * self.expected_daily_change, 1, 2)
         self.output_stats.add_to_stats(output_matrix)
         return {
             row[0]: OutputFeatures(*row[1:])

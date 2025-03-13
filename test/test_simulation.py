@@ -151,6 +151,7 @@ class TestSimulation:
     @patch("src.evolution_handler.EvolutionHandler.create_model")
     def test_model_versions(self, create_model, pick_class, train_on_historical):
         from src.training_strategy import LearnOnMistakes
+
         pick_class.return_value = LearnOnMistakes
         environment = Environment("config/config.yml")
         environment.config["rl_runner"]["training_time_min"] = 2
@@ -159,7 +160,7 @@ class TestSimulation:
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v4(asset_dependent=True)
+        model = model_builder.build_model_v6(asset_dependent=False)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})

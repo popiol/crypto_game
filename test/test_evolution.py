@@ -240,6 +240,14 @@ class TestEvolution:
         assert np.shape(output_6) == np.shape(output_4)
         print(model_6)
         print("model 6 n layers:", len(model_6.get_layers()))
+        model_7 = builder.merge_models(model_2, model_3, builder.MergeVersion.NORM)
+        print(model_7)
+        print("model 7 n layers:", len(model_7.get_layers()))
+        assert len(model_7.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 1
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        output_7 = model_7.predict(input)
+        assert np.shape(output_1) == np.shape(output_7)
 
     def test_merge_multiply(self, builder: ModelBuilder):
         model_1 = builder.build_model()
@@ -344,3 +352,13 @@ class TestEvolution:
         output_3 = model3.predict(input)
         assert np.shape(output_2) == (len(asset_list), 4)
         assert np.shape(output_3) == (len(current_assets), 4)
+
+    def test_model_development(self, environment: Environment):
+        builder = environment.model_builder
+        model = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V1)
+        print(model)
+        model = builder.add_dropout(model, 0)
+        model = builder.add_relu(model, 4)
+        model = builder.add_dense_layer(model, 5, 100)
+        model = builder.add_relu(model, 5)
+        print(model)

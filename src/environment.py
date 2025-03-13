@@ -61,7 +61,10 @@ class Environment:
     @cached_property
     def model_builder(self):
         return ModelBuilder(
-            self.data_transformer.memory_length, self.n_assets, self.data_transformer.n_features, self.data_transformer.n_outputs
+            self.data_transformer.memory_length,
+            self.n_assets,
+            self.data_transformer.n_features,
+            self.data_transformer.n_outputs - 1,
         )
 
     @cached_property

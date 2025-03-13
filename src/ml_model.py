@@ -4,6 +4,8 @@ import io
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
+from tabulate import tabulate
 
 from src.keras import keras
 
@@ -14,6 +16,7 @@ class MlModelLayer:
     layer_type: str
     shape: tuple
     input_shape: tuple
+    output_shape: tuple
     activation: str
 
 
@@ -57,16 +60,18 @@ class MlModel:
             parent_layers = self.get_parent_layer_names(index)
             input_shape = input_shapes[parent_layers[0]] if len(parent_layers) == 1 else [input_shapes[x] for x in parent_layers]
             input_shape_without_batch = input_shape[1:] if type(input_shape) == tuple else [x[1:] for x in input_shape]
+            output_shape = l.compute_output_shape(input_shape)
             layers.append(
                 MlModelLayer(
                     name=l.name,
                     layer_type=l.name.split("_")[0],
                     shape=tuple(l.weights[0].shape) if l.weights else None,
                     input_shape=input_shape_without_batch,
+                    output_shape=output_shape[1:],
                     activation=format_activation(l.activation.__name__) if l.weights else None,
                 )
             )
-            input_shapes[l.name] = l.compute_output_shape(input_shape)
+            input_shapes[l.name] = output_shape
         return layers
 
     def get_layer_short_desc(self, layer: keras.layers.Layer) -> str:
@@ -134,7 +139,13 @@ class MlModel:
 
     def __str__(self):
         s = io.StringIO()
-        self.model.summary(print_fn=lambda x: s.write(x + "\n"))
+        df = pd.DataFrame(columns=["name", "parent", "out_shape", "act"])
+        df.loc[len(df)] = ["input_layer", "", self.model.layers[0].batch_shape[1:], ""]
+        for index, layer in enumerate(self.get_layers()):
+            parents = self.get_parent_layer_names(index)
+            df.loc[len(df)] = [layer.name, ",".join(parents), layer.output_shape, layer.activation or ""]
+        print()
+        print(tabulate(df, headers="keys", tablefmt="psql"))
         return s.getvalue()
 
     @property

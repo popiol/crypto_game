@@ -1,4 +1,3 @@
-import math
 import random
 import re
 from dataclasses import dataclass
@@ -41,19 +40,16 @@ class ModelBuilder:
 
     class ModelVersion(Enum):
         V1 = auto()
-        V2 = auto()
-        V3 = auto()
-        V4 = auto()
+        V5 = auto()
+        V6 = auto()
 
     def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
         if version == self.ModelVersion.V1:
             return self.build_model_v1(asset_dependent)
-        if version == self.ModelVersion.V2:
-            return self.build_model_v2(asset_dependent)
-        if version == self.ModelVersion.V3:
-            return self.build_model_v3(asset_dependent)
-        if version == self.ModelVersion.V4:
-            return self.build_model_v4(asset_dependent)
+        if version == self.ModelVersion.V5:
+            return self.build_model_v5(asset_dependent)
+        if version == self.ModelVersion.V6:
+            return self.build_model_v6(asset_dependent)
 
     def build_model_v1(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
@@ -73,10 +69,9 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
-    def build_model_v2(self, asset_dependent=False) -> MlModel:
+    def build_model_v5(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        l = keras.layers.Dropout(0.3)(l)
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
             l = keras.layers.Dense(100)(l)
@@ -92,39 +87,21 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
-    def build_model_v3(self, asset_dependent=False) -> MlModel:
+    def build_model_v6(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
             l = keras.layers.Dense(100)(l)
             l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 2, 1))(l)
-        else:
-            l = keras.layers.Permute((2, 3, 1))(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Permute((1, 3, 2))(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Reshape((self.n_assets, 10000))(l)
-        l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(self.n_outputs)(l)
-        model = keras.Model(inputs=inputs, outputs=l)
-        self.compile_model(model)
-        return MlModel(model)
-
-    def build_model_v4(self, asset_dependent=False) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Conv2D(100, 9)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
             l = keras.layers.Permute((3, 1, 2))(l)
         else:
             l = keras.layers.Permute((2, 1, 3))(l)
-        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(100, activation="softsign")(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
@@ -381,6 +358,19 @@ class ModelBuilder:
 
         return self.modify_model(model, on_layer_start)
 
+    def add_dropout(self, model: MlModel, before_index: int):
+        print("Add dropout", before_index)
+        assert 0 <= before_index < len(model.model.layers) - 1
+
+        def on_layer_start(input: ModificationInput):
+            if input.index == before_index:
+                if not isinstance(input.tensor, keras.KerasTensor):
+                    raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
+                layer_name = self.fix_layer_name("dropout", input.layer_names)
+                return ModificationOutput(tensor=keras.layers.Dropout(0.3, name=layer_name)(input.tensor))
+
+        return self.modify_model(model, on_layer_start)
+
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("Resize layer", layer_index, new_size)
         assert 0 <= layer_index < len(model.model.layers) - 2
@@ -451,6 +441,7 @@ class ModelBuilder:
         TRANSFORM = auto()
         SELECT = auto()
         MULTIPLY = auto()
+        NORM = auto()
 
     @keras.utils.register_keras_serializable()
     class OuterProduct(keras.layers.Layer):
@@ -515,6 +506,8 @@ class ModelBuilder:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
+        elif merge_version == self.MergeVersion.NORM:
+            tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
