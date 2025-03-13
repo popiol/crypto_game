@@ -334,7 +334,7 @@ class TestEvolution:
         assert np.shape(output_2) == (5, 13)
 
     def test_filter_assets_existing_model(self):
-        model_name = "Mia_20250130110042_f1337"
+        model_name = "Evelyn_20250312034030_e57f9"
         environment = Environment("config/config.yml")
         model_registry = environment.model_registry
         serialized = model_registry.get_model(model_name)
@@ -346,12 +346,13 @@ class TestEvolution:
         builder = environment.model_builder
         model2 = builder.adjust_n_assets(model)
         model3 = builder.filter_assets(model2, asset_list, current_assets)
-        input = np.zeros([*layers[0].input_shape])
-        model.predict(input)
+        input = np.zeros(
+            (environment.data_transformer.memory_length, environment.n_assets, environment.data_transformer.n_features)
+        )
         output_2 = model2.predict(input)
         output_3 = model3.predict(input)
-        assert np.shape(output_2) == (len(asset_list), 4)
-        assert np.shape(output_3) == (len(current_assets), 4)
+        assert np.shape(output_2) == (len(asset_list), 3)
+        assert np.shape(output_3) == (len(current_assets), 3)
 
     def test_model_development(self, environment: Environment):
         builder = environment.model_builder

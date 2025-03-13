@@ -211,6 +211,8 @@ class ModelBuilder:
                 if resp and resp.skip_branch:
                     continue
             config["name"] = self.fix_layer_name(config["name"], layer_names)
+            if index == len(model.model.layers) - 2:
+                config["units"] = self.n_outputs
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
             if on_layer_end:
