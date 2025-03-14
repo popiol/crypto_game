@@ -92,12 +92,12 @@ class ModelBuilder:
         l = inputs
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Conv2D(100, 3)(l)
             l = keras.layers.Dense(self.n_assets)(l)
             l = keras.layers.Permute((3, 1, 2))(l)
         else:
             l = keras.layers.Permute((2, 1, 3))(l)
-        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)

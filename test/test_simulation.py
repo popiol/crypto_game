@@ -160,7 +160,7 @@ class TestSimulation:
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v6(asset_dependent=False)
+        model = model_builder.build_model_v6(asset_dependent=True)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})
