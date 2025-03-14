@@ -146,6 +146,7 @@ class MlModel:
             df.loc[len(df)] = [layer.name, ",".join(parents), layer.output_shape, layer.activation or ""]
         print()
         print(tabulate(df, headers="keys", tablefmt="psql"))
+        print("Params:", self.get_n_params())
         return s.getvalue()
 
     @property
