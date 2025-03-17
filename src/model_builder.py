@@ -182,6 +182,16 @@ class ModelBuilder:
     def expects_list_of_tensors(self, config: dict):
         return config["name"].split("_")[0] in ["concatenate", "outer"]
 
+    def fix_reshape(self, config: dict):
+        if not config["name"].startswith("reshape"):
+            return
+        if self.n_assets not in config["target_shape"]:
+            return
+        if config["target_shape"][-1] == self.n_assets:
+            config["target_shape"] = (-1, self.n_assets)
+        elif config["target_shape"][0] == self.n_assets:
+            config["target_shape"] = (self.n_assets, -1)
+
     def get_model_tensor(
         self,
         model: MlModel,
@@ -212,6 +222,7 @@ class ModelBuilder:
                 if resp and resp.skip_branch:
                     continue
             config["name"] = self.fix_layer_name(config["name"], layer_names)
+            self.fix_reshape(config)
             if index == len(model.model.layers) - 2:
                 config["units"] = self.n_outputs
             new_layer = l.from_config(config)
@@ -358,6 +369,44 @@ class ModelBuilder:
                     raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
                 layer_name = self.fix_layer_name("dense", input.layer_names)
                 return ModificationOutput(tensor=keras.layers.Dense(size, name=layer_name)(input.tensor))
+
+        return self.modify_model(model, on_layer_start)
+
+    def add_conv_layer(self, model: MlModel, before_index: int, size: int):
+        print("Add conv layer", before_index, size)
+        assert 0 <= before_index < len(model.model.layers) - 1
+
+        def on_layer_start(input: ModificationInput):
+            if input.index == before_index:
+                if not isinstance(input.tensor, keras.KerasTensor):
+                    raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
+                if self.n_assets not in input.tensor.shape or len(input.tensor.shape) not in [3, 4]:
+                    raise ModificationError(f"Invalid shape: {input.tensor.shape}")
+                tensor = input.tensor
+                if input.tensor.shape[-1] != self.n_assets:
+                    index = input.tensor.shape.index(self.n_assets)
+                    permutation = list(range(len(input.tensor.shape)))
+                    permutation[index] = 3
+                    permutation[3] = index
+                    permutation = permutation[1:]
+                    layer_name = self.fix_layer_name("permute", input.layer_names)
+                    tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
+                if len(input.tensor.shape) == 4:
+                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
+                    tensor = keras.layers.Conv2D(size, 3, name=layer_name)(tensor)
+                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
+                    tensor = keras.layers.Conv2D(size, 3, name=layer_name)(tensor)
+                else:
+                    layer_name = self.fix_layer_name("conv1d", input.layer_names)
+                    tensor = keras.layers.Conv1D(size, 3, name=layer_name)(tensor)
+                    layer_name = self.fix_layer_name("conv1d", input.layer_names)
+                    tensor = keras.layers.Conv1D(size, 3, name=layer_name)(tensor)
+                layer_name = self.fix_layer_name("dense", input.layer_names)
+                tensor = keras.layers.Dense(self.n_assets, name=layer_name)(tensor)
+                if input.tensor.shape[-1] != self.n_assets:
+                    layer_name = self.fix_layer_name("permute", input.layer_names)
+                    tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
+                return ModificationOutput(tensor=tensor)
 
         return self.modify_model(model, on_layer_start)
 

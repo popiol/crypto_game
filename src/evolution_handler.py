@@ -140,6 +140,11 @@ class EvolutionHandler:
                     model = self.model_builder.add_dense_layer(model, index, size)
                     if not self.model_builder.last_failed:
                         mutations["add_dense_layer"] = mutations.get("add_dense_layer", 0) + 1
+                elif add_layer_action == self.evolution_randomizer.AddLayerAction.CONV:
+                    size = max(10, round(random.gauss(100, 30)))
+                    model = self.model_builder.add_conv_layer(model, index, size)
+                    if not self.model_builder.last_failed:
+                        mutations["add_conv_layer"] = mutations.get("add_conv_layer", 0) + 1
                 elif add_layer_action == self.evolution_randomizer.AddLayerAction.DROPOUT:
                     model = self.model_builder.add_dropout(model, index)
                     if not self.model_builder.last_failed:

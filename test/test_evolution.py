@@ -362,4 +362,19 @@ class TestEvolution:
         model = builder.add_relu(model, 4)
         model = builder.add_dense_layer(model, 5, 100)
         model = builder.add_relu(model, 5)
+        model = builder.add_conv_layer(model, 1, 100)
+        model = builder.add_relu(model, 2)
+        model = builder.add_relu(model, 3)
+        model = builder.add_conv_layer(model, 7, 100)
+        model = builder.add_relu(model, 8)
+        model = builder.add_relu(model, 9)
+        print(model)
+
+    def test_asset_dependent_model_development(self, environment: Environment):
+        builder = environment.model_builder
+        model = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
+        print(model)
+        model = builder.add_conv_layer(model, 1, 100)
+        model = builder.add_relu(model, 1)
+        model = builder.add_relu(model, 2)
         print(model)

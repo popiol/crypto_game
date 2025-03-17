@@ -12,6 +12,7 @@ from src.rl_runner import RlRunner
 
 class TestSimulation:
 
+    @patch("src.rl_runner.RlRunner.train_on_historical")
     @patch("src.data_registry.DataRegistry.add_to_trainset")
     @patch("src.evolution_randomizer.EvolutionRandomizer.model_creation_method")
     @patch("src.model_registry.ModelRegistry.set_metrics")
@@ -26,6 +27,7 @@ class TestSimulation:
         set_metrics,
         model_creation_method,
         add_to_trainset,
+        train_on_historical,
     ):
         get_metrics.return_value = {"a": 1}
         model_creation_method.return_value = EvolutionRandomizer.ModelCreationMethod.NEW_MODEL
