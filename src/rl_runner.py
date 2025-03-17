@@ -1,5 +1,6 @@
 import src.check_running_master  # isort: skip
 import argparse
+import heapq
 import itertools
 import pickle
 import random
@@ -144,10 +145,13 @@ class RlRunner:
             wide_output[:, indices] = output
             self.rl_trainset.append((input, wide_output, reward))
 
+    def get_best_rl_trainset(self, n_records: int = 100):
+        return heapq.nlargest(n_records, self.rl_trainset, key=lambda x: x[2])
+
     def save_rl_trainset(self):
         if not self.should_save_rl_trainset():
             return
-        self.data_registry.add_to_trainset(self.rl_trainset)
+        self.data_registry.add_to_trainset(self.get_best_rl_trainset())
 
     def save_models(self):
         for agent in self.agents:
