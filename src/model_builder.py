@@ -187,6 +187,8 @@ class ModelBuilder:
             return
         if self.n_assets not in config["target_shape"]:
             return
+        if len(config["target_shape"]) != 2:
+            return
         if config["target_shape"][-1] == self.n_assets:
             config["target_shape"] = (-1, self.n_assets)
         elif config["target_shape"][0] == self.n_assets:
