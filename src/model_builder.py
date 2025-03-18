@@ -395,9 +395,9 @@ class ModelBuilder:
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
                 if len(input.tensor.shape) == 4:
                     layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(size, 3, name=layer_name)(tensor)
+                    tensor = keras.layers.Conv2D(size, 3, name=layer_name, activation="relu")(tensor)
                     layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(size, 3, name=layer_name)(tensor)
+                    tensor = keras.layers.Conv2D(size, 3, name=layer_name, activation="relu")(tensor)
                 else:
                     layer_name = self.fix_layer_name("conv1d", input.layer_names)
                     tensor = keras.layers.Conv1D(size, 3, name=layer_name)(tensor)
