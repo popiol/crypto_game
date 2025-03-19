@@ -1,4 +1,5 @@
 import glob
+import heapq
 import json
 import lzma
 import os
@@ -191,6 +192,12 @@ class DataRegistry:
         if not trainset_bytes:
             return []
         trainset = pickle.loads(lzma.decompress(trainset_bytes))
+        print("trainset size", len(trainset))
+        if len(trainset) > 100:
+            trainset = heapq.nlargest(100, trainset, key=lambda x: x[2])
+            print("trainset new size", len(trainset))
+            trainset_bytes = lzma.compress(pickle.dumps(trainset))
+            self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)
         n_assets = len(asset_list)
         trainset = self.fix_n_assets(trainset, n_assets)
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]

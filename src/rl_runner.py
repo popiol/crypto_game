@@ -161,7 +161,6 @@ class RlRunner:
             self.model_registry.save_model(agent.model_name, serialized_model, metrics)
 
     def main_loop(self):
-        self.train_on_historical()
         for simulation_index in itertools.count():
             self.logger.log("Start simulation", simulation_index)
             self.reset_simulation()
@@ -248,6 +247,7 @@ class RlRunner:
         self.prepare()
         self.initial_run()
         self.create_agents()
+        self.train_on_historical()
         self.main_loop()
         self.save_rl_trainset()
         self.save_models()
