@@ -29,7 +29,6 @@ class S3Utils:
         return b"download" in out or b"upload" in out
 
     def download_file(self, remote_path: str, local_path: str, only_updated: bool = False) -> bool:
-        print("Download", local_path)
         if only_updated and os.path.isfile(local_path):
             local_mtime = datetime.fromtimestamp(os.path.getmtime(local_path), tz=timezone.utc)
             remote_mtime = self.get_last_modification_time(remote_path)
@@ -37,6 +36,7 @@ class S3Utils:
                 return True
         s3 = boto3.client("s3")
         try:
+            print("Download", local_path)
             s3.download_file(self.bucket_name, remote_path, local_path)
             return True
         except ClientError:
