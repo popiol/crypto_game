@@ -1,5 +1,6 @@
 import glob
 import json
+from datetime import datetime
 
 import altair as alt
 import pandas as pd
@@ -30,6 +31,7 @@ st.write(
 environment.model_registry.download_report(environment.reports.change_in_time_path)
 df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
+df = df[df.datetime > datetime(2025, 3, 10)]
 df = df[~df.leader_value.isna()]
 
 df.leader_value = df.leader_value / df.iloc[0].leader_value - 1
