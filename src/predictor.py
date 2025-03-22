@@ -46,6 +46,7 @@ class Predictor:
                 continue
             matched = [position for position in positions if position.asset == new_position.asset]
             if matched:
+                matched[0].volume = new_position.volume
                 updated_positions.append(matched[0])
             else:
                 new_orders.append(

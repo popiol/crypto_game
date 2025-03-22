@@ -40,7 +40,7 @@ class TestKrakenApi:
 
     def test_get_closed_orders(self):
         api = KrakenApi()
-        orders = api.get_closed_orders(datetime.strptime("2024-12-07 00:00:00", "%Y-%m-%d %H:%M:%S"))
+        orders = api.get_closed_orders(datetime.strptime("2025-03-22 10:00:00", "%Y-%m-%d %H:%M:%S"))
         print(orders)
 
     def test_get_precision(self):
