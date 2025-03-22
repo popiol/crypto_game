@@ -84,8 +84,8 @@ class Predictor:
             }
         positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
         print("old positions", positions)
-        last_update = self.environment.model_registry.get_real_portfolio_last_update() or datetime.now() - timedelta(hours=1)
-        since = last_update - timedelta(minutes=1)
+        last_update = self.environment.model_registry.get_real_portfolio_last_update() or datetime.now()
+        since = last_update - timedelta(days=1)
         portfolio_manager = self.environment.get_portfolio_managers(1)[0]
         new_positions = portfolio_api.get_positions(since)
         print("new_positions", new_positions)

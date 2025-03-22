@@ -561,7 +561,7 @@ class ModelBuilder:
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         elif merge_version == self.MergeVersion.NORM:
-            tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
+            tensor = keras.layers.Activation("softmax", name=self.fix_layer_name("softmax", layer_names))(tensor)
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
