@@ -74,6 +74,7 @@ class ModelBuilder:
         l = inputs
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.UnitNormalization()(l)
             l = keras.layers.Dense(100)(l)
             l = keras.layers.Dense(self.n_assets)(l)
             l = keras.layers.Permute((3, 1, 2))(l)
@@ -92,6 +93,7 @@ class ModelBuilder:
         l = inputs
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.UnitNormalization()(l)
             l = keras.layers.Conv2D(100, 3, activation="relu")(l)
             l = keras.layers.Conv2D(100, 3, activation="relu")(l)
             l = keras.layers.Dense(self.n_assets)(l)
