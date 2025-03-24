@@ -44,11 +44,11 @@ evolution_handler:
 
 evolution_randomizer:
   new_basic_model_prob: 0.3
-  remove_layer_prob: 0.02
+  remove_layer_prob: 0.015
   add_layer_prob: 0.01
-  resize_prob: 0.02
+  resize_prob: 0.03
   relu_prob: 0.01
-  reuse_prob: 0.01
+  reuse_prob: 0.008
 
 reports:
   aggregated_path: data/aggregated
