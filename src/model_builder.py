@@ -40,16 +40,31 @@ class ModelBuilder:
 
     class ModelVersion(Enum):
         V1 = auto()
+        V2 = auto()
+        V3 = auto()
+        V4 = auto()
         V5 = auto()
         V6 = auto()
+        V7 = auto()
+        V8 = auto()
 
     def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
         if version == self.ModelVersion.V1:
             return self.build_model_v1(asset_dependent)
+        if version == self.ModelVersion.V2:
+            return self.build_model_v2(asset_dependent)
+        if version == self.ModelVersion.V3:
+            return self.build_model_v3(asset_dependent)
+        if version == self.ModelVersion.V4:
+            return self.build_model_v4(asset_dependent)
         if version == self.ModelVersion.V5:
             return self.build_model_v5(asset_dependent)
         if version == self.ModelVersion.V6:
             return self.build_model_v6(asset_dependent)
+        if version == self.ModelVersion.V7:
+            return self.build_model_v7(asset_dependent)
+        if version == self.ModelVersion.V8:
+            return self.build_model_v8(asset_dependent)
 
     def build_model_v1(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
