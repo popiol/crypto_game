@@ -240,10 +240,10 @@ class TestEvolution:
         assert np.shape(output_6) == np.shape(output_4)
         print(model_6)
         print("model 6 n layers:", len(model_6.get_layers()))
-        model_7 = builder.merge_models(model_2, model_3, builder.MergeVersion.NORM)
+        model_7 = builder.merge_models(model_2, model_3, builder.MergeVersion.DOT)
         print(model_7)
         print("model 7 n layers:", len(model_7.get_layers()))
-        assert len(model_7.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 1
+        assert len(model_7.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 3
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(input)
         output_7 = model_7.predict(input)

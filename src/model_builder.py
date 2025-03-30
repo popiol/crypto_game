@@ -69,6 +69,69 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
+    def build_model_v2(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        if asset_dependent:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 1, 2))(l)
+        else:
+            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v3(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        if asset_dependent:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 1, 2))(l)
+        else:
+            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="tanh_shrink")(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v4(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        if asset_dependent:
+            l = keras.layers.Permute((1, 3, 2))(l)
+            l = keras.layers.Dense(100)(l)
+            l = keras.layers.Dense(self.n_assets)(l)
+            l = keras.layers.Permute((3, 1, 2))(l)
+        else:
+            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="tanh")(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
     def build_model_v5(self, asset_dependent=False) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
@@ -93,7 +156,6 @@ class ModelBuilder:
         l = inputs
         if asset_dependent:
             l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.UnitNormalization()(l)
             l = keras.layers.Conv2D(100, 3, activation="relu")(l)
             l = keras.layers.Conv2D(100, 3, activation="relu")(l)
             l = keras.layers.Dense(self.n_assets)(l)
@@ -104,7 +166,41 @@ class ModelBuilder:
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="softsign")(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v7(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        if asset_dependent:
+            l2 = keras.layers.Activation("softmax")(l)
+            l2 = keras.layers.Dot(axes=2)([l2, l2])
+            l = keras.layers.Dot(axes=[2, 1])([l2, l])
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v8(self, asset_dependent=False) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100)(l)
+        if asset_dependent:
+            l2 = keras.layers.Activation("softmax")(l)
+            l2 = keras.layers.Dot(axes=2)([l2, l2])
+            l = keras.layers.Dot(axes=[2, 1])([l2, l])
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
@@ -497,7 +593,7 @@ class ModelBuilder:
         TRANSFORM = auto()
         SELECT = auto()
         MULTIPLY = auto()
-        NORM = auto()
+        DOT = auto()
 
     @keras.utils.register_keras_serializable()
     class OuterProduct(keras.layers.Layer):
@@ -521,7 +617,13 @@ class ModelBuilder:
             return (*shape_1[:-1], shape_1[-1] * shape_2[-1])
 
     def prepare_for_merge(
-        self, model: MlModel, inputs: keras.layers.Input, merge_version: MergeVersion, names_map: dict, layer_names: dict
+        self,
+        model: MlModel,
+        inputs: keras.layers.Input,
+        merge_version: MergeVersion,
+        names_map: dict,
+        layer_names: dict,
+        remove_last: bool = True,
     ) -> keras.KerasTensor:
         if merge_version == self.MergeVersion.SELECT:
             first_layers = []
@@ -533,7 +635,7 @@ class ModelBuilder:
 
         def on_layer_start(input: ModificationInput):
             names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
-            if input.index == n_layers - 1:
+            if remove_last and input.index == n_layers - 1:
                 return ModificationOutput(skip=True)
             if merge_version == self.MergeVersion.SELECT:
                 if input.parents[0].split("_")[0] == "input":
@@ -551,8 +653,13 @@ class ModelBuilder:
         names_map = {}
         layer_names = set()
         tensor_1 = self.prepare_for_merge(model_1, inputs, merge_version, names_map, layer_names)
-        tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names)
-        if merge_version == self.MergeVersion.MULTIPLY:
+        remove_last = merge_version != self.MergeVersion.DOT
+        tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names, remove_last=remove_last)
+        if merge_version == self.MergeVersion.DOT:
+            tensor_1 = keras.layers.Activation("softmax", name=self.fix_layer_name("softmax", layer_names))(tensor_1)
+            tensor_1 = keras.layers.Dot(axes=2, name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_1])
+            tensor = keras.layers.Dot(axes=[2, 1], name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_2])
+        elif merge_version == self.MergeVersion.MULTIPLY:
             tensor_1_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
             tensor_2_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1_10, tensor_2_10])
@@ -562,8 +669,6 @@ class ModelBuilder:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
-        elif merge_version == self.MergeVersion.NORM:
-            tensor = keras.layers.Activation("softmax", name=self.fix_layer_name("softmax", layer_names))(tensor)
         tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
