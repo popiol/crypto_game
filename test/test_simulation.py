@@ -144,10 +144,9 @@ class TestSimulation:
         assert np.shape(fixed[0][0]) == (1, n_steps, n_assets + 10, n_features)
         assert np.shape(fixed[0][1]) == (1, n_assets + 10, n_outputs)
 
-    @patch("src.rl_runner.RlRunner.train_on_historical")
     @patch("src.training_strategy.StrategyPicker.pick_class")
     @patch("src.evolution_handler.EvolutionHandler.create_model")
-    def test_model_versions(self, create_model, pick_class, train_on_historical):
+    def test_model_versions(self, create_model, pick_class):
         from src.training_strategy import LearnOnMistakes
 
         pick_class.return_value = LearnOnMistakes
@@ -158,9 +157,10 @@ class TestSimulation:
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v1(asset_dependent=True)
+        model = model_builder.build_model_v7(asset_dependent=True)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
+        model_builder.pretrain(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})
         rl_runner.create_agents()
         rl_runner.main_loop()

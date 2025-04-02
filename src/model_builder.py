@@ -17,6 +17,7 @@ class ModificationInput:
     tensor: keras.KerasTensor
     layer_names: set[str]
     parents: list[str]
+    input_tensor: keras.layers.Input
 
 
 @dataclass
@@ -328,7 +329,9 @@ class ModelBuilder:
                     continue
                 tensor = tensor[0]
             if on_layer_start:
-                resp: ModificationOutput = on_layer_start(ModificationInput(index, config, tensor, layer_names, parent_layers))
+                resp: ModificationOutput = on_layer_start(
+                    ModificationInput(index, config, tensor, layer_names, parent_layers, inputs)
+                )
                 if resp and resp.tensor is not None:
                     tensor = resp.tensor
                 if resp and resp.skip:
@@ -343,7 +346,9 @@ class ModelBuilder:
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
             if on_layer_end:
-                resp: ModificationOutput = on_layer_end(ModificationInput(index, config, tensor, layer_names, parent_layers))
+                resp: ModificationOutput = on_layer_end(
+                    ModificationInput(index, config, tensor, layer_names, parent_layers, inputs)
+                )
                 if resp and resp.tensor is not None:
                     tensor = resp.tensor
             tensors[l.name] = tensor
@@ -446,6 +451,97 @@ class ModelBuilder:
             return ModificationOutput(tensor=tensor, skip=skip)
 
         return self.modify_model(model, on_layer_start, filter_indices=indices, raise_on_failure=True)
+
+    def pretrain(self, model: MlModel, asset_list: list[str], current_assets: set[str], asset_only: bool = False):
+        indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
+        n_assets = len(indices)
+        names_map = {}
+        names_map_inv = {}
+
+        def on_layer_start(input: ModificationInput):
+            names_map[input.config["name"]] = self.fix_layer_name(input.config["name"], input.layer_names, add=False)
+            names_map_inv[self.fix_layer_name(input.config["name"], input.layer_names, add=False)] = input.config["name"]
+
+        def on_layer_end(input: ModificationInput):
+            if not input.config["name"].startswith("dense"):
+                return
+            if asset_only and input.config["units"] != n_assets:
+                return
+            if input.index == len(model.model.layers) - 2:
+                return
+            tensor = self.add_layers_for_pretrain(input.tensor, n_assets, (None, self.n_steps, n_assets, self.n_features), input.layer_names)
+            model_2 = keras.Model(inputs=input.input_tensor, outputs=tensor)
+            self.compile_model(model_2)
+            self.copy_weights(model.model, model_2, names_map)
+            x = np.random.normal(size=(10, self.n_steps, self.n_assets, self.n_features))
+            y = x.take(indices, 2)
+            MlModel(model_2).train(x, y)
+            self.copy_weights(model_2, model.model, names_map_inv)
+
+        self.modify_model(model, on_layer_start, on_layer_end, raise_on_failure=True)
+
+    def add_layers_for_pretrain(self, tensor: keras.KerasTensor, n_assets: int, y_shape: tuple[int], layer_names: set[str]):
+        shape = tensor.shape[1:]
+        target_shape = y_shape[1:]
+        if shape[-1] != n_assets:
+            layer_name = self.fix_layer_name("dense", layer_names)
+            tensor = keras.layers.Dense(n_assets, name=layer_name)(tensor)
+            shape = tensor.shape[1:]
+        if np.prod(shape) != np.prod(target_shape):
+            index = shape.index(n_assets)
+            if index > 0:
+                permute = list(range(1, len(target_shape) + 1))
+                permute[0] = index + 1
+                permute[index] = 1
+                layer_name = self.fix_layer_name("permute", layer_names)
+                tensor = keras.layers.Permute(permute, name=layer_name)(tensor)
+            if len(shape) > 2:
+                layer_name = self.fix_layer_name("reshape", layer_names)
+                tensor = keras.layers.Reshape((n_assets, -1), name=layer_name)(tensor)
+            dense_size = round(np.prod(target_shape) / n_assets)
+            if dense_size != shape[-1]:
+                layer_name = self.fix_layer_name("dense", layer_names)
+                tensor = keras.layers.Dense(dense_size, name=layer_name)(tensor)
+            if len([dim for dim in target_shape if dim != n_assets]) > 1:
+                layer_name = self.fix_layer_name("reshape", layer_names)
+                tensor = keras.layers.Reshape((n_assets, *[dim for dim in target_shape if dim != n_assets]), name=layer_name)(
+                    tensor
+                )
+            shape = tensor.shape[1:]
+        index = shape.index(n_assets)
+        target_index = target_shape.index(n_assets)
+        if index != target_index:
+            permute = list(range(1, len(target_shape) + 1))
+            permute[index] = target_index + 1
+            permute[target_index] = index + 1
+            layer_name = self.fix_layer_name("permute", layer_names)
+            tensor = keras.layers.Permute(permute, name=layer_name)(tensor)
+            shape = tensor.shape[1:]
+        assert shape == target_shape
+        return tensor
+
+    def pretrain_with(self, model: MlModel, asset_list: list[str], current_assets: set[str], x: np.ndarray, y: np.ndarray = None):
+        indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
+        n_assets = len(indices)
+        if y is None:
+            y = x
+            try:
+                index = x.shape.index(self.n_assets)
+                y = y.take(indices, index)
+            except ValueError:
+                pass
+        n_layers = len(model.model.layers) - 1
+        names_map = {}
+
+        def on_layer_start(input: ModificationInput):
+            names_map[self.fix_layer_name(input.config["name"], input.layer_names, add=False)] = input.config["name"]
+            if input.index == n_layers - 1:
+                tensor = self.add_layers_for_pretrain(input.tensor, n_assets, y.shape, input.layer_names)
+                return ModificationOutput(tensor=tensor, skip=True)
+
+        model_2 = self.modify_model(model, on_layer_start, raise_on_failure=True)
+        model_2.train(x, y)
+        self.copy_weights(model_2.model, model.model, names_map)
 
     @keras.utils.register_keras_serializable()
     class Gather(keras.layers.Layer):
