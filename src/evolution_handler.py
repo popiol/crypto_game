@@ -31,6 +31,8 @@ class EvolutionHandler:
         model = self.model_builder.adjust_dimensions(model)
         model = self.model_builder.filter_assets(model, self.asset_list, self.current_assets)
         model, metrics = self.mutate(model, metrics)
+        if method == self.evolution_randomizer.ModelCreationMethod.NEW_MODEL:
+            self.model_builder.pretrain(model, self.asset_list, self.current_assets)
         return model, metrics
 
     def create_new_model(self) -> tuple[MlModel, dict]:

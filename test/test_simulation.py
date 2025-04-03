@@ -157,7 +157,7 @@ class TestSimulation:
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v7(asset_dependent=True)
+        model = model_builder.build_model_v1(asset_dependent=True)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         model_builder.pretrain(model, environment.asset_list, environment.data_transformer.current_assets)
