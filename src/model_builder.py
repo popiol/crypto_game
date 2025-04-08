@@ -197,9 +197,8 @@ class ModelBuilder:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         if asset_dependent:
-            l2 = keras.layers.Activation("softmax")(l)
-            l2 = keras.layers.Dot(axes=2)([l2, l2])
-            l = keras.layers.Dot(axes=[2, 1])([l2, l])
+            l = keras.layers.Activation("softmax")(l)
+            l = keras.layers.Dot(axes=2)([l, l])
         l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
@@ -294,7 +293,7 @@ class ModelBuilder:
         return layer_name
 
     def expects_list_of_tensors(self, config: dict):
-        return config["name"].split("_")[0] in ["concatenate", "outer"]
+        return config["name"].split("_")[0] in ["concatenate", "outer", "dot"]
 
     def fix_reshape(self, config: dict):
         if not config["name"].startswith("reshape"):
@@ -341,7 +340,7 @@ class ModelBuilder:
                     continue
             config["name"] = self.fix_layer_name(config["name"], layer_names)
             self.fix_reshape(config)
-            if index == len(model.model.layers) - 2:
+            if index == len(model.model.layers) - 2 and config["name"].startswith("dense"):
                 config["units"] = self.n_outputs
             new_layer = l.from_config(config)
             tensor = new_layer(tensor)
@@ -361,13 +360,15 @@ class ModelBuilder:
         on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
         filter_indices: list[int] = None,
         raise_on_failure: bool = False,
+        check_output_shape: bool = True,
     ) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         self.last_failed = False
         layer_names = set()
         try:
             tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
-            assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs
+            if check_output_shape:
+                assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs
         except Exception as e:
             self.last_failed = True
             print("Modification failed")
@@ -390,6 +391,8 @@ class ModelBuilder:
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
+        if self.n_assets == n_assets:
+            return model
 
         print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
@@ -453,6 +456,7 @@ class ModelBuilder:
         return self.modify_model(model, on_layer_start, filter_indices=indices, raise_on_failure=True)
 
     def pretrain(self, model: MlModel, asset_list: list[str], current_assets: set[str], asset_only: bool = False):
+        print("Pretrain as autoencoder")
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         n_assets = len(indices)
         names_map = {}
@@ -475,7 +479,7 @@ class ModelBuilder:
             self.copy_weights(model.model, model_2, names_map)
             x = np.random.normal(size=(10, self.n_steps, self.n_assets, self.n_features))
             y = x.take(indices, 2)
-            MlModel(model_2).train(x, y)
+            MlModel(model_2).train(x, y, n_epochs=1)
             self.copy_weights(model_2, model.model, names_map_inv)
 
         self.modify_model(model, on_layer_start, on_layer_end, raise_on_failure=True)
@@ -483,31 +487,34 @@ class ModelBuilder:
     def add_layers_for_pretrain(self, tensor: keras.KerasTensor, n_assets: int, y_shape: tuple[int], layer_names: set[str]):
         shape = tensor.shape[1:]
         target_shape = y_shape[1:]
-        if shape[-1] != n_assets:
+        if n_assets not in shape:
             layer_name = self.fix_layer_name("dense", layer_names)
             tensor = keras.layers.Dense(n_assets, name=layer_name)(tensor)
             shape = tensor.shape[1:]
         if np.prod(shape) != np.prod(target_shape):
             index = shape.index(n_assets)
             if index > 0:
-                permute = list(range(1, len(target_shape) + 1))
+                permute = list(range(1, len(shape) + 1))
                 permute[0] = index + 1
                 permute[index] = 1
                 layer_name = self.fix_layer_name("permute", layer_names)
                 tensor = keras.layers.Permute(permute, name=layer_name)(tensor)
+                shape = tensor.shape[1:]
             if len(shape) > 2:
                 layer_name = self.fix_layer_name("reshape", layer_names)
                 tensor = keras.layers.Reshape((n_assets, -1), name=layer_name)(tensor)
+                shape = tensor.shape[1:]
             dense_size = round(np.prod(target_shape) / n_assets)
             if dense_size != shape[-1]:
                 layer_name = self.fix_layer_name("dense", layer_names)
                 tensor = keras.layers.Dense(dense_size, name=layer_name)(tensor)
+                shape = tensor.shape[1:]
             if len([dim for dim in target_shape if dim != n_assets]) > 1:
                 layer_name = self.fix_layer_name("reshape", layer_names)
                 tensor = keras.layers.Reshape((n_assets, *[dim for dim in target_shape if dim != n_assets]), name=layer_name)(
                     tensor
                 )
-            shape = tensor.shape[1:]
+                shape = tensor.shape[1:]
         index = shape.index(n_assets)
         target_index = target_shape.index(n_assets)
         if index != target_index:
@@ -523,25 +530,29 @@ class ModelBuilder:
     def pretrain_with(self, model: MlModel, asset_list: list[str], current_assets: set[str], x: np.ndarray, y: np.ndarray = None):
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         n_assets = len(indices)
-        if y is None:
-            y = x
-            try:
-                index = x.shape.index(self.n_assets)
-                y = y.take(indices, index)
-            except ValueError:
-                pass
+        y = x if y is None else y
+        try:
+            index = x.shape.index(self.n_assets)
+            y = y.take(indices, index)
+        except ValueError:
+            pass
         n_layers = len(model.model.layers) - 1
-        names_map = {}
+        names_map_inv = {}
 
         def on_layer_start(input: ModificationInput):
-            names_map[self.fix_layer_name(input.config["name"], input.layer_names, add=False)] = input.config["name"]
             if input.index == n_layers - 1:
                 tensor = self.add_layers_for_pretrain(input.tensor, n_assets, y.shape, input.layer_names)
                 return ModificationOutput(tensor=tensor, skip=True)
+            names_map_inv[self.fix_layer_name(input.config["name"], input.layer_names, add=False)] = input.config["name"]
 
-        model_2 = self.modify_model(model, on_layer_start, raise_on_failure=True)
-        model_2.train(x, y)
-        self.copy_weights(model_2.model, model.model, names_map)
+        try:
+            model_2 = self.modify_model(model, on_layer_start, raise_on_failure=True, check_output_shape=False)
+            model_2.train(x, y, n_epochs=10)
+            self.copy_weights(model_2.model, model.model, names_map_inv)
+        except Exception as ex:
+            print(ex)
+            print("Pretrain failed")
+            pass
 
     @keras.utils.register_keras_serializable()
     class Gather(keras.layers.Layer):
@@ -768,8 +779,9 @@ class ModelBuilder:
         tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names, remove_last=remove_last)
         if merge_version == self.MergeVersion.DOT:
             tensor_1 = keras.layers.Activation("softmax", name=self.fix_layer_name("softmax", layer_names))(tensor_1)
-            tensor_1 = keras.layers.Dot(axes=2, name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_1])
-            tensor = keras.layers.Dot(axes=[2, 1], name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_2])
+            tensor_2 = keras.layers.Permute((2, 1), name=self.fix_layer_name("permute", layer_names))(tensor_2)
+            tensor_2 = keras.layers.Dense(tensor_1.shape[-1], name=self.fix_layer_name("dense", layer_names))(tensor_2)
+            tensor = keras.layers.Dot(axes=2, name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_2])
         elif merge_version == self.MergeVersion.MULTIPLY:
             tensor_1_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
             tensor_2_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
@@ -780,7 +792,8 @@ class ModelBuilder:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
-        tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
+        if tensor.shape[-1] != self.n_outputs:
+            tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         new_model = keras.Model(inputs=inputs, outputs=tensor)
         self.compile_model(new_model)
         self.copy_weights(model_1.model, new_model, names_map)

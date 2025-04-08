@@ -130,6 +130,55 @@ class RlRunner:
                 continue
             agent.train(historical=rl_trainset)
 
+    def pretrain(self):
+        if any([agent.metrics.get("parents") for agent in self.agents]):
+            if random.random() < .75:
+                return
+        self.logger.log("Pretrain as a sequence predictor")
+        inputs = []
+        start_timestamp = None
+        start_with_offset = None
+        outputs = []
+        agent_memory = np.zeros((self.data_transformer.memory_length, len(self.asset_list), 1))
+        for offset in range(3):
+            self.reset_simulation()
+            inputs_ = None
+            for timestamp, quotes, features, preprocess in self.quotes_iterator():
+                if features is None:
+                    continue
+                self.data_transformer.add_to_memory(features)
+                if preprocess:
+                    continue
+                if start_timestamp is None:
+                    start_timestamp = timestamp
+                if timestamp - start_timestamp < timedelta(days=offset):
+                    continue
+                if inputs_ is None:
+                    inputs_ = self.data_transformer.get_shared_memory()
+                    inputs_ = np.concatenate((inputs_, agent_memory), axis=-1)
+                    inputs.append(inputs_)
+                    start_with_offset = timestamp
+                if timestamp - start_with_offset > timedelta(days=3, hours=23):
+                    outputs_ = self.data_transformer.get_shared_memory()
+                    outputs_ = np.concatenate((outputs_, agent_memory), axis=-1)
+                    outputs.append(outputs_)
+                    break
+            if len(inputs) > len(outputs):
+                outputs_ = self.data_transformer.get_shared_memory()
+                outputs_ = np.concatenate((outputs_, agent_memory), axis=-1)
+                outputs.append(outputs_)
+            if inputs is None or outputs is None:
+                self.logger.log("Pretrain failed")
+                return
+        for agent in self.agents:
+            self.environment.model_builder.pretrain_with(
+                agent.training_strategy.model,
+                self.asset_list,
+                self.data_transformer.current_assets,
+                np.array(inputs),
+                np.array(outputs),
+            )
+
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
             rl_trainset = agent.train(positions=portfolio_manager.portfolio.positions)
@@ -247,6 +296,7 @@ class RlRunner:
         self.prepare()
         self.initial_run()
         self.create_agents()
+        self.pretrain()
         self.train_on_historical()
         self.main_loop()
         self.save_rl_trainset()
