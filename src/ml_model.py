@@ -26,7 +26,7 @@ class MlModel:
         self.model = model
 
     def train(self, x: np.ndarray, y: np.ndarray, n_epochs: int = 1):
-        self.model.fit(x, y, epochs=n_epochs, verbose=0)
+        self.model.fit(x, y, epochs=n_epochs, verbose=1)
 
     def test(self, x: np.ndarray, y: np.ndarray):
         return self.model.evaluate(x, y)

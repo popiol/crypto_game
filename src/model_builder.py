@@ -139,10 +139,7 @@ class ModelBuilder:
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="tanh")(l)
-        l = keras.layers.Dense(10)(l)
-        l = keras.layers.Dense(10)(l)
-        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(100, activation="tanh")(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
@@ -182,7 +179,6 @@ class ModelBuilder:
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
@@ -473,7 +469,9 @@ class ModelBuilder:
                 return
             if input.index == len(model.model.layers) - 2:
                 return
-            tensor = self.add_layers_for_pretrain(input.tensor, n_assets, (None, self.n_steps, n_assets, self.n_features), input.layer_names)
+            tensor = self.add_layers_for_pretrain(
+                input.tensor, n_assets, (None, self.n_steps, n_assets, self.n_features), input.layer_names
+            )
             model_2 = keras.Model(inputs=input.input_tensor, outputs=tensor)
             self.compile_model(model_2)
             self.copy_weights(model.model, model_2, names_map)
