@@ -26,6 +26,7 @@ class CustomMetrics:
             df[["training_strategy", "evaluation_score"]].groupby("training_strategy")["evaluation_score"].mean().to_dict()
         )
         for col in [
+            "model_age",
             "n_merge_ancestors",
             "n_layers",
             "n_ancestors",
