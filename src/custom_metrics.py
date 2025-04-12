@@ -73,7 +73,7 @@ class CustomMetrics:
                     )
             df["grouping"] = df[col].apply(
                 lambda x: (
-                    round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val
+                    round(round((x - min_val) / (max_val - min_val) * n_buckets) / n_buckets * (max_val - min_val) + min_val, 2)
                     if not np.isnan(x)
                     else np.nan
                 )
