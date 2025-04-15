@@ -22,6 +22,7 @@ class EvolutionHandler:
 
     def create_model(self) -> tuple[MlModel, dict]:
         method = self.evolution_randomizer.model_creation_method()
+        print("Model creation method:", method.name)
         if method == self.evolution_randomizer.ModelCreationMethod.NEW_MODEL:
             model, metrics = self.create_new_model()
         elif method == self.evolution_randomizer.ModelCreationMethod.EXISTING_MODEL:
