@@ -387,9 +387,6 @@ class ModelBuilder:
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
         assert self.n_assets >= n_assets
-        if self.n_assets == n_assets:
-            return model
-
         print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
         def on_layer_start(input: ModificationInput):
