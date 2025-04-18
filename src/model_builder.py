@@ -474,7 +474,7 @@ class ModelBuilder:
             self.copy_weights(model.model, model_2, names_map)
             x = np.random.normal(size=(10, self.n_steps, self.n_assets, self.n_features))
             y = x.take(indices, 2)
-            MlModel(model_2).train(x, y, n_epochs=1)
+            MlModel(model_2).train(x, y, n_epochs=10)
             self.copy_weights(model_2, model.model, names_map_inv)
 
         self.modify_model(model, on_layer_start, on_layer_end, raise_on_failure=True)

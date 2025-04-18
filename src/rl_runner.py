@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 
 import numpy as np
-
+from src.stats import Stats
 from src.agent import Agent
 from src.baseline.baseline_agent import BaselineAgent
 from src.constants import RlTrainset
@@ -129,10 +129,11 @@ class RlRunner:
             except IndexError:
                 continue
             agent.train(historical=rl_trainset)
+            agent.training_strategy._stats = Stats()
 
     def pretrain(self):
         if any([agent.metrics.get("parents") for agent in self.agents]):
-            if random.random() < .75:
+            if random.random() < 0.75:
                 return
         self.logger.log("Pretrain as a sequence predictor")
         inputs = []

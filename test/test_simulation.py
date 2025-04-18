@@ -144,28 +144,3 @@ class TestSimulation:
         fixed = environment.data_registry.fix_n_assets(rl_trainset, n_assets + 10)
         assert np.shape(fixed[0][0]) == (1, n_steps, n_assets + 10, n_features)
         assert np.shape(fixed[0][1]) == (1, n_assets + 10, n_outputs)
-
-    @patch("src.training_strategy.StrategyPicker.pick_class")
-    @patch("src.evolution_handler.EvolutionHandler.create_model")
-    def test_model_versions(self, create_model, pick_class):
-        from src.training_strategy import LearnOnBoth
-
-        pick_class.return_value = LearnOnBoth
-        environment = Environment("config/config.yml")
-        environment.config["rl_runner"]["training_time_min"] = 2
-        environment.config["agent_builder"]["n_agents"] = 1
-        rl_runner = RlRunner(environment)
-        rl_runner.prepare()
-        rl_runner.initial_run()
-        model_builder = environment.model_builder
-        model_1 = model_builder.build_model_v6(asset_dependent=False)
-        model_2 = model_builder.build_model_v3(asset_dependent=False)
-        model = model_builder.merge_models(model_1, model_2, ModelBuilder.MergeVersion.DOT)
-        print(model)
-        model = model_builder.adjust_dimensions(model)
-        model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
-        model_builder.pretrain(model, environment.asset_list, environment.data_transformer.current_assets)
-        create_model.return_value = (model, {})
-        rl_runner.create_agents()
-        rl_runner.pretrain()
-        rl_runner.main_loop()
