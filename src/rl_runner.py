@@ -1,4 +1,3 @@
-import src.check_running_master  # isort: skip
 import argparse
 import heapq
 import itertools
@@ -7,7 +6,7 @@ import random
 import sys
 import time
 from datetime import datetime, timedelta
-
+import pandas as pd
 import numpy as np
 from src.stats import Stats
 from src.agent import Agent
@@ -288,6 +287,57 @@ class RlRunner:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)
 
+    def get_model_correlations(self):
+        correlations = pd.DataFrame(columns=["model_1", "model_2", "correlation", "score_1", "score_2"])
+        for agent_1, metrics_1 in zip(self.agents, self.all_metrics):
+            if agent_1.agent_name in ["Leader", "Baseline"]:
+                continue
+            for agent_2, metrics_2 in zip(self.agents, self.all_metrics):
+                if agent_2.agent_name in ["Leader", "Baseline"]:
+                    continue
+                if agent_1.model_name >= agent_2.model_name:
+                    continue
+                correlation = 0
+                if metrics_1["n_ancestors"] > 0 and metrics_2["n_ancestors"] > 0:
+                    ancestors_1 = set(Metrics.parents_as_list(metrics_1["parents"]))
+                    ancestors_2 = set(Metrics.parents_as_list(metrics_2["parents"]))
+                    correlation = len(ancestors_1 & ancestors_2) / len(ancestors_1.union(ancestors_2))
+                correlations.loc[len(correlations)] = [
+                    agent_1.model_name,
+                    agent_2.model_name,
+                    correlation,
+                    metrics_1["evaluation_score"],
+                    metrics_2["evaluation_score"],
+                ]
+                correlations.loc[len(correlations)] = [
+                    agent_2.model_name,
+                    agent_1.model_name,
+                    correlation,
+                    metrics_2["evaluation_score"],
+                    metrics_1["evaluation_score"],
+                ]
+        return correlations
+
+    def archive_models(self):
+        df = self.get_model_correlations()
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
+            print("Correlations:")
+            print(df)
+        min_score = df.score_1.min()
+        max_score = df.score_1.max()
+        if min_score == max_score:
+            df["score"] = df["score_1"]
+        else:
+            df["score"] = df.apply(lambda x: x.score_1 - x.correlation * (max_score - min_score), axis=1)
+        best = df[df.score_1 == df.score_1.max()]
+        best.score = best.score_1
+        best = best.set_index("model_1").score.to_dict()
+        df = df[df.score_1 < df.score_2]
+        df = df[["model_1", "score"]]
+        df = df.groupby("model_1").min().score.to_dict()
+        scores = {**best, **df}
+        self.model_registry.archive_models(scores)
+
     def prepare_reports(self):
         reports = self.environment.reports
         model_names = [agent.model_name for agent in self.agents]
@@ -308,7 +358,7 @@ class RlRunner:
         self.prepare()
         self.initial_run()
         self.evaluate_models()
-        self.model_registry.archive_models()
+        self.archive_models()
         self.prepare_reports()
 
 

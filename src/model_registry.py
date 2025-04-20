@@ -70,10 +70,10 @@ class ModelRegistry:
     def set_metrics(self, model_name: str, metrics: dict) -> dict:
         self.s3_utils.upload_json(f"{self.metrics_prefix}/{model_name}", metrics)
 
-    def archive_models(self):
+    def archive_models(self, scores: dict):
         self.archive_old_models()
-        self.archive_weak_models(mature=True)
-        self.archive_weak_models(mature=False)
+        self.archive_weak_models(scores, mature=True)
+        self.archive_weak_models(scores, mature=False)
         self.clean_archive()
         self.clean_local_cache()
 
@@ -88,7 +88,7 @@ class ModelRegistry:
             print("archive old", model)
             self.archive_model(model)
 
-    def get_weak_models(self, mature: bool) -> list[str]:
+    def get_weak_models(self, scores: dict, mature: bool) -> list[str]:
         older_than = self.maturity_min_hours if mature else None
         younger_than = self.maturity_min_hours if not mature else None
         max_models = self.max_mature_models if mature else self.max_immature_models
@@ -97,10 +97,10 @@ class ModelRegistry:
         to_archive = []
         for file in files:
             model_name = file.split("/")[-1]
-            metrics = self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
             try:
-                score = float(metrics["evaluation_score"])
+                score = scores[model_name]
                 model_and_score = (model_name, score)
+                print(model_and_score)
                 if np.isnan(score) or score == 0:
                     to_archive.append(model_and_score)
                 else:
@@ -113,8 +113,8 @@ class ModelRegistry:
             to_archive.extend(weak_models)
         return [model for model, _ in to_archive]
 
-    def archive_weak_models(self, mature: bool):
-        models = self.get_weak_models(mature)
+    def archive_weak_models(self, scores: dict, mature: bool):
+        models = self.get_weak_models(scores, mature)
         for model in models:
             print("archive weak", "mature" if mature else "immature", model)
             self.archive_model(model)

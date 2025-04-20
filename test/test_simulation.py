@@ -96,8 +96,10 @@ class TestSimulation:
     @patch("src.reports.Reports.upload_reports")
     @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
     @patch("src.model_registry.ModelRegistry.set_metrics")
-    @patch("src.model_registry.ModelRegistry.archive_models")
-    def test_evaluate_all_existing_models(self, archive_models, set_metrics, set_aggregated_metrics, upload_reports):
+    @patch("src.model_registry.ModelRegistry.archive_model")
+    @patch("src.model_registry.ModelRegistry.clean_archive")
+    @patch("src.model_registry.ModelRegistry.clean_local_cache")
+    def test_evaluate_all_existing_models(self, clean_local_cache, clean_archive, archive_model, set_metrics, set_aggregated_metrics, upload_reports):
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
         rl_runner.evaluate()
