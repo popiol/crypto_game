@@ -321,15 +321,11 @@ class RlRunner:
     def archive_models(self):
         df = self.get_model_correlations()
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
-            print("Correlations:")
-            print(df)
+            print(df[df.correlation > 0.5].sort_values("correlation", ascending=False))
         min_score = df.score_1.min()
         max_score = df.score_1.max()
-        if min_score == max_score:
-            df["score"] = df["score_1"]
-        else:
-            df["score"] = df.apply(lambda x: x.score_1 - x.correlation * (max_score - min_score), axis=1)
-        best = df[df.score_1 == df.score_1.max()]
+        df["score"] = df.apply(lambda x: x.score_1 - (x.correlation if x.score_1 else 0) * (max_score - min_score), axis=1)
+        best = df[df.score_1 == max_score]
         best.score = best.score_1
         best = best.set_index("model_1").score.to_dict()
         df = df[df.score_1 < df.score_2]
