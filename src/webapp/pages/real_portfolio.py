@@ -33,7 +33,7 @@ st.write(
 environment.model_registry.download_report(environment.reports.change_in_time_path)
 df = pd.read_csv(environment.reports.change_in_time_path)
 df["datetime"] = pd.to_datetime(df["datetime"])
-df = df[df.datetime > datetime(2025, 3, 10)]
+df = df[df.datetime > datetime(2025, 4, 13)]
 df = df[~df.real_portfolio_value.isna()]
 
 df.real_portfolio_value = df.real_portfolio_value / df.iloc[0].real_portfolio_value - 1
