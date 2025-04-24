@@ -197,7 +197,9 @@ class DataRegistry:
         trainset = pickle.loads(lzma.decompress(trainset_bytes))
         print("trainset size", len(trainset))
         if len(trainset) > 100:
-            trainset = heapq.nlargest(100, trainset, key=lambda x: x[2])
+            trainset_top = heapq.nlargest(50, trainset, key=lambda x: x[2])
+            trainset_bottom = heapq.nsmallest(50, trainset, key=lambda x: x[2])
+            trainset = trainset_bottom + trainset_top
             print("trainset new size", len(trainset))
             trainset_bytes = lzma.compress(pickle.dumps(trainset))
             self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)

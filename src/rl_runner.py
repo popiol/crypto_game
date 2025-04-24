@@ -195,7 +195,9 @@ class RlRunner:
             self.rl_trainset.append((input, wide_output, reward))
 
     def get_best_rl_trainset(self, n_records: int = 100):
-        return heapq.nlargest(n_records, self.rl_trainset, key=lambda x: x[2])
+        top = heapq.nlargest(n_records // 2, self.rl_trainset, key=lambda x: x[2])
+        bottom = heapq.nsmallest(n_records // 2, self.rl_trainset, key=lambda x: x[2])
+        return bottom + top
 
     def save_rl_trainset(self):
         if not self.should_save_rl_trainset():

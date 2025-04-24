@@ -777,12 +777,13 @@ class ModelBuilder:
             tensor_2 = keras.layers.Permute((2, 1), name=self.fix_layer_name("permute", layer_names))(tensor_2)
             tensor_2 = keras.layers.Dense(tensor_1.shape[-1], name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = keras.layers.Dot(axes=2, name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_2])
+            tensor = keras.layers.Activation("softsign", name=self.fix_layer_name("softsign", layer_names))(tensor)
         elif merge_version == self.MergeVersion.MULTIPLY:
             tensor_1_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
             tensor_2_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1_10, tensor_2_10])
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2, tensor])
-            tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
+            tensor = keras.layers.Dense(100, activation="softsign", name=self.fix_layer_name("dense", layer_names))(tensor)
         else:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
         if merge_version == self.MergeVersion.TRANSFORM:
