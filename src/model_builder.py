@@ -120,7 +120,7 @@ class ModelBuilder:
         l = keras.layers.Dense(10, activation="tanh_shrink")(l)
         l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(10)(l)
-        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dense(10, activation="softsign")(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)

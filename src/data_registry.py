@@ -207,7 +207,8 @@ class DataRegistry:
         trainset = self.fix_n_assets(trainset, n_assets)
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         trainset = self.filter_assets(trainset, indices)
-        return sorted(trainset, key=lambda x: x[2])
+        random.shuffle(trainset)
+        return trainset
 
     def fix_n_assets(self, trainset: RlTrainset, n_assets: int):
         orig_n_assets = len(trainset[0][0][0][0])
