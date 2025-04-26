@@ -204,3 +204,10 @@ class PortfolioManager:
                 continue
             if self.sell_asset(order, quotes, asset_index, [], adjust_only=True):
                 continue
+
+    def make_deposit(self, amount: float):
+        if amount <= 0:
+            return
+        self.portfolio.cash += amount
+        if self.debug:
+            print("Deposit of", amount, "completed, current cash:", self.portfolio.cash)
