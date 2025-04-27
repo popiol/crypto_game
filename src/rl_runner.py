@@ -8,7 +8,6 @@ import time
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
-from src.stats import Stats
 from src.agent import Agent
 from src.baseline.baseline_agent import BaselineAgent
 from src.constants import RlTrainset
@@ -130,7 +129,7 @@ class RlRunner:
             except IndexError:
                 continue
             agent.train(historical=rl_trainset)
-            agent.training_strategy._stats = Stats()
+        self.logger.log_reward(self.agents)
 
     def pretrain(self):
         if any([agent.metrics.get("parents") for agent in self.agents]):
