@@ -193,7 +193,7 @@ class ModelBuilder:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         if asset_dependent:
-            l = keras.layers.Activation("softmax")(l)
+            l = keras.layers.Activation("softmax", name="softmax")(l)
             l = keras.layers.Dot(axes=2)([l, l])
         l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
@@ -209,7 +209,7 @@ class ModelBuilder:
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
         if asset_dependent:
-            l2 = keras.layers.Activation("softmax")(l)
+            l2 = keras.layers.Activation("softmax", name="softmax")(l)
             l2 = keras.layers.Dot(axes=2)([l2, l2])
             l = keras.layers.Dot(axes=[2, 1])([l2, l])
         l = keras.layers.Dense(self.n_outputs)(l)

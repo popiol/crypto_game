@@ -22,7 +22,9 @@ class TestPerformance:
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v5(asset_dependent=True)
+        model_1 = model_builder.build_model_v7(asset_dependent=True)
+        model_2 = model_builder.build_model_v8(asset_dependent=True)
+        model = model_builder.merge_models(model_1, model_2, ModelBuilder.MergeVersion.DOT)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         model_builder.pretrain(model, environment.asset_list, environment.data_transformer.current_assets)
