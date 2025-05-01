@@ -55,5 +55,5 @@ class TestKrakenApi:
 
     def test_find_asset_pairs(self):
         api = KrakenApi()
-        pairs = api.find_asset_pairs(["HNT", "BLUR", "XXBT", "CHZ", "EUR", "ZEUR"])
+        pairs = api.find_asset_pairs(["HNT", "BLUR", "XXBT", "CHZ", "EUR", "ZEUR", "ZAUD"])
         print(pairs)

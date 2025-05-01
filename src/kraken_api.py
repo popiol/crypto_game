@@ -127,12 +127,12 @@ class KrakenApi:
         assets = [asset for asset, volume in balance.items() if volume > pow(10, 2 - precision[asset])]
         orders = self.get_closed_orders(since)
         matched = {}
+        pairs = self.find_asset_pairs(assets)
         for order in orders.values():
-            for asset in assets:
-                if order["descr"]["pair"].startswith(asset) and order["descr"]["type"] == "buy":
+            for asset, pair in pairs.items():
+                if order["descr"]["pair"] == pair and order["descr"]["type"] == "buy":
                     if asset not in matched or matched[asset]["opentm"] < order["opentm"]:
                         matched[asset] = order
-        pairs = self.find_asset_pairs(assets)
         return [
             PortfolioPosition(
                 asset=order["descr"]["pair"],
@@ -152,7 +152,7 @@ class KrakenApi:
                 place_dt=None,
                 value=None,
             )
-            for asset in assets
+            for asset in pairs
             if asset not in matched
         ]
 
@@ -234,4 +234,15 @@ class KrakenApi:
         command = "AssetPairs"
         resp = requests.get(f"{self.public_endpoint}/{command}")
         pairs = [pair for pair in resp.json()["result"] if pair.endswith("USD")]
-        return {asset: pair for asset in assets for pair in pairs if pair.startswith(asset)}
+        result = {}
+        for asset in assets:
+            for pair in pairs:
+                if pair.startswith(asset):
+                    if asset not in result or len(pair) < len(result[asset]):
+                        result[asset] = pair
+            if asset not in result:
+                for pair in pairs:
+                    if pair.startswith(asset[1:]):
+                        if asset not in result or len(pair) < len(result[asset]):
+                            result[asset] = pair
+        return result
