@@ -32,6 +32,9 @@ class S3Utils:
         if only_updated and os.path.isfile(local_path):
             local_mtime = datetime.fromtimestamp(os.path.getmtime(local_path), tz=timezone.utc)
             remote_mtime = self.get_last_modification_time(remote_path)
+            if remote_mtime is None:
+                print("Remote file not found", remote_path)
+                return False
             if remote_mtime <= local_mtime:
                 return True
         s3 = boto3.client("s3")
