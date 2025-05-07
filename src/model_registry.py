@@ -79,9 +79,9 @@ class ModelRegistry:
         self.clean_local_cache()
 
     def show_new_mature_models(self):
-        older_than = self.maturity_min_hours
-        younger_than = self.maturity_min_hours + 1.5
-        files = self.s3_utils.list_files(self.current_prefix + "/", older_than, younger_than)
+        older = set(self.s3_utils.list_files(self.current_prefix + "/", older_than_hours=self.maturity_min_hours))
+        younger = set(self.s3_utils.list_files(self.current_prefix + "/", younger_than_hours=self.maturity_min_hours + 1.5))
+        files = older & younger
         for file in files:
             model_name = file.split("/")[-1]
             print("new mature", model_name)
