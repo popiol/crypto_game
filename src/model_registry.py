@@ -72,10 +72,19 @@ class ModelRegistry:
 
     def archive_models(self, scores: dict):
         self.archive_old_models()
+        self.show_new_mature_models()
         self.archive_weak_models(scores, mature=True)
         self.archive_weak_models(scores, mature=False)
         self.clean_archive()
         self.clean_local_cache()
+
+    def show_new_mature_models(self):
+        older_than = self.maturity_min_hours
+        younger_than = self.maturity_min_hours + 1.5
+        files = self.s3_utils.list_files(self.current_prefix + "/", older_than, younger_than)
+        for file in files:
+            model_name = file.split("/")[-1]
+            print("new mature", model_name)
 
     def archive_model(self, model_name: str):
         self.s3_utils.move_file(f"{self.current_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}")
@@ -88,7 +97,7 @@ class ModelRegistry:
             print("archive old", model)
             self.archive_model(model)
 
-    def get_weak_models(self, scores: dict, mature: bool) -> list[str]:
+    def get_weak_models(self, scores: dict, mature: bool) -> list[tuple[str, str]]:
         older_than = self.maturity_min_hours if mature else None
         younger_than = self.maturity_min_hours if not mature else None
         max_models = self.max_mature_models if mature else self.max_immature_models
@@ -99,24 +108,22 @@ class ModelRegistry:
             model_name = file.split("/")[-1]
             try:
                 score = scores[model_name]
-                model_and_score = (model_name, score)
-                print(model_and_score)
                 if np.isnan(score) or score == 0:
-                    to_archive.append(model_and_score)
+                    to_archive.append((model_name, score, "inactive"))
                 else:
-                    models.append(model_and_score)
+                    models.append((model_name, score))
             except:
                 if mature:
-                    to_archive.append((model_name, 0))
+                    to_archive.append((model_name, 0, "invalid"))
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
-            to_archive.extend(weak_models)
-        return [model for model, _ in to_archive]
+            to_archive.extend([(model, score, "weak") for model, score in weak_models])
+        return [(model, reason) for model, _, reason in to_archive]
 
     def archive_weak_models(self, scores: dict, mature: bool):
         models = self.get_weak_models(scores, mature)
-        for model in models:
-            print("archive weak", "mature" if mature else "immature", model)
+        for model, reason in models:
+            print(f"archive {reason}", "mature" if mature else "immature", model)
             self.archive_model(model)
 
     def clean_archive(self):
