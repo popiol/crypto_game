@@ -80,7 +80,7 @@ class ModelRegistry:
 
     def show_new_mature_models(self):
         older = set(self.s3_utils.list_files(self.current_prefix + "/", older_than_hours=self.maturity_min_hours))
-        younger = set(self.s3_utils.list_files(self.current_prefix + "/", younger_than_hours=self.maturity_min_hours + 1.5))
+        younger = set(self.s3_utils.list_files(self.current_prefix + "/", younger_than_hours=self.maturity_min_hours + .75))
         files = older & younger
         for file in files:
             model_name = file.split("/")[-1]
