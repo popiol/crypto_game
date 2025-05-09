@@ -5,7 +5,7 @@ model_registry:
   remote_path: s3://popiol-crypto-models
   maturity_min_hours: 24
   max_mature_models: 50
-  max_immature_models: 15
+  max_immature_models: 30
   retirement_min_days: 7
   archive_retention_days: 1
   local_path: data/models
