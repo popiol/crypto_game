@@ -111,18 +111,18 @@ class ModelRegistry:
                 score = scores[model_name]
                 df.loc[len(df)] = [model_name, score]
                 if np.isnan(score) or score == 0:
-                    to_archive.append((model_name, score, "inactive"))
+                    to_archive.append((model_name, "inactive"))
                 else:
                     models.append((model_name, score))
             except:
                 if mature:
-                    to_archive.append((model_name, 0, "invalid"))
+                    to_archive.append((model_name, "invalid"))
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
-            to_archive.extend([(model, score, "weak") for model, score in weak_models])
+            to_archive.extend([(model, "weak") for model, _ in weak_models])
         print("Mature" if mature else "Immature", "models")
         print(df.sort_values("score", ascending=False))
-        return [(model, reason) for model, _, reason in to_archive]
+        return to_archive
 
     def archive_weak_models(self, scores: dict, mature: bool):
         models = self.get_weak_models(scores, mature)
