@@ -325,7 +325,7 @@ class RlRunner:
         df = self.get_model_correlations()
         min_score = df.score_1.min()
         max_score = df.score_1.max()
-        df["score"] = df.apply(lambda x: x.score_1 - x.correlation * (max_score - min_score) / 2, axis=1)
+        df["score"] = df.apply(lambda x: x.score_1 - (x.correlation if x.score_1 else 0) * (max_score - min_score) / 2, axis=1)
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
             print(df[df.correlation > 0].sort_values("correlation", ascending=False))
         best = df[df.score_1 == max_score]
