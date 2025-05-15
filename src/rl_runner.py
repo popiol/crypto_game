@@ -288,6 +288,7 @@ class RlRunner:
                 self.model_registry.set_baseline_metrics(metrics_dict)
             else:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)
+            self.logger.log(agent.model_name, score)
 
     def get_model_correlations(self):
         correlations = pd.DataFrame(columns=["model_1", "model_2", "correlation", "score_1", "score_2"])
@@ -326,7 +327,7 @@ class RlRunner:
             print(df[df.correlation > 0.5].sort_values("correlation", ascending=False))
         min_score = df.score_1.min()
         max_score = df.score_1.max()
-        df["score"] = df.apply(lambda x: x.score_1 - (x.correlation if x.score_1 else 0) * (max_score - min_score), axis=1)
+        df["score"] = df.apply(lambda x: x.score_1 - x.correlation * (max_score - min_score) / 2, axis=1)
         best = df[df.score_1 == max_score]
         best.score = best.score_1
         best = best.set_index("model_1").score.to_dict()

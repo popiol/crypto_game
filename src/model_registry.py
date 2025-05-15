@@ -98,7 +98,7 @@ class ModelRegistry:
             self.archive_model(model)
 
     def get_weak_models(self, scores: dict, mature: bool) -> list[tuple[str, str]]:
-        df = pd.DataFrame(columns=["model, score"])
+        df = pd.DataFrame(columns=["model", "score"])
         older_than = self.maturity_min_hours if mature else None
         younger_than = self.maturity_min_hours if not mature else None
         max_models = self.max_mature_models if mature else self.max_immature_models
