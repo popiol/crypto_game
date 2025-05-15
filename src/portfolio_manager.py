@@ -92,6 +92,7 @@ class PortfolioManager:
             return False
         assert order.price > 0
         assert order.volume > 0
+        order.volume = min(order.volume, self.portfolio.cash / 2)
         cost = order.price * order.volume * (1 + self.transaction_fee)
         if cost > self.portfolio.cash * 1.1:
             if self.debug:
