@@ -121,7 +121,8 @@ class ModelRegistry:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend([(model, "weak") for model, _ in weak_models])
         print("Mature" if mature else "Immature", "models")
-        print(df.sort_values("score", ascending=False).reset_index())
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
+            print(df.sort_values("score", ascending=False).reset_index())
         return to_archive
 
     def archive_weak_models(self, scores: dict, mature: bool):
