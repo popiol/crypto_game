@@ -3,7 +3,7 @@ import os
 import random
 import re
 from datetime import datetime, timedelta
-
+import pandas as pd
 import numpy as np
 
 from src.s3_utils import S3Utils
@@ -98,6 +98,7 @@ class ModelRegistry:
             self.archive_model(model)
 
     def get_weak_models(self, scores: dict, mature: bool) -> list[tuple[str, str]]:
+        df = pd.DataFrame(columns=["model, score"])
         older_than = self.maturity_min_hours if mature else None
         younger_than = self.maturity_min_hours if not mature else None
         max_models = self.max_mature_models if mature else self.max_immature_models
@@ -108,6 +109,7 @@ class ModelRegistry:
             model_name = file.split("/")[-1]
             try:
                 score = scores[model_name]
+                df.loc[len(df)] = [model_name, score]
                 if np.isnan(score) or score == 0:
                     to_archive.append((model_name, score, "inactive"))
                 else:
@@ -118,6 +120,8 @@ class ModelRegistry:
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend([(model, score, "weak") for model, score in weak_models])
+        print("Mature" if mature else "Immature", "models")
+        print(df.sort_values("score", ascending=False))
         return [(model, reason) for model, _, reason in to_archive]
 
     def archive_weak_models(self, scores: dict, mature: bool):

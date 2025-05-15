@@ -288,7 +288,6 @@ class RlRunner:
                 self.model_registry.set_baseline_metrics(metrics_dict)
             else:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)
-            self.logger.log(agent.model_name, score)
 
     def get_model_correlations(self):
         correlations = pd.DataFrame(columns=["model_1", "model_2", "correlation", "score_1", "score_2"])
