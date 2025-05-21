@@ -365,6 +365,11 @@ class ModelBuilder:
             tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
             if check_output_shape:
                 assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs
+            new_model = keras.Model(inputs=inputs, outputs=tensor)
+            self.compile_model(new_model)
+            self.copy_weights(model.model, new_model, filter_indices=filter_indices)
+            print("Modification succeeded")
+            return MlModel(new_model)
         except Exception as e:
             self.last_failed = True
             print("Modification failed")
@@ -373,11 +378,6 @@ class ModelBuilder:
                 print(model)
                 raise e
             return model
-        new_model = keras.Model(inputs=inputs, outputs=tensor)
-        self.compile_model(new_model)
-        self.copy_weights(model.model, new_model, filter_indices=filter_indices)
-        print("Modification succeeded")
-        return MlModel(new_model)
 
     def adjust_dimensions(self, model: MlModel) -> MlModel:
         model = self.adjust_n_assets(model)
