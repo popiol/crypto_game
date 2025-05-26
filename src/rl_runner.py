@@ -131,7 +131,7 @@ class RlRunner:
             agent.train(historical=rl_trainset)
         self.logger.log_reward(self.agents)
 
-    def pretrain(self):
+    def pretrain_(self):
         if any([agent.metrics.get("parents") for agent in self.agents]):
             if random.random() < 0.75:
                 return
@@ -179,6 +179,47 @@ class RlRunner:
                 np.array(inputs),
                 np.array(outputs),
             )
+
+    def pretrain(self):
+        if any([agent.metrics.get("parents") for agent in self.agents]):
+            if random.random() < 0.75:
+                return
+        self.logger.log("Pretrain as a top assets predictor")
+        inputs = []
+        outputs = []
+        snapshots = []
+        agent_memory = np.zeros((self.data_transformer.memory_length, len(self.asset_list), 1))
+        self.reset_simulation()
+        inputs_ = None
+        index = 0
+        indices = [index for index, asset in enumerate(self.asset_list) if asset in self.data_transformer.current_assets]
+        for timestamp, quotes, features, preprocess in self.quotes_iterator():
+            if features is None:
+                continue
+            self.data_transformer.add_to_memory(features)
+            if preprocess:
+                continue
+            if index % 24 == 0:
+                prices = np.array(
+                    [quotes.closing_price(asset) if quotes.has_asset(asset) else np.nan for asset in self.asset_list]
+                )
+                snapshots.append(prices)
+                inputs_ = self.data_transformer.get_shared_memory()
+                inputs_ = np.concatenate((inputs_, agent_memory), axis=-1)
+                inputs.append(inputs_)
+                if len(snapshots) > 1:
+                    outputs_ = (snapshots[-1] - snapshots[-2]) / snapshots[-2]
+                    outputs_ = np.nan_to_num(outputs_)
+                    sorted_scores = sorted(outputs_)
+                    best_th = sorted_scores[int(len(sorted_scores) * 0.9)]
+                    worst_th = sorted_scores[int(len(sorted_scores) * 0.1)]
+                    outputs_ = [1 if score > best_th else -1 if score < worst_th else 0 for score in outputs_]
+                    outputs_ = [(score, 0.5, 1) for score in outputs_]
+                    outputs_ = np.array(outputs_)[indices]
+                    outputs.append(outputs_)
+            index += 1
+        for agent in self.agents:
+            agent.training_strategy.model.train(np.array(inputs[:-1]), np.array(outputs), n_epochs=100)
 
     def train_on_open_positions(self):
         for agent, portfolio_manager in zip(self.agents, self.portfolio_managers):
