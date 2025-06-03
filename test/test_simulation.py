@@ -84,15 +84,15 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.iterate_models")
     @patch("src.model_registry.ModelRegistry.archive_models")
     def test_evaluate_existing_model(self, archive_models, iterate_models, set_metrics, set_aggregated_metrics, upload_reports):
-        model_name = "Ava_20250213221035_9d694"
+        model_name = "Henry_20250530223121_87d25"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
         model_registry = environment.model_registry
         model = model_registry.get_model(model_name)
         iterate_models.return_value = [(model_name, model)]
         rl_runner.evaluate()
-        print("model metrics", set_metrics.call_args.args[1])
-        print("aggregated", set_aggregated_metrics.call_args.args[0])
+        # print("model metrics", set_metrics.call_args.args[1])
+        # print("aggregated", set_aggregated_metrics.call_args.args[0])
 
     @patch("src.reports.Reports.upload_reports")
     @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")

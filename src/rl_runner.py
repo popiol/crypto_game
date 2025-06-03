@@ -292,11 +292,12 @@ class RlRunner:
                 self.agents.append(agent)
             except:
                 self.model_registry.archive_model(model_name)
-        serialized_model, metrics = self.model_registry.get_leader()
+        serialized_model, metrics, create_dt = self.model_registry.get_leader()
         model = self.model_serializer.deserialize(serialized_model)
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
         self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
+        self.agents[-1].model_name = "_".join([self.agents[-1].model_name.split("_")[0], create_dt.strftime("%Y%m%d%H%M%S"), "00000"])
         metrics = self.model_registry.get_baseline_metrics()
         self.agents.append(BaselineAgent("Baseline", self.data_transformer, metrics))
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))

@@ -158,7 +158,8 @@ class ModelRegistry:
     def get_leader(self):
         model = self.s3_utils.download_bytes(f"{self.leader_prefix}/model")
         metrics = self.s3_utils.download_json(f"{self.leader_prefix}/metrics.json")
-        return model, metrics
+        create_dt = self.s3_utils.get_last_modification_time(f"{self.leader_prefix}/model")
+        return model, metrics, create_dt
 
     def get_leader_metrics(self):
         return self.s3_utils.download_json(f"{self.leader_prefix}/metrics.json")
