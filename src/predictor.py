@@ -197,10 +197,12 @@ class Predictor:
         best_active = active_models[active_models.score == active_models.score.max()].iloc[0]
         print("Best active model score", best_active.score, "with", best_active.n_transactions, "transactions")
         new_model = leader
-        if leader.n_transactions == 0 and best_active.score > 0.05:
+        if best_active.score > leader.score or (leader.n_transactions == 0 and best_active.score > 0.05):
             new_model = best_active
+            print("Choose best active")
         elif best_model.score > leader.score:
             new_model = best_model
+            print("Choose best")
         if new_model.model != leader.model:
             print("Set new leader", new_model.model)
             self.environment.model_registry.set_leader(new_model.model)
