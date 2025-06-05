@@ -25,10 +25,10 @@ ignore_prefix = ["n_layers_", "version_", "merge_"]
 st.write("## Mean score vs BTCUSD change")
 chart = alt.Chart(df).encode(x=alt.X("datetime", axis=alt.Axis(title=None)))
 chart = alt.layer(
-    chart.mark_line(color="#7f7", strokeWidth=5).encode(
+    chart.mark_line(color="#7f7", strokeWidth=2).encode(
         y=alt.Y("evaluation_score_mean", axis=alt.Axis(title=None), scale=alt.Scale(zero=False))
     ),
-    chart.mark_line(color="#f77", strokeWidth=5).encode(
+    chart.mark_line(color="#f77", strokeWidth=2).encode(
         y=alt.Y("BTCUSD_change_mean", axis=alt.Axis(title=None), scale=alt.Scale(zero=False))
     )
 )
@@ -51,7 +51,7 @@ for group in groups:
     chart = alt.Chart(df).encode(x=alt.X("datetime", axis=alt.Axis(title=None)))
     chart = alt.layer(
         *[
-            chart.mark_line(color=color, strokeWidth=5).encode(
+            chart.mark_line(color=color, strokeWidth=2).encode(
                 y=alt.Y(col, axis=alt.Axis(title=None), scale=alt.Scale(zero=False))
             )
             for col, color in zip(cols, colors)

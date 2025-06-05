@@ -32,5 +32,5 @@ for col in cols:
         continue
     st.write("## " + col)
     chart = alt.Chart(df).encode(x=alt.X("datetime", axis=alt.Axis(title=None)), y=col)
-    chart = chart.mark_line(strokeWidth=5).encode(y=alt.Y(col, axis=alt.Axis(title=None), scale=alt.Scale(zero=False)))
+    chart = chart.mark_line(strokeWidth=2).encode(y=alt.Y(col, axis=alt.Axis(title=None), scale=alt.Scale(zero=False)))
     st.altair_chart(chart, use_container_width=True, theme=None)

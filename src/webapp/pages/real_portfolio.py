@@ -41,7 +41,7 @@ df["BTCUSD"] = df.BTCUSD_mean / df.iloc[0].BTCUSD_mean - 1
 
 chart = (
     alt.Chart(df)
-    .mark_line(strokeWidth=5)
+    .mark_line(strokeWidth=2)
     .transform_fold(fold=["real_portfolio_value", "BTCUSD"], as_=["variable", "value"])
     .encode(
         x=alt.X("datetime", axis=alt.Axis(title=None)),
