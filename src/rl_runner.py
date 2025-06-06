@@ -393,6 +393,7 @@ class RlRunner:
         self.main_loop()
         self.save_rl_trainset()
         self.save_models()
+        self.model_registry.clean_local_cache()
 
     def evaluate(self):
         self.environment.eval_mode = True
