@@ -96,7 +96,6 @@ class RlRunner:
         if not self.environment.eval_mode:
             rl_trainset = agent.train(transactions=closed_transactions)
             self.extend_rl_trainset(rl_trainset)
-        if not self.environment.eval_mode:
             portfolio_manager.make_deposit(portfolio_manager.init_cash - portfolio_manager.portfolio.cash)
         orders = agent.make_decision(timestamp, input, quotes, portfolio_manager.portfolio, self.asset_list)
         portfolio_manager.place_orders(timestamp, orders)
