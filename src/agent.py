@@ -49,11 +49,15 @@ class Agent:
     ) -> list[PortfolioOrder]:
         orders = []
         for position in portfolio.positions:
+            sell_price = quotes.closing_price(position.asset) * output[position.asset].relative_sell_price
+            if position.last_sell_price is not None:
+                sell_price = sell_price * .9 + position.last_sell_price * .1
+            position.last_sell_price = sell_price
             sell_order = PortfolioOrder(
                 order_type=PortfolioOrderType.sell,
                 asset=position.asset,
                 volume=position.volume,
-                price=quotes.closing_price(position.asset) * output[position.asset].relative_sell_price,
+                price=sell_price,
                 place_dt=timestamp,
             )
             if sell_order.price > 0 and sell_order.volume > 0:
@@ -64,6 +68,7 @@ class Agent:
                 if quotes.has_asset(asset)
                 and 0.9 < features.relative_buy_price <= 1
                 and features.relative_buy_volume > 0
+                and .9999 < features.score < 1.0001
                 and not asset.startswith("USD")
                 and asset not in [p.asset for p in portfolio.positions]
                 else np.nan

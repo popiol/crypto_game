@@ -46,6 +46,7 @@ class PortfolioPosition:
     cost: float
     place_dt: datetime
     value: float = None
+    last_sell_price: float = None
 
     @staticmethod
     def from_json(obj: dict):
@@ -56,6 +57,7 @@ class PortfolioPosition:
             obj["cost"],
             datetime.strptime(obj["place_dt"], "%Y%m%d%H%M%S"),
             obj["value"],
+            obj.get("last_sell_price"),
         )
 
     def to_json(self):
@@ -66,6 +68,7 @@ class PortfolioPosition:
             "cost": self.cost,
             "place_dt": datetime.strftime(self.place_dt, "%Y%m%d%H%M%S"),
             "value": self.value,
+            "last_sell_price": self.last_sell_price,
         }
 
 
