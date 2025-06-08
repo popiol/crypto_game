@@ -240,7 +240,7 @@ class ModelBuilder:
         elif size > old_size:
             add_shape = list(old_shape)
             add_shape[dim] = size - old_size
-            array = np.concatenate((array, np.random.normal(array.mean(), array.std(), add_shape)), axis=dim)
+            array = np.concatenate((array, np.zeros(array.mean(), array.std(), add_shape)), axis=dim)
         return array
 
     def adjust_weights_shape(
