@@ -136,6 +136,18 @@ class ModelRegistry:
         for file in files:
             self.s3_utils.delete_file(file)
 
+    def restore_archived_model(self, model_name: str):
+        self.s3_utils.move_file(f"{self.archived_prefix}/{model_name}", f"{self.current_prefix}/{model_name}")
+        self.s3_utils.move_file(f"{self.archived_prefix}/{model_name}.json", f"{self.metrics_prefix}/{model_name}")
+
+    def restore_all_archived_models(self):
+        for file in self.s3_utils.list_files(self.archived_prefix + "/"):
+            if file.endswith(".json"):
+                continue
+            model_name = file.split("/")[-1]
+            self.restore_archived_model(model_name)
+            print("restored", model_name)
+
     def clean_local_cache(self):
         for file in glob.iglob(self.local_path + "/*"):
             local_mtime = datetime.fromtimestamp(os.path.getmtime(file))

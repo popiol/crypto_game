@@ -6,9 +6,7 @@ from src.aggregated_metrics import AggregatedMetrics
 from src.custom_metrics import CustomMetrics
 from src.environment import Environment
 from src.evolution_randomizer import EvolutionRandomizer
-from src.model_serializer import ModelSerializer
 from src.rl_runner import RlRunner
-from src.model_builder import ModelBuilder
 
 class TestSimulation:
 
@@ -85,16 +83,20 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.archive_models")
     @patch("src.rl_runner.RlRunner.prepare_reports")
     def test_evaluate_existing_model(self, prepare_reports, archive_models, iterate_models, set_metrics, set_aggregated_metrics, upload_reports):
-        model_name = "Henry_20250530223121_87d25"
+        model_name = "Charlotte_20250608211039_d4e3c"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
         model_registry = environment.model_registry
         model = model_registry.get_model(model_name)
-        #iterate_models.return_value = [(model_name, model)]
-        iterate_models.return_value = []
+        iterate_models.return_value = [(model_name, model)]
         rl_runner.evaluate()
         # print("model metrics", set_metrics.call_args.args[1])
         # print("aggregated", set_aggregated_metrics.call_args.args[0])
+
+    def test_restore_all_archived_models(self):
+        environment = Environment("config/config.yml")
+        model_registry = environment.model_registry
+        model_registry.restore_all_archived_models()
 
     @patch("src.reports.Reports.upload_reports")
     @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
