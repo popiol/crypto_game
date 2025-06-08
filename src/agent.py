@@ -69,7 +69,6 @@ class Agent:
                 and 0.9 < features.relative_buy_price <= 1
                 and features.relative_buy_volume > 0
                 and .9 < features.score < 1.1
-                # and features.score > 1.1
                 and not asset.startswith("USD")
                 and asset not in [p.asset for p in portfolio.positions]
                 else np.nan
