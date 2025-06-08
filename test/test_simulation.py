@@ -83,7 +83,7 @@ class TestSimulation:
     @patch("src.model_registry.ModelRegistry.archive_models")
     @patch("src.rl_runner.RlRunner.prepare_reports")
     def test_evaluate_existing_model(self, prepare_reports, archive_models, iterate_models, set_metrics, set_aggregated_metrics, upload_reports):
-        model_name = "Charlotte_20250608211039_d4e3c"
+        model_name = "Amelia_20250608060540_95a27"
         environment = Environment("config/config.yml")
         rl_runner = RlRunner(environment)
         model_registry = environment.model_registry

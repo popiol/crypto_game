@@ -73,10 +73,8 @@ class LearnOnBoth(TrainingStrategy):
 
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
-        if reward < 0:
-            output = np.round(1 - output)
-            n_epochs = 1 if reward > self.stats["mean"] - self.stats["std"] else 2
-            self.model.train(input, output, n_epochs=n_epochs)
+        if reward < self.stats["mean"] - self.stats["std"]:
+            self.model.train(input, np.round(1 - output))
         elif reward > self.stats["mean"] + self.stats["std"]:
             self.model.train(input, output)
 
