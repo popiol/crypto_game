@@ -208,7 +208,7 @@ class ModelBuilder:
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
-        if asset_dependent:
+        if True or asset_dependent:
             l2 = keras.layers.Activation("softmax", name="softmax")(l)
             l2 = keras.layers.Dot(axes=2)([l2, l2])
             l = keras.layers.Dot(axes=[2, 1])([l2, l])
