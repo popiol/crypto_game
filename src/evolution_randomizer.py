@@ -24,7 +24,7 @@ class EvolutionRandomizer:
         return random.choice(list(self.ModelCreationMethod)[1:])
 
     def asset_dependent(self):
-        return bool(random.randint(0, 1))
+        return bool(random.random() < .2)
 
     def remove_layer(self):
         return random.random() < self.remove_layer_prob
