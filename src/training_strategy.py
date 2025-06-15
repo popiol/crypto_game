@@ -51,7 +51,7 @@ class LearnOnSuccess(TrainingStrategy):
 
     def reset(self):
         self.clone = self.model.copy()
-        self.clone.add_noise(0.4)
+        self.clone.add_noise(0.1)
 
     def predict(self, input: np.ndarray) -> np.ndarray:
         return self.clone.predict(input)
