@@ -205,15 +205,18 @@ class KrakenApi:
             return {}
         print("get volume precision for", assets)
         command = "Assets"
+        assets = [x.split(".")[0] for x in assets]
         params = {"asset": ",".join(assets)}
         resp = requests.get(f"{self.public_endpoint}/{command}", params=params)
         resp_json = resp.json()
-        if not resp_json["error"]:
-            result = resp_json["result"]
-            map_1 = {key: val["decimals"] for key, val in result.items()}
-            map_2 = {val["altname"]: val["decimals"] for key, val in result.items()}
-            map = {**map_1, **map_2}
-            return {asset: map[asset] for asset in assets}
+        if resp_json["error"]:
+            print(resp_json["error"])
+            return {}
+        result = resp_json["result"]
+        map_1 = {key: val["decimals"] for key, val in result.items()}
+        map_2 = {val["altname"]: val["decimals"] for key, val in result.items()}
+        map = {**map_1, **map_2}
+        return {asset: map[asset] for asset in assets}
 
     def get_precision(self, assets: list[str]):
         if not assets:
