@@ -122,9 +122,8 @@ class KrakenApi:
 
     def get_positions(self, since: datetime):
         print("get real positions")
-        balance = {asset: float(volume) for asset, volume in self.get_balance().items() if float(volume) > 0 and asset != "ZUSD"}
-        assets = [x.split(".")[0] for x in balance]
-        precision = self.get_base_volume_precision(assets)
+        balance = {asset.split(".")[0]: float(volume) for asset, volume in self.get_balance().items() if float(volume) > 0 and asset != "ZUSD"}
+        precision = self.get_base_volume_precision(list(balance))
         assets = [asset for asset, volume in balance.items() if volume > pow(10, 2 - precision[asset])]
         orders = self.get_closed_orders(since)
         matched = {}
