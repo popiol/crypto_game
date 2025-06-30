@@ -92,13 +92,12 @@ class PortfolioManager:
             return False
         assert order.price > 0
         assert order.volume > 0
-        order.volume = min(order.volume, self.portfolio.cash / 2)
         cost = order.price * order.volume * (1 + self.transaction_fee)
         if cost > self.portfolio.cash * 1.1:
             if self.debug:
                 print("Not enough cash", order.asset, self.portfolio.cash, "<", cost)
             return True
-        cost = min(cost, self.portfolio.cash)
+        cost = min(cost, self.portfolio.cash / 2)
         if cost < self.min_transaction:
             if self.debug:
                 print("Order too small", order.asset, cost, "<", self.min_transaction)
