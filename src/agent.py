@@ -50,8 +50,8 @@ class Agent:
         orders = []
         for position in portfolio.positions:
             sell_price = quotes.closing_price(position.asset) * output[position.asset].relative_sell_price
-            #if position.last_sell_price is not None:
-            #    sell_price = sell_price * 0.1 + position.last_sell_price * 0.9
+            if position.last_sell_price is not None:
+                sell_price = sell_price * 0.1 + position.last_sell_price * 0.9
             position.last_sell_price = sell_price
             sell_order = PortfolioOrder(
                 order_type=PortfolioOrderType.sell,
