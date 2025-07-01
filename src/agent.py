@@ -96,7 +96,6 @@ class Agent:
     def make_decision(
         self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ):
-        print("timestamp", timestamp)
         output_matrix = self.training_strategy.predict(input)
         current_asset_list = self.data_transformer.get_current_asset_list(asset_list)
         if self.trainset:
