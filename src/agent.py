@@ -62,7 +62,7 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
-        if portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=3):
+        if timestamp > datetime.now() - timedelta(hours=1) and portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=3):
             scores = []
         else:
             scores = [
@@ -96,6 +96,7 @@ class Agent:
     def make_decision(
         self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
     ):
+        print("timestamp", timestamp)
         output_matrix = self.training_strategy.predict(input)
         current_asset_list = self.data_transformer.get_current_asset_list(asset_list)
         if self.trainset:
