@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -62,19 +62,22 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
-        scores = [
-            (
-                features.score
-                if quotes.has_asset(asset)
-                and 0.9 < features.relative_buy_price <= 1
-                and features.relative_buy_volume > 0
-                and .9 < features.score < 1.1
-                and not asset.startswith("USD")
-                and asset not in [p.asset for p in portfolio.positions]
-                else np.nan
-            )
-            for asset, features in output.items()
-        ]
+        if portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=3):
+            scores = []
+        else:
+            scores = [
+                (
+                    features.score
+                    if quotes.has_asset(asset)
+                    and 0.9 < features.relative_buy_price <= 1
+                    and features.relative_buy_volume > 0
+                    and .9 < features.score < 1.1
+                    and not asset.startswith("USD")
+                    and asset not in [p.asset for p in portfolio.positions]
+                    else np.nan
+                )
+                for asset, features in output.items()
+            ]
         if not np.isnan(scores).all():
             best_asset_index = np.nanargmax(scores)
             best_asset = asset_list[best_asset_index]
