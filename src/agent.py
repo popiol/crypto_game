@@ -62,7 +62,7 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
-        if timestamp > datetime.now() - timedelta(hours=1) and portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=3):
+        if timestamp > datetime.now() - timedelta(hours=1) and portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=2):
             scores = []
         else:
             scores = [
