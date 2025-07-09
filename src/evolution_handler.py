@@ -30,8 +30,8 @@ class EvolutionHandler:
         elif method == self.evolution_randomizer.ModelCreationMethod.MERGE_MODELS:
             model, metrics = self.merge_existing_models()
         model = self.model_builder.adjust_dimensions(model)
-        model = self.model_builder.filter_assets(model, self.asset_list, self.current_assets)
         model, metrics = self.mutate(model, metrics)
+        model = self.model_builder.filter_assets(model, self.asset_list, self.current_assets)
         if method == self.evolution_randomizer.ModelCreationMethod.NEW_MODEL:
             self.model_builder.pretrain(model, self.asset_list, self.current_assets)
         return model, metrics
