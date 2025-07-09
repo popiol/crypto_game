@@ -290,7 +290,7 @@ class TestEvolution:
             if layer.shape:
                 model = model_builder.add_relu(model, index)
                 break
-        for _ in range(20):
+        for _ in range(100):
             model, metrics = evolution_handler.mutate(model, metrics)
         print(model)
         print("mutations:", metrics["mutations"])
