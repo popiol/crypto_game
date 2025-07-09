@@ -5,8 +5,8 @@ from enum import Enum, auto
 
 @dataclass
 class EvolutionRandomizer:
-
     new_basic_model_prob: float
+    merge_prob: float
     remove_layer_prob: float
     add_layer_prob: float
     resize_prob: float
@@ -21,7 +21,9 @@ class EvolutionRandomizer:
     def model_creation_method(self):
         if random.random() < self.new_basic_model_prob:
             return self.ModelCreationMethod.NEW_MODEL
-        return random.choice(list(self.ModelCreationMethod)[1:])
+        if random.random() < self.merge_prob:
+            return self.ModelCreationMethod.MERGE_MODELS
+        return self.ModelCreationMethod.EXISTING_MODEL
 
     def asset_dependent(self):
         return bool(random.random() < .2)
