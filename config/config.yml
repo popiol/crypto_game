@@ -48,7 +48,7 @@ evolution_randomizer:
   add_layer_prob: 0.01
   resize_prob: 0.03
   relu_prob: 0.01
-  reuse_prob: 0.008
+  reuse_prob: 0.03
 
 reports:
   aggregated_path: data/aggregated
