@@ -693,7 +693,7 @@ class ModelBuilder:
                 if not isinstance(input.tensor, keras.KerasTensor):
                     raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
                 if len(input.tensor.shape) != 3 or input.tensor.shape[1] != self.n_assets:
-                    raise ModificationError("Cannot reuse the layer")
+                    raise ModificationError(f"Invalid shape  {input.tensor.shape}")
                 tensor_to_reuse = input.tensor
 
         def on_layer_start(input: ModificationInput):
