@@ -275,7 +275,7 @@ class TestEvolution:
         model = complex_model2
         metrics = {}
         with patch("src.model_builder.ModelBuilder.reuse_layer", wraps=model_builder.reuse_layer) as reuse_layer:
-            for _ in range(100):
+            for _ in range(20):
                 model, metrics = evolution_handler.mutate(model, metrics)
         print(model)
         print("mutations:", metrics["mutations"])

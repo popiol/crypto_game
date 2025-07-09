@@ -701,7 +701,10 @@ class ModelBuilder:
                 if tensor_to_reuse is None:
                     raise ModificationError("No tensor to reuse")
                 layer_name = self.fix_layer_name("concatenate", input.layer_names)
-                return ModificationOutput(tensor=keras.layers.Concatenate(name=layer_name)([input.tensor, tensor_to_reuse]))
+                tensor = keras.layers.Concatenate(name=layer_name)([input.tensor, tensor_to_reuse])
+                tensor = keras.layers.UnitNormalization()(tensor)
+                tensor = keras.layers.Dense(100)(tensor)
+                return ModificationOutput(tensor=tensor)
 
         return self.modify_model(model, on_layer_start, on_layer_end)
 
