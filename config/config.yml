@@ -44,6 +44,7 @@ evolution_handler:
 
 evolution_randomizer:
   new_basic_model_prob: 0.05
+  merge_prob: 0.1
   remove_layer_prob: 0.015
   add_layer_prob: 0.01
   resize_prob: 0.03
