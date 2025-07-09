@@ -381,9 +381,11 @@ class TestEvolution:
             patch("src.evolution_handler.EvolutionHandler.load_existing_model", wraps=evolution_handler.load_existing_model) as load_existing_model,
             patch("src.evolution_handler.EvolutionHandler.merge_existing_models", wraps=evolution_handler.merge_existing_models) as merge_existing_models,
             patch("src.model_builder.ModelBuilder.pretrain"),
+            patch("src.model_builder.ModelBuilder.reuse_layer", wraps=evolution_handler.model_builder.reuse_layer) as reuse_layer,
         ):
             for _ in range(20):
                 environment.evolution_handler.create_model()
+        print("reuse_layer", reuse_layer.call_count)
         print("create_new_model", create_new_model.call_count)
         print("load_existing_model", load_existing_model.call_count)
         print("merge_existing_models", merge_existing_models.call_count)
