@@ -45,7 +45,7 @@ class EvolutionRandomizer:
         return random.random() < self.relu_prob
 
     def remove_relu(self):
-        return random.random() < self.relu_prob * 1.5
+        return random.random() < self.relu_prob * 0.5
 
     class AddLayerAction(Enum):
         NO_ACTION = auto()
