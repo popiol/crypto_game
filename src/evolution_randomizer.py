@@ -17,6 +17,9 @@ class EvolutionRandomizer:
     dot_weight: float
     transform_weight: float
     concat_weight: float
+    learn_on_success_weight: float
+    learn_on_mistake_weight: float
+    learn_on_both_weight: float
 
 
     class ModelCreationMethod(Enum):
@@ -71,7 +74,18 @@ class EvolutionRandomizer:
         return random.choice(list(versions))
 
     def merge_version(self, versions: type[ModelBuilder.MergeVersion]):
-        random.choices(
+        return random.choices(
             [versions.SELECT, versions.MULTIPLY, versions.DOT, versions.TRANSFORM, versions.CONCAT], 
             [self.select_weight, self.multiply_weight, self.dot_weight, self.transform_weight, self.concat_weight],
+        )[0]
+
+    class TrainingStrategy(Enum):
+        LEARN_ON_SUCCESS = auto()
+        LEARN_ON_MISTAKE = auto()
+        LEARN_ON_BOTH = auto()
+
+    def training_strategy(self):
+        return random.choices(
+            [self.TrainingStrategy.LEARN_ON_SUCCESS, self.TrainingStrategy.LEARN_ON_MISTAKE, self.TrainingStrategy.LEARN_ON_BOTH], 
+            [self.learn_on_success_weight, self.learn_on_mistake_weight, self.learn_on_both_weight],
         )[0]

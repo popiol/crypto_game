@@ -55,6 +55,9 @@ evolution_randomizer:
   dot_weight: 0.5
   transform_weight: 1
   concat_weight: 1
+  learn_on_success_weight: 1
+  learn_on_mistake_weight: 0.5
+  learn_on_both_weight: 1
 
 reports:
   aggregated_path: data/aggregated
