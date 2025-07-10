@@ -86,7 +86,7 @@ class EvolutionHandler:
         for metric_name in metrics_1:
             if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
                 metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
-        merge_version = random.choice(list(self.model_builder.MergeVersion))
+        merge_version = self.evolution_randomizer.merge_version(self.model_builder.MergeVersion)
         merge_version_metrics: dict = metrics.get("merge_version", {})
         merge_version_metrics[merge_version.name] = merge_version_metrics.get(merge_version.name, 0) + 1
         metrics["merge_version"] = merge_version_metrics
