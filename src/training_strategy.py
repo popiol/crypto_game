@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 
 from src.ml_model import MlModel
@@ -77,15 +75,3 @@ class LearnOnBoth(TrainingStrategy):
             self.model.train(input, np.round(1 - output))
         elif reward > self.stats["mean"] + self.stats["std"]:
             self.model.train(input, output)
-
-
-class StrategyPicker:
-
-    def __init__(self):
-        self.strategies = [LearnOnMistakes, LearnOnSuccess, LearnOnBoth]
-
-    def pick_class(self) -> type[TrainingStrategy]:
-        return random.choice(self.strategies)
-
-    def pick(self, model: MlModel) -> TrainingStrategy:
-        return self.pick_class()(model)
