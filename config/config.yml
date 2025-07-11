@@ -43,7 +43,7 @@ evolution_handler:
   max_n_params: 1000000
 
 evolution_randomizer:
-  new_basic_model_prob: 0.05
+  new_basic_model_prob: 0.1
   merge_prob: 0.1
   remove_layer_prob: 0.03
   add_layer_prob: 0.01
