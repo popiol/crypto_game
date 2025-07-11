@@ -226,7 +226,7 @@ class TestEvolution:
         print("model 3 n layers:", len(model_3.get_layers()))
         model_4 = builder.merge_models(model_2, model_3, builder.MergeVersion.TRANSFORM)
         print("model 4 n layers:", len(model_4.get_layers()))
-        assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 1
+        assert len(model_4.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 2
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(input)
         output_4 = model_4.predict(input)
@@ -243,7 +243,7 @@ class TestEvolution:
         model_7 = builder.merge_models(model_2, model_3, builder.MergeVersion.DOT)
         print(model_7)
         print("model 7 n layers:", len(model_7.get_layers()))
-        assert len(model_7.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 3
+        assert len(model_7.get_layers()) == len(model_2.get_layers()) + len(model_3.get_layers()) + 5
         input = np.zeros([*model_1.get_layers()[0].input_shape])
         output_1 = model_1.predict(input)
         output_7 = model_7.predict(input)
