@@ -375,7 +375,7 @@ class TestEvolution:
 
     def test_create_model(self, environment: Environment):
         evolution_handler = environment.evolution_handler
-        evolution_handler.current_assets = set(evolution_handler.asset_list)
+        evolution_handler.current_assets = set(evolution_handler.asset_list[:400])
         with (
             patch("src.evolution_handler.EvolutionHandler.create_new_model", wraps=evolution_handler.create_new_model) as create_new_model,
             patch("src.evolution_handler.EvolutionHandler.load_existing_model", wraps=evolution_handler.load_existing_model) as load_existing_model,

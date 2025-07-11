@@ -224,9 +224,9 @@ class ModelBuilder:
         return np.argsort([np.abs(x).sum() for x in np.rollaxis(array, dim)])[-size:]
 
     def adjust_array_shape(self, array: np.ndarray, dim: int, size: int, filter_indices: list[int] = None) -> np.ndarray:
-        assert size > 0
+        assert size > 0, f"Invalid size {size}"
         old_shape = np.shape(array)
-        assert 0 <= dim < len(old_shape)
+        assert 0 <= dim < len(old_shape), f"Invalid dimension {dim}"
         old_size = old_shape[dim]
         if size == old_size:
             return array
@@ -249,9 +249,9 @@ class ModelBuilder:
         new_weights = []
         if not weights:
             return new_weights
-        assert len(weights) <= 2
+        assert len(weights) <= 2, f"Invalid weights length {len(weights)}"
         for x in target_shape:
-            assert x > 0
+            assert x > 0, f"Invalid dimension {x} in target_shape {target_shape}"
         w0 = weights[0]
         for dim, size in enumerate(target_shape):
             w0 = self.adjust_array_shape(w0, dim, size, filter_indices)
@@ -364,7 +364,7 @@ class ModelBuilder:
         try:
             tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
             if check_output_shape:
-                assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs
+                assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs, f"Invalid output shape {tensor.shape}"
             new_model = keras.Model(inputs=inputs, outputs=tensor)
             self.compile_model(new_model)
             self.copy_weights(model.model, new_model, filter_indices=filter_indices)
@@ -386,7 +386,7 @@ class ModelBuilder:
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
         n_assets = model.model.layers[0].batch_shape[2]
-        assert self.n_assets >= n_assets
+        assert self.n_assets >= n_assets, f"New n_assets has to be higher got {self.n_assets} < {n_assets}"
         print("Adjust n_assets from", n_assets, "to", self.n_assets)
 
         def on_layer_start(input: ModificationInput):
@@ -407,7 +407,7 @@ class ModelBuilder:
 
     def adjust_n_features(self, model: MlModel) -> MlModel:
         n_features = model.model.layers[0].batch_shape[3]
-        assert self.n_features >= n_features
+        assert self.n_features >= n_features, f"New n_features has to be higher got {self.n_features} < {n_features}"
         if self.n_features == n_features:
             return model
 
@@ -519,7 +519,7 @@ class ModelBuilder:
             layer_name = self.fix_layer_name("permute", layer_names)
             tensor = keras.layers.Permute(permute, name=layer_name)(tensor)
             shape = tensor.shape[1:]
-        assert shape == target_shape
+        assert shape == target_shape, f"Invalid shape {shape}, should be {target_shape}"
         return tensor
 
     def pretrain_with(self, model: MlModel, asset_list: list[str], current_assets: set[str], x: np.ndarray, y: np.ndarray = None):
@@ -568,7 +568,7 @@ class ModelBuilder:
 
     def remove_layer(self, model: MlModel, start_index: int, end_index: int) -> MlModel:
         print("Remove layers", start_index, end_index)
-        assert 0 <= start_index <= end_index < len(model.model.layers) - 2
+        assert 0 <= start_index <= end_index < len(model.model.layers) - 2, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if start_index <= input.index <= end_index:
@@ -578,7 +578,7 @@ class ModelBuilder:
 
     def add_dense_layer(self, model: MlModel, before_index: int, size: int):
         print("Add dense layer", before_index, size)
-        assert 0 <= before_index < len(model.model.layers) - 1
+        assert 0 <= before_index < len(model.model.layers) - 1, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == before_index:
@@ -591,7 +591,7 @@ class ModelBuilder:
 
     def add_conv_layer(self, model: MlModel, before_index: int, size: int):
         print("Add conv layer", before_index, size)
-        assert 0 <= before_index < len(model.model.layers) - 1
+        assert 0 <= before_index < len(model.model.layers) - 1, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == before_index:
@@ -629,7 +629,7 @@ class ModelBuilder:
 
     def add_dropout(self, model: MlModel, before_index: int):
         print("Add dropout", before_index)
-        assert 0 <= before_index < len(model.model.layers) - 1
+        assert 0 <= before_index < len(model.model.layers) - 1, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == before_index:
@@ -642,7 +642,7 @@ class ModelBuilder:
 
     def resize_layer(self, model: MlModel, layer_index: int, new_size: int):
         print("Resize layer", layer_index, new_size)
-        assert 0 <= layer_index < len(model.model.layers) - 2
+        assert 0 <= layer_index < len(model.model.layers) - 2, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
@@ -655,7 +655,7 @@ class ModelBuilder:
 
     def add_relu(self, model: MlModel, layer_index: int):
         print("Add relu", layer_index)
-        assert 0 <= layer_index < len(model.model.layers) - 2
+        assert 0 <= layer_index < len(model.model.layers) - 2, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
@@ -669,7 +669,7 @@ class ModelBuilder:
 
     def remove_relu(self, model: MlModel, layer_index: int):
         print("Remove relu", layer_index)
-        assert 0 <= layer_index < len(model.model.layers) - 2
+        assert 0 <= layer_index < len(model.model.layers) - 2, "Index out of bounds"
 
         def on_layer_start(input: ModificationInput):
             if input.index == layer_index:
@@ -683,7 +683,7 @@ class ModelBuilder:
 
     def reuse_layer(self, model: MlModel, layer_index: int):
         print("Reuse layer", layer_index)
-        assert 0 <= layer_index < len(model.model.layers) - 3
+        assert 0 <= layer_index < len(model.model.layers) - 3, "Index out of bounds"
         tensor_to_reuse = None
         n_layers = len(model.model.layers) - 1
 
@@ -724,10 +724,10 @@ class ModelBuilder:
             super().__init__(name=name, **kwargs)
 
         def build(self, input_shape):
-            assert type(input_shape) == list
-            assert len(input_shape) == 2
+            assert type(input_shape) == list, f"Invalid input_shape type {type(input_shape)}"
+            assert len(input_shape) == 2, f"Expected 2 shapes got {input_shape}"
             shape_1, shape_2 = input_shape
-            assert shape_1[:-1] == shape_2[:-1]
+            assert shape_1[:-1] == shape_2[:-1], f"Shapes need to have same last dimension, got {shape_1}, {shape_2}"
 
         def call(self, inputs):
             x, y = inputs
@@ -782,15 +782,18 @@ class ModelBuilder:
             tensor_2 = keras.layers.Permute((2, 1), name=self.fix_layer_name("permute", layer_names))(tensor_2)
             tensor_2 = keras.layers.Dense(tensor_1.shape[-1], name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = keras.layers.Dot(axes=2, name=self.fix_layer_name("dot", layer_names))([tensor_1, tensor_2])
-            tensor = keras.layers.Activation("softsign", name=self.fix_layer_name("softsign", layer_names))(tensor)
+            tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
+            tensor = keras.layers.Dense(self.n_outputs, name=self.fix_layer_name("dense", layer_names))(tensor)
         elif merge_version == self.MergeVersion.MULTIPLY:
             tensor_1_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_1)
             tensor_2_10 = keras.layers.Dense(10, name=self.fix_layer_name("dense", layer_names))(tensor_2)
             tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1_10, tensor_2_10])
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2, tensor])
-            tensor = keras.layers.Dense(100, activation="softsign", name=self.fix_layer_name("dense", layer_names))(tensor)
+            tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
+            tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         else:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
+            tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
         if merge_version == self.MergeVersion.TRANSFORM:
             tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         if tensor.shape[-1] != self.n_outputs:
