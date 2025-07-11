@@ -38,14 +38,14 @@ class EvolutionHandler:
 
     def create_new_model(self) -> tuple[MlModel, dict]:
         version = self.evolution_randomizer.model_version(self.model_builder.ModelVersion)
-        asset_dependent = self.evolution_randomizer.asset_dependent()
+        asset_dependent = version.name.endswith("DEP")
         print("create model, asset_dependent:", asset_dependent, ", version:", version.name)
         metrics = {
             "n_asset_dependent": int(asset_dependent),
             "n_asset_independent": int(not asset_dependent),
             "model_version": {version.name: 1},
         }
-        return self.model_builder.build_model(asset_dependent, version), metrics
+        return self.model_builder.build_model(version), metrics
 
     def load_spicific_model(self, model_name: str, model: MlModel = None, serialized_model: bytes = None) -> tuple[MlModel, dict]:
         if model is None:

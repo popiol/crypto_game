@@ -40,61 +40,34 @@ class ModelBuilder:
     n_outputs: int
 
     class ModelVersion(Enum):
-        V1 = auto()
-        V2 = auto()
-        V3 = auto()
-        V4 = auto()
-        V5 = auto()
-        V6 = auto()
-        V7 = auto()
-        V8 = auto()
+        V2DEP = auto()
+        V2IND = auto()
+        V5DEP = auto()
+        V6DEP = auto()
+        V6IND = auto()
+        V8DEP = auto()
 
-    def build_model(self, asset_dependent=False, version: ModelVersion = ModelVersion.V1) -> MlModel:
-        if version == self.ModelVersion.V1:
-            return self.build_model_v1(asset_dependent)
-        if version == self.ModelVersion.V2:
-            return self.build_model_v2(asset_dependent)
-        if version == self.ModelVersion.V3:
-            return self.build_model_v3(asset_dependent)
-        if version == self.ModelVersion.V4:
-            return self.build_model_v4(asset_dependent)
-        if version == self.ModelVersion.V5:
-            return self.build_model_v5(asset_dependent)
-        if version == self.ModelVersion.V6:
-            return self.build_model_v6(asset_dependent)
-        if version == self.ModelVersion.V7:
-            return self.build_model_v7(asset_dependent)
-        if version == self.ModelVersion.V8:
-            return self.build_model_v8(asset_dependent)
+    def build_model(self, version: ModelVersion) -> MlModel:
+        if version == self.ModelVersion.V2DEP:
+            return self.build_model_v2dep()
+        if version == self.ModelVersion.V2IND:
+            return self.build_model_v2ind()
+        if version == self.ModelVersion.V5DEP:
+            return self.build_model_v5dep()
+        if version == self.ModelVersion.V6DEP:
+            return self.build_model_v6dep()
+        if version == self.ModelVersion.V6IND:
+            return self.build_model_v6ind()
+        if version == self.ModelVersion.V8DEP:
+            return self.build_model_v8dep()
 
-    def build_model_v1(self, asset_dependent=False) -> MlModel:
+    def build_model_v2dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Dense(100)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
-        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
-        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Permute((1, 3, 2))(l)
         l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(self.n_outputs)(l)
-        model = keras.Model(inputs=inputs, outputs=l)
-        self.compile_model(model)
-        return MlModel(model)
-
-    def build_model_v2(self, asset_dependent=False) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Dense(100)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Dense(self.n_assets)(l)
+        l = keras.layers.Permute((3, 1, 2))(l)
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
@@ -103,78 +76,45 @@ class ModelBuilder:
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
-
-    def build_model_v3(self, asset_dependent=False) -> MlModel:
+    
+    def build_model_v2ind(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Dense(100)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Permute((2, 1, 3))(l)
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="tanh_shrink")(l)
-        l = keras.layers.Dense(10)(l)
-        l = keras.layers.Dense(10)(l)
-        l = keras.layers.Dense(10, activation="softsign")(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(100)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
-
-    def build_model_v4(self, asset_dependent=False) -> MlModel:
+    
+    def build_model_v5dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Dense(100)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Permute((1, 3, 2))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(self.n_assets)(l)
+        l = keras.layers.Permute((3, 1, 2))(l)
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
         l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="tanh")(l)
-        l = keras.layers.Dense(self.n_outputs)(l)
-        model = keras.Model(inputs=inputs, outputs=l)
-        self.compile_model(model)
-        return MlModel(model)
-
-    def build_model_v5(self, asset_dependent=False) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.UnitNormalization()(l)
-            l = keras.layers.Dense(100)(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
-        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
-        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(100)(l)
         l = keras.layers.Dense(100)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
 
-    def build_model_v6(self, asset_dependent=False) -> MlModel:
+    def build_model_v6dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
-        if asset_dependent:
-            l = keras.layers.Permute((1, 3, 2))(l)
-            l = keras.layers.Conv2D(100, 3, activation="relu")(l)
-            l = keras.layers.Conv2D(100, 3, activation="relu")(l)
-            l = keras.layers.Dense(self.n_assets)(l)
-            l = keras.layers.Permute((3, 1, 2))(l)
-        else:
-            l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Permute((1, 3, 2))(l)
+        l = keras.layers.Conv2D(100, 3, activation="relu")(l)
+        l = keras.layers.Conv2D(100, 3, activation="relu")(l)
+        l = keras.layers.Dense(self.n_assets)(l)
+        l = keras.layers.Permute((3, 1, 2))(l)
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
@@ -184,7 +124,7 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
-    def build_model_v7(self, asset_dependent=False) -> MlModel:
+    def build_model_v6ind(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         l = keras.layers.Permute((2, 1, 3))(l)
@@ -192,26 +132,21 @@ class ModelBuilder:
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        if asset_dependent:
-            l = keras.layers.Activation("softmax", name="softmax")(l)
-            l = keras.layers.Dot(axes=2)([l, l])
-        l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
 
-    def build_model_v8(self, asset_dependent=False) -> MlModel:
+    def build_model_v8dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         l = keras.layers.Permute((2, 1, 3))(l)
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(100)(l)
-        if True or asset_dependent:
-            l2 = keras.layers.Activation("softmax", name="softmax")(l)
-            l2 = keras.layers.Dot(axes=2)([l2, l2])
-            l = keras.layers.Dot(axes=[2, 1])([l2, l])
+        l2 = keras.layers.Activation("softmax", name="softmax")(l)
+        l2 = keras.layers.Dot(axes=2)([l2, l2])
+        l = keras.layers.Dot(axes=[2, 1])([l2, l])
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
