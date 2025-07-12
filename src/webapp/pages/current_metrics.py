@@ -16,7 +16,7 @@ def list_current_models():
     environment.model_registry.download_report(environment.reports.quick_stats_path)
     df = pd.read_csv(environment.reports.quick_stats_path)
     df = df[df.score != 0]
-    df = df.sort_values("score", ascending=False)[:15]
+    df = df.sort_values("score", ascending=False)
     df["model"] = df["model"].apply(lambda x: f"?model={x}")
     st.dataframe(df, hide_index=True, column_config={"model": st.column_config.LinkColumn()})
 
