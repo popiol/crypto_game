@@ -17,7 +17,6 @@ class EvolutionHandler:
     evolution_randomizer: EvolutionRandomizer
     asset_list: list[str]
     current_assets: set[str]
-    resize_by: int
     max_n_params: int
 
     def create_model(self) -> tuple[MlModel, dict]:
@@ -120,14 +119,13 @@ class EvolutionHandler:
                     skip = offset
                     mutations["remove_layer"] = mutations.get("remove_layer", 0) + n_removed
                     continue
-            resize_by = abs(round(random.gauss(self.resize_by - 1, self.resize_by))) + 1
             resize_action = self.evolution_randomizer.resize_layer()
-            if resize_action == self.evolution_randomizer.ResizeAction.SHRINK and layer.shape and layer.shape[1] >= 2 * resize_by:
-                model = self.model_builder.resize_layer(model, index, layer.shape[1] - resize_by)
+            if resize_action == self.evolution_randomizer.ResizeAction.SHRINK and layer.shape and layer.shape[1] >= 20:
+                model = self.model_builder.resize_layer(model, index, layer.shape[1] // 2)
                 if not self.model_builder.last_failed:
                     mutations["shrink_layer"] = mutations.get("shrink_layer", 0) + 1
             elif resize_action == self.evolution_randomizer.ResizeAction.EXTEND and layer.shape:
-                model = self.model_builder.resize_layer(model, index, layer.shape[1] + resize_by)
+                model = self.model_builder.resize_layer(model, index, layer.shape[1] * 2)
                 if not self.model_builder.last_failed:
                     mutations["extend_layer"] = mutations.get("extend_layer", 0) + 1
             if self.evolution_randomizer.add_relu() and layer.shape:

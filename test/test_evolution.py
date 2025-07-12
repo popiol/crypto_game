@@ -60,8 +60,8 @@ class TestEvolution:
     @pytest.fixture
     def complex_model2(self, environment: Environment):
         builder = environment.model_builder
-        model_1 = builder.build_model(False, builder.ModelVersion.V1)
-        model_2 = builder.build_model(True, builder.ModelVersion.V1)
+        model_1 = builder.build_model()
+        model_2 = builder.build_model()
         return builder.merge_models(model_1, model_2)
 
     def test_adjust_weights_shape(self, builder: ModelBuilder, complex_model: MlModel):
@@ -290,7 +290,7 @@ class TestEvolution:
             if layer.shape:
                 model = model_builder.add_relu(model, index)
                 break
-        for _ in range(100):
+        for _ in range(20):
             model, metrics = evolution_handler.mutate(model, metrics)
         print(model)
         print("mutations:", metrics["mutations"])

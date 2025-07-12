@@ -9,7 +9,9 @@ class EvolutionRandomizer:
     merge_prob: float
     dependent_prob: float
     remove_layer_prob: float
-    add_layer_prob: float
+    add_dense_prob: float
+    add_conv_prob: float
+    add_dropout_prob: float
     resize_prob: float
     relu_prob: float
     reuse_prob: float
@@ -64,9 +66,13 @@ class EvolutionRandomizer:
         DROPOUT = auto()
 
     def add_layer(self):
-        if random.random() > self.add_layer_prob:
-            return self.AddLayerAction.NO_ACTION
-        return random.choice(list(self.AddLayerAction)[1:])
+        if random.random() < self.add_dense_prob:
+            return self.AddLayerAction.DENSE
+        if random.random() < self.add_conv_prob:
+            return self.AddLayerAction.CONV
+        if random.random() < self.add_dropout_prob:
+            return self.AddLayerAction.DROPOUT
+        return self.AddLayerAction.NO_ACTION
 
     def reuse_layer(self):
         return random.random() < self.reuse_prob

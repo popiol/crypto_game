@@ -47,7 +47,7 @@ class ModelBuilder:
         V6IND = auto()
         V8DEP = auto()
 
-    def build_model(self, version: ModelVersion) -> MlModel:
+    def build_model(self, version: ModelVersion = ModelVersion.V6IND) -> MlModel:
         if version == self.ModelVersion.V2DEP:
             return self.build_model_v2dep()
         if version == self.ModelVersion.V2IND:

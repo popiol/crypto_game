@@ -39,7 +39,6 @@ trainset:
   local_path: data/trainset
 
 evolution_handler:
-  resize_by: 10
   max_n_params: 1000000
 
 evolution_randomizer:
@@ -47,7 +46,9 @@ evolution_randomizer:
   merge_prob: 0.1
   dependent_prob: 0.2
   remove_layer_prob: 0.03
-  add_layer_prob: 0.01
+  add_dense_prob: 0.005
+  add_conv_prob: 0.005
+  add_dropout_prob: 0.005
   resize_prob: 0.01
   relu_prob: 0.02
   reuse_prob: 0.03
