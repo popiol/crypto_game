@@ -34,7 +34,14 @@ class CustomMetrics:
             "merge_transform",
             "merge_select",
             "merge_multiply",
+            "version_v2ind",
+            "version_v2dep",
+            "version_v6ind",
+            "version_v6dep",
+            "version_v5dep",
+            "version_v8dep",
             "n_mutations_add_dense_layer",
+            "n_mutations_add_conv_layer",
             "n_mutations_remove_layer",
             "n_mutations_extend_layer",
             "n_mutations_shrink_layer",
@@ -46,6 +53,7 @@ class CustomMetrics:
             "n_layers_reshape",
             "n_layers_unit",
             "n_layers_concatenate",
+            "n_layers_dropout",
             "trained_ratio",
             "BTCUSD_change",
             "n_trainings",
@@ -69,7 +77,7 @@ class CustomMetrics:
             ]:
                 if col not in df and col.startswith(prefix):
                     df[col] = df[key].apply(
-                        lambda x: x.get(col[len(prefix) :], x.get(col[len(prefix) :].upper(), 0)) if type(x) == dict else 0
+                        lambda x: x.get(col[len(prefix) :], x.get(col[len(prefix) :].upper(), 0)) / (sum(x.values()) or 1) if type(x) == dict else 0
                     )
             df["grouping"] = df[col].apply(
                 lambda x: (
