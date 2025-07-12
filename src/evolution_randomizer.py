@@ -7,6 +7,7 @@ from src.model_builder import ModelBuilder
 class EvolutionRandomizer:
     new_basic_model_prob: float
     merge_prob: float
+    dependent_prob: float
     remove_layer_prob: float
     add_layer_prob: float
     resize_prob: float
@@ -35,7 +36,7 @@ class EvolutionRandomizer:
         return self.ModelCreationMethod.EXISTING_MODEL
 
     def asset_dependent(self):
-        return bool(random.randint(0, 1))
+        return random.random() < self.dependent_prob
 
     def remove_layer(self):
         return random.random() < self.remove_layer_prob

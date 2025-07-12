@@ -37,8 +37,11 @@ class EvolutionHandler:
         return model, metrics
 
     def create_new_model(self) -> tuple[MlModel, dict]:
-        version = self.evolution_randomizer.model_version(self.model_builder.ModelVersion)
-        asset_dependent = version.name.endswith("DEP")
+        asset_dependent = self.evolution_randomizer.asset_dependent()
+        while True:
+            version = self.evolution_randomizer.model_version(self.model_builder.ModelVersion)
+            if asset_dependent == version.name.endswith("DEP"):
+                break
         print("create model, asset_dependent:", asset_dependent, ", version:", version.name)
         metrics = {
             "n_asset_dependent": int(asset_dependent),
