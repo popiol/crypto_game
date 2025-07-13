@@ -51,12 +51,12 @@ evolution_randomizer:
   add_dropout_prob: 0.002
   resize_prob: 0.005
   relu_prob: 0.005
-  reuse_prob: 0.03
+  reuse_prob: 0.02
   select_weight: 1.5
   multiply_weight: 1
   dot_weight: 0.5
-  transform_weight: 1
-  concat_weight: 1
+  transform_weight: 0.5
+  concat_weight: 2
   learn_on_success_weight: 1
   learn_on_mistake_weight: 0.3
   learn_on_both_weight: 0.7
