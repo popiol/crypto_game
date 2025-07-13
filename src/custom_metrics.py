@@ -47,6 +47,7 @@ class CustomMetrics:
             "n_mutations_extend_layer",
             "n_mutations_shrink_layer",
             "n_mutations_add_relu",
+            "n_mutations_reuse_layer",
             "trained_ratio",
             "BTCUSD_change",
             "n_trainings",
