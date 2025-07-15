@@ -52,14 +52,14 @@ evolution_randomizer:
   resize_prob: 0.005
   relu_prob: 0.005
   reuse_prob: 0.02
-  select_weight: 1.5
-  multiply_weight: 1
+  select_weight: 2
+  multiply_weight: 0.5
   dot_weight: 0.5
-  transform_weight: 0.5
-  concat_weight: 2
-  learn_on_success_weight: 1
+  transform_weight: 1.5
+  concat_weight: 1.5
+  learn_on_success_weight: 1.4
   learn_on_mistake_weight: 0.3
-  learn_on_both_weight: 0.7
+  learn_on_both_weight: 0.3
 
 reports:
   aggregated_path: data/aggregated
