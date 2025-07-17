@@ -42,7 +42,6 @@ class ModelBuilder:
     class ModelVersion(Enum):
         V2DEP = auto()
         V2IND = auto()
-        V5DEP = auto()
         V6DEP = auto()
         V6IND = auto()
         V8DEP = auto()
@@ -52,8 +51,6 @@ class ModelBuilder:
             return self.build_model_v2dep()
         if version == self.ModelVersion.V2IND:
             return self.build_model_v2ind()
-        if version == self.ModelVersion.V5DEP:
-            return self.build_model_v5dep()
         if version == self.ModelVersion.V6DEP:
             return self.build_model_v6dep()
         if version == self.ModelVersion.V6IND:
@@ -90,23 +87,6 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
     
-    def build_model_v5dep(self) -> MlModel:
-        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
-        l = inputs
-        l = keras.layers.Permute((1, 3, 2))(l)
-        l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(self.n_assets)(l)
-        l = keras.layers.Permute((3, 1, 2))(l)
-        l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)
-        l = keras.layers.UnitNormalization()(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(100)(l)
-        l = keras.layers.Dense(self.n_outputs)(l)
-        model = keras.Model(inputs=inputs, outputs=l)
-        self.compile_model(model)
-        return MlModel(model)
-
     def build_model_v6dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
