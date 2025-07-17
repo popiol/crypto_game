@@ -38,7 +38,6 @@ class CustomMetrics:
             "version_v2dep",
             "version_v6ind",
             "version_v6dep",
-            "version_v5dep",
             "version_v8dep",
             "n_mutations_add_dropout",
             "n_mutations_add_dense_layer",
