@@ -52,7 +52,7 @@ evolution_randomizer:
   resize_prob: 0.005
   relu_prob: 0.005
   reuse_prob: 0.02
-  select_weight: 2
+  select_weight: 1.5
   multiply_weight: 0.5
   dot_weight: 0.5
   transform_weight: 1
