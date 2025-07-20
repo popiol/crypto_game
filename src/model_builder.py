@@ -45,6 +45,7 @@ class ModelBuilder:
         V6DEP = auto()
         V6IND = auto()
         V8DEP = auto()
+        V9IND = auto()
 
     def build_model(self, version: ModelVersion = ModelVersion.V6IND) -> MlModel:
         if version == self.ModelVersion.V2DEP:
@@ -57,6 +58,9 @@ class ModelBuilder:
             return self.build_model_v6ind()
         if version == self.ModelVersion.V8DEP:
             return self.build_model_v8dep()
+        if version == self.ModelVersion.V9IND:
+            return self.build_model_v9ind()
+
 
     def build_model_v2dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
@@ -126,6 +130,21 @@ class ModelBuilder:
         l2 = keras.layers.Activation("softmax", name="softmax")(l)
         l2 = keras.layers.Dot(axes=2)([l2, l2])
         l = keras.layers.Dot(axes=[2, 1])([l2, l])
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v9ind(self) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)

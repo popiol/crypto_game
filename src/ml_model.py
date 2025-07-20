@@ -68,7 +68,7 @@ class MlModel:
                     shape=tuple(l.weights[0].shape) if l.weights else None,
                     input_shape=input_shape_without_batch,
                     output_shape=output_shape[1:],
-                    activation=format_activation(l.activation.__name__) if l.weights else None,
+                    activation=format_activation(l.activation.__name__) if hasattr(l, "activation") else None,
                 )
             )
             input_shapes[l.name] = output_shape
