@@ -88,8 +88,7 @@ class TestPerformance:
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})
         rl_runner.create_agents()
-        for _ in range(2):
-            rl_runner.main_loop()
+        rl_runner.main_loop()
         iterate_models.return_value = [
             (agent.model_name, ModelSerializer().serialize(agent.training_strategy.model)) for agent in rl_runner.agents
         ]

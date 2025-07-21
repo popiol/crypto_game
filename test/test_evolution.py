@@ -356,7 +356,7 @@ class TestEvolution:
 
     def test_model_development(self, environment: Environment):
         builder = environment.model_builder
-        model = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V1)
+        model = builder.build_model(version=builder.ModelVersion.V2IND)
         print(model)
         model = builder.add_dropout(model, 0)
         model = builder.add_relu(model, 4)
@@ -368,7 +368,7 @@ class TestEvolution:
 
     def test_asset_dependent_model_development(self, environment: Environment):
         builder = environment.model_builder
-        model = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
+        model = builder.build_model(version=builder.ModelVersion.V2DEP)
         print(model)
         model = builder.add_conv_layer(model, 1, 100)
         print(model)

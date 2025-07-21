@@ -139,10 +139,8 @@ class ModelBuilder:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         l = keras.layers.Permute((2, 1, 3))(l)
-        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
-        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
-        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
-        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"))(l)
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(self.n_outputs)(l)
@@ -530,30 +528,22 @@ class ModelBuilder:
             if input.index == before_index:
                 if not isinstance(input.tensor, keras.KerasTensor):
                     raise ModificationError(f"Invalid tensor type: {type(input.tensor)}")
-                if self.n_assets not in input.tensor.shape or len(input.tensor.shape) not in [3, 4]:
+                if self.n_assets not in input.tensor.shape or len(input.tensor.shape) != 4:
                     raise ModificationError(f"Invalid shape: {input.tensor.shape}")
                 tensor = input.tensor
-                if input.tensor.shape[-1] != self.n_assets:
+                permutation = None
+                if tensor.shape[1] != self.n_assets:
                     index = input.tensor.shape.index(self.n_assets)
                     permutation = list(range(len(input.tensor.shape)))
-                    permutation[index] = 3
-                    permutation[3] = index
+                    permutation[index] = 1
+                    permutation[1] = index
                     permutation = permutation[1:]
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
-                if len(input.tensor.shape) == 4:
-                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(size, 3, name=layer_name, activation="relu")(tensor)
-                    layer_name = self.fix_layer_name("conv2d", input.layer_names)
-                    tensor = keras.layers.Conv2D(size, 3, name=layer_name, activation="relu")(tensor)
-                else:
+                for _ in range(2):
                     layer_name = self.fix_layer_name("conv1d", input.layer_names)
-                    tensor = keras.layers.Conv1D(size, 3, name=layer_name)(tensor)
-                    layer_name = self.fix_layer_name("conv1d", input.layer_names)
-                    tensor = keras.layers.Conv1D(size, 3, name=layer_name)(tensor)
-                layer_name = self.fix_layer_name("dense", input.layer_names)
-                tensor = keras.layers.Dense(self.n_assets, name=layer_name)(tensor)
-                if input.tensor.shape[-1] != self.n_assets:
+                    tensor = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"), name=layer_name)(tensor)
+                if permutation is not None:
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
                 return ModificationOutput(tensor=tensor)
