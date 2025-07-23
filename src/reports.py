@@ -114,7 +114,7 @@ class Reports:
 
     def calc_leader_stats(self):
         # prepare portfolio history
-        self.model_registry.download_leader_history(self.leader_history_path)
+        self.model_registry.download_real_history(self.leader_history_path)
         files = glob.glob(self.leader_history_path + "/*.json")
         df = pd.DataFrame()
         if os.path.exists(self.leader_stats_path):
@@ -137,7 +137,8 @@ class Reports:
         metrics_timestamps = list(all_data["metrics"].keys())[-min_len:]
 
         # prepare transactions
-        files = sorted(glob.glob(self.transactions_path + "/*.json"))
+        self.model_registry.download_real_portfolio(self.real_portfolio_path, self.real_transactions_path)
+        files = sorted(glob.glob(self.real_transactions_path + "/*.json"))
         transactions = {}
         for file in files:
             timestamp = file.split("/")[-1].split(".")[0]
