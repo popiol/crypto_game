@@ -160,7 +160,8 @@ class Reports:
             portfolio = all_data["portfolio"][portfolio_timestamp]
             stats["n_open_positions"] = [len(portfolio["positions"])]
             stats["n_orders"] = [len(portfolio["orders"])]
-            stats["n_closed_transactions"] = [len([key for key in transactions if key[:10] <= timestamp])]
+            from_timestamp = datetime.strftime(datetime.strptime(timestamp, '%Y%m%d%H') - timedelta(days=1), '%Y%m%d%H')
+            stats["n_closed_transactions"] = [len([key for key in transactions if from_timestamp < key[:10] <= timestamp])]
             dfs.append(pd.DataFrame.from_dict(stats))
         return pd.concat(dfs)
 
