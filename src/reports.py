@@ -119,6 +119,8 @@ class Reports:
         df = pd.DataFrame()
         if os.path.exists(self.leader_stats_path):
             df = pd.read_csv(self.leader_stats_path)
+            start_dt = int((datetime.now() - timedelta(days=90)).strftime("%Y%m%d%H"))
+            df = df[df.datetime > start_dt]
             last_dt = str(df.datetime.max())
             files = [file for file in files if file.split("/")[-1].split("_")[1][:10] > last_dt]
         dfs = [df]
