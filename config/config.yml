@@ -47,7 +47,7 @@ evolution_randomizer:
   dependent_prob: 0.2
   remove_layer_prob: 0.005
   add_dense_prob: 0.002
-  add_conv_prob: 0.01
+  add_conv_prob: 0.02
   add_dropout_prob: 0.005
   resize_prob: 0.01
   relu_prob: 0.01
