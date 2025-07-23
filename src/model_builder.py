@@ -140,7 +140,7 @@ class ModelBuilder:
         l = inputs
         l = keras.layers.Permute((2, 1, 3))(l)
         l = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"))(l)
-        l = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"))(l)
+        l = keras.layers.TimeDistributed(keras.layers.Conv1D(10, 3, activation="relu"))(l)
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(self.n_outputs)(l)
@@ -540,9 +540,9 @@ class ModelBuilder:
                     permutation = permutation[1:]
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
-                for _ in range(2):
+                for size in [100, 10]:
                     layer_name = self.fix_layer_name("conv1d", input.layer_names)
-                    tensor = keras.layers.TimeDistributed(keras.layers.Conv1D(100, 3, activation="relu"), name=layer_name)(tensor)
+                    tensor = keras.layers.TimeDistributed(keras.layers.Conv1D(size, 3, activation="relu"), name=layer_name)(tensor)
                 if permutation is not None:
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
