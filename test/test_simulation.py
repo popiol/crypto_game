@@ -93,6 +93,19 @@ class TestSimulation:
         # print("model metrics", set_metrics.call_args.args[1])
         # print("aggregated", set_aggregated_metrics.call_args.args[0])
 
+    @patch("src.reports.Reports.upload_reports")
+    @patch("src.model_registry.ModelRegistry.set_aggregated_metrics")
+    @patch("src.model_registry.ModelRegistry.set_metrics")
+    @patch("src.model_registry.ModelRegistry.iterate_models")
+    @patch("src.model_registry.ModelRegistry.archive_models")
+    @patch("src.rl_runner.RlRunner.prepare_reports")
+    def test_evaluate_leader(self, prepare_reports, archive_models, iterate_models, set_metrics, set_aggregated_metrics, upload_reports):
+        environment = Environment("config/config.yml")
+        rl_runner = RlRunner(environment)
+        iterate_models.return_value = []
+        rl_runner.evaluate()
+
+
     def test_restore_all_archived_models(self):
         environment = Environment("config/config.yml")
         model_registry = environment.model_registry

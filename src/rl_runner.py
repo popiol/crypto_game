@@ -322,6 +322,7 @@ class RlRunner:
             metrics.set_bitcoin_change(bitcoin_change)
             metrics.set_n_transactions(len(self.logger.transactions.get(agent.model_name, [])))
             print("n_transactions", len(self.logger.transactions.get(agent.model_name, [])))
+            print("portfolio_size", len(portfolio_manager.portfolio.positions))
             metrics_dict = metrics.get_metrics()
             self.all_metrics.append(metrics_dict)
             if agent.agent_name == "Leader":

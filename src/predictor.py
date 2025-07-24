@@ -158,6 +158,7 @@ class Predictor:
             }
         positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
         portfolio_manager.portfolio = Portfolio(positions, raw_portfolio["cash"], raw_portfolio["value"])
+        portfolio_manager.make_deposit(portfolio_manager.init_cash - portfolio_manager.portfolio.cash)
         portfolio_manager.place_orders(datetime.now(), [PortfolioOrder.from_json(o) for o in raw_portfolio["orders"]])
         transactions = portfolio_manager.handle_orders(datetime.now(), quotes)
         data_transformer = self.environment.data_transformer
