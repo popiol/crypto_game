@@ -80,6 +80,7 @@ class Environment:
             self.evolution_randomizer,
             self.asset_list,
             self.data_transformer.current_assets,
+            self.reports.quick_stats_path,
             **self.config["evolution_handler"]
         )
 

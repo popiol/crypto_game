@@ -322,9 +322,9 @@ class ModelBuilder:
 
         def on_layer_start(input: ModificationInput):
             nonlocal n_assets
-            if input.config["name"].startswith("dense") and input.config["units"] == n_assets:
+            if "units" in input.config and input.config["units"] == n_assets:
                 input.config["units"] = self.n_assets
-            elif input.config["name"].startswith("conv") and input.config["filters"] == n_assets:
+            elif "filters" in input.config and input.config["filters"] == n_assets:
                 input.config["filters"] = self.n_assets
             elif input.config["name"].startswith("reshape") and n_assets in input.config["target_shape"]:
                 shape = list(input.config["target_shape"])
@@ -345,9 +345,9 @@ class ModelBuilder:
         print("Adjust n_features")
 
         def on_layer_start(input: ModificationInput):
-            if input.config["name"].startswith("dense") and input.config["units"] == n_features:
+            if "units" in input.config and input.config["units"] == n_features:
                 input.config["units"] = self.n_features
-            elif input.config["name"].startswith("conv1d") and input.config["filters"] == n_features:
+            elif "filters" in input.config and input.config["filters"] == n_features:
                 input.config["filters"] = self.n_features
             elif input.config["name"].startswith("reshape") and n_features in input.config["target_shape"]:
                 shape = list(input.config["target_shape"])
@@ -362,9 +362,9 @@ class ModelBuilder:
         print("Filter assets from", len(asset_list), "to", n_assets)
 
         def on_layer_start(input: ModificationInput):
-            if input.config["name"].startswith("dense") and input.config["units"] == self.n_assets:
+            if "units" in input.config and input.config["units"] == self.n_assets:
                 input.config["units"] = n_assets
-            elif input.config["name"].startswith("conv") and input.config["filters"] == self.n_assets:
+            elif "filters" in input.config and input.config["filters"] == self.n_assets:
                 input.config["filters"] = n_assets
             elif input.config["name"].startswith("reshape") and self.n_assets in input.config["target_shape"]:
                 shape = list(input.config["target_shape"])

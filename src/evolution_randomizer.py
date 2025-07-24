@@ -37,6 +37,13 @@ class EvolutionRandomizer:
             return self.ModelCreationMethod.MERGE_MODELS
         return self.ModelCreationMethod.EXISTING_MODEL
 
+    def choose_model(self, models: list[str], weights: list[float]) -> str:
+        if not models:
+            return None
+        min_w = min(weights)
+        weights = [w - min_w for w in weights]
+        return random.choices(models, weights)[0]
+
     def asset_dependent(self):
         return random.random() < self.dependent_prob
 

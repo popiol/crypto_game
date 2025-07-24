@@ -1,3 +1,4 @@
+import pandas as pd
 import random
 from dataclasses import dataclass
 
@@ -17,6 +18,7 @@ class EvolutionHandler:
     evolution_randomizer: EvolutionRandomizer
     asset_list: list[str]
     current_assets: set[str]
+    quick_stats_path: str
     max_n_params: int
 
     def create_model(self) -> tuple[MlModel, dict]:
@@ -61,10 +63,17 @@ class EvolutionHandler:
         return model, metrics
 
     def load_existing_model(self) -> tuple[MlModel, dict]:
-        model_name, serialized_model = self.model_registry.get_random_model()
-        if model_name is None:
+        self.model_registry.download_report(self.quick_stats_path)
+        df = pd.read_csv(self.quick_stats_path)
+        try:
+            model_name = self.evolution_randomizer.choose_model(list(df["model"]), list(df["score"]))
+            if model_name is None:
+                return self.create_new_model()
+            return self.load_spicific_model(model_name)
+        except FileNotFoundError as ex:
+            print(ex)
             return self.create_new_model()
-        return self.load_spicific_model(model_name, serialized_model=serialized_model)
+
 
     def merge_existing_models(self) -> tuple[MlModel, dict]:
         model_name_1, serialized_model_1 = self.model_registry.get_random_model()
