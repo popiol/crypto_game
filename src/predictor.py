@@ -167,7 +167,7 @@ class Predictor:
         agent_memory = data_transformer.get_agent_memory(agent.agent_name)
         input = data_transformer.join_memory(shared_memory, agent_memory)
         data_transformer.current_assets = current_assets
-        orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list)
+        orders = agent.make_decision(datetime.now(), input, quotes, portfolio_manager.portfolio, asset_list, limit_purchase=False)
         raw_portfolio = {
             "positions": [p.to_json() for p in portfolio_manager.portfolio.positions],
             "cash": portfolio_manager.portfolio.cash,

@@ -46,6 +46,7 @@ class Agent:
         quotes: QuotesSnapshot,
         portfolio: Portfolio,
         asset_list: list[str],
+        limit_purchase: bool = True,
     ) -> list[PortfolioOrder]:
         orders = []
         for position in portfolio.positions:
@@ -62,7 +63,7 @@ class Agent:
             )
             if sell_order.price > 0 and sell_order.volume > 0:
                 orders.append(sell_order)
-        if timestamp > datetime.now() - timedelta(hours=1) and portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=2):
+        if limit_purchase and timestamp > datetime.now() - timedelta(hours=1) and portfolio.positions and max(p.place_dt for p in portfolio.positions) > datetime.now() - timedelta(days=2):
             scores = []
         else:
             scores = [
@@ -94,14 +95,14 @@ class Agent:
         return orders
 
     def make_decision(
-        self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str]
+            self, timestamp: datetime, input: np.ndarray, quotes: QuotesSnapshot, portfolio: Portfolio, asset_list: list[str], limit_purchase: bool = True
     ):
         output_matrix = self.training_strategy.predict(input)
         current_asset_list = self.data_transformer.get_current_asset_list(asset_list)
         if self.trainset:
             self.trainset.store_output(timestamp, output_matrix, self.agent_name)
         output = self.data_transformer.transform_output(output_matrix, current_asset_list)
-        return self._make_decision(timestamp, output, quotes, portfolio, current_asset_list)
+        return self._make_decision(timestamp, output, quotes, portfolio, current_asset_list, limit_purchase)
 
     def get_input_output(self, timestamp: datetime) -> tuple[np.ndarray, np.ndarray]:
         shared_input, agent_input, output = self.trainset.get_by_timestamp(timestamp, self.agent_name)
