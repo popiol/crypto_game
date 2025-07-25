@@ -51,7 +51,7 @@ evolution_randomizer:
   add_dropout_prob: 0.01
   resize_prob: 0.01
   relu_prob: 0.01
-  reuse_prob: 0.02
+  reuse_prob: 0.01
   select_weight: 1.5
   multiply_weight: 0.5
   dot_weight: 0.5
