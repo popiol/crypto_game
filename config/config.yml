@@ -45,7 +45,7 @@ evolution_randomizer:
   new_basic_model_prob: 0.05
   merge_prob: 0.2
   dependent_prob: 0.2
-  remove_layer_prob: 0.002
+  remove_layer_prob: 0.005
   add_dense_prob: 0.005
   add_conv_prob: 0.02
   add_dropout_prob: 0.005
@@ -57,9 +57,9 @@ evolution_randomizer:
   dot_weight: 0.5
   transform_weight: 1
   concat_weight: 1
-  learn_on_success_weight: 0.6
-  learn_on_mistake_weight: 0.2
-  learn_on_both_weight: 0.2
+  learn_on_success_weight: 0.7
+  learn_on_mistake_weight: 0.15
+  learn_on_both_weight: 0.15
 
 reports:
   aggregated_path: data/aggregated
