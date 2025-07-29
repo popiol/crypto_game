@@ -35,7 +35,7 @@ class Logger:
         self.transactions[model].extend(transactions)
 
     def display_transaction(self, transaction: ClosedTransaction):
-        return f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}"
+        return f"{transaction.asset}:{round(transaction.profit - transaction.cost, 2)}/{transaction.predicted_score}"
 
     def log_simulation_results(self, portfolios: list[Portfolio]):
         results = {}

@@ -104,6 +104,7 @@ class TestSimulation:
         rl_runner = RlRunner(environment)
         iterate_models.return_value = []
         rl_runner.evaluate()
+        rl_runner.logger.log_simulation_results([p.portfolio for p in rl_runner.portfolio_managers])
 
 
     def test_restore_all_archived_models(self):

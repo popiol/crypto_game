@@ -17,6 +17,7 @@ class PortfolioOrder:
     volume: float
     price: float
     place_dt: datetime
+    predicted_score: float = None
 
     @staticmethod
     def from_json(obj: dict):
@@ -26,6 +27,7 @@ class PortfolioOrder:
             obj["volume"],
             obj["price"],
             datetime.strptime(obj["place_dt"], "%Y%m%d%H%M%S"),
+            obj.get("predicted_score"),
         )
 
     def to_json(self):
@@ -35,6 +37,7 @@ class PortfolioOrder:
             "volume": self.volume,
             "price": self.price,
             "place_dt": datetime.strftime(self.place_dt, "%Y%m%d%H%M%S"),
+            "predicted_score": self.predicted_score,
         }
 
 
@@ -47,6 +50,7 @@ class PortfolioPosition:
     place_dt: datetime
     value: float = None
     last_sell_price: float = None
+    predicted_score: float = None
 
     @staticmethod
     def from_json(obj: dict):
@@ -58,6 +62,7 @@ class PortfolioPosition:
             datetime.strptime(obj["place_dt"], "%Y%m%d%H%M%S"),
             obj["value"],
             obj.get("last_sell_price"),
+            obj.get("predicted_score"),
         )
 
     def to_json(self):
@@ -69,6 +74,7 @@ class PortfolioPosition:
             "place_dt": datetime.strftime(self.place_dt, "%Y%m%d%H%M%S"),
             "value": self.value,
             "last_sell_price": self.last_sell_price,
+            "predicted_score": self.predicted_score,
         }
 
 
@@ -97,6 +103,7 @@ class ClosedTransaction:
     place_sell_dt: datetime
     cost: float
     profit: float
+    predicted_score: float = None
 
     def to_json(self):
         return {
@@ -108,6 +115,7 @@ class ClosedTransaction:
             "place_sell_dt": datetime.strftime(self.place_sell_dt, "%Y%m%d%H%M%S"),
             "cost": self.cost,
             "profit": self.profit,
+            "predicted_score": self.predicted_score,
         }
 
 

@@ -112,7 +112,7 @@ class PortfolioManager:
             return True
         self.portfolio.cash -= cost
         if asset_index is None:
-            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, cost, order.place_dt))
+            self.portfolio.positions.append(PortfolioPosition(order.asset, order.volume, order.price, cost, order.place_dt, predicted_score=order.predicted_score))
         else:
             position = self.portfolio.positions[asset_index]
             position.buy_price = (position.buy_price * position.volume + order.price * order.volume) / (
@@ -169,6 +169,7 @@ class PortfolioManager:
                 order.place_dt,
                 position.cost,
                 profit,
+                position.predicted_score,
             )
         )
         if self.debug:
