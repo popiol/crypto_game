@@ -157,6 +157,7 @@ class Predictor:
                 "orders": [],
             }
         positions = [PortfolioPosition.from_json(p) for p in raw_portfolio["positions"]]
+        positions = [p for p in positions if p.place_dt > datetime.now() - timedelta(days=7)]
         portfolio_manager.portfolio = Portfolio(positions, raw_portfolio["cash"], raw_portfolio["value"])
         portfolio_manager.make_deposit(portfolio_manager.init_cash - portfolio_manager.portfolio.cash)
         portfolio_manager.place_orders(datetime.now(), [PortfolioOrder.from_json(o) for o in raw_portfolio["orders"]])
