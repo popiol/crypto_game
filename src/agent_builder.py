@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from src.agent import Agent
 from src.data_transformer import DataTransformer
 from src.evolution_handler import EvolutionHandler
-from src.training_strategy import LearnOnSuccess, LearnOnMistakes, LearnOnBoth
+from src.training_strategy import LearnOnSuccess, LearnOnMistakes, LearnOnBoth, LearnOnExtreme
 from src.trainset import Trainset
 
 
@@ -31,6 +31,8 @@ class AgentBuilder:
             return LearnOnMistakes
         elif strategy == self.evolution_handler.evolution_randomizer.TrainingStrategy.LEARN_ON_BOTH:
             return LearnOnBoth
+        elif strategy == self.evolution_handler.evolution_randomizer.TrainingStrategy.LEARN_ON_EXTREME:
+            return LearnOnExtreme
         
 
     def create_agents(self) -> list[Agent]:

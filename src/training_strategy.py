@@ -60,6 +60,21 @@ class LearnOnSuccess(TrainingStrategy):
             self.model.train(input, output)
 
 
+class LearnOnExtreme(TrainingStrategy):
+
+    def reset(self):
+        self.clone = self.model.copy()
+        self.clone.add_noise(0.4)
+
+    def predict(self, input: np.ndarray) -> np.ndarray:
+        return self.clone.predict(input)
+
+    def train(self, input: np.ndarray, output: np.ndarray, reward: float):
+        self.add_to_stats(reward)
+        if reward > self.stats["mean"] + self.stats["std"] * 2:
+            self.model.train(input, output)
+
+
 class LearnOnBoth(TrainingStrategy):
 
     def reset(self):

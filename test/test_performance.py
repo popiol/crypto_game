@@ -76,14 +76,14 @@ class TestPerformance:
     @patch("src.evolution_handler.EvolutionHandler.create_model")
     def test_performance_simple(self, create_model, training_strategy, iterate_models):
         environment = Environment("config/config.yml")
-        training_strategy.return_value = environment.evolution_randomizer.TrainingStrategy.LEARN_ON_SUCCESS
+        training_strategy.return_value = environment.evolution_randomizer.TrainingStrategy.LEARN_ON_EXTREME
         environment.config["rl_runner"]["training_time_min"] = 2
         environment.config["agent_builder"]["n_agents"] = 1
         rl_runner = RlRunner(environment)
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v9ind()
+        model = model_builder.build_model_v6ind()
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})

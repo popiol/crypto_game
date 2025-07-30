@@ -23,6 +23,7 @@ class EvolutionRandomizer:
     learn_on_success_weight: float
     learn_on_mistake_weight: float
     learn_on_both_weight: float
+    learn_on_extreme_weight: float
 
 
     class ModelCreationMethod(Enum):
@@ -97,9 +98,11 @@ class EvolutionRandomizer:
         LEARN_ON_SUCCESS = auto()
         LEARN_ON_MISTAKE = auto()
         LEARN_ON_BOTH = auto()
+        LEARN_ON_EXTREME = auto()
 
     def training_strategy(self):
         return random.choices(
-            [self.TrainingStrategy.LEARN_ON_SUCCESS, self.TrainingStrategy.LEARN_ON_MISTAKE, self.TrainingStrategy.LEARN_ON_BOTH], 
-            [self.learn_on_success_weight, self.learn_on_mistake_weight, self.learn_on_both_weight],
+            [self.TrainingStrategy.LEARN_ON_SUCCESS, self.TrainingStrategy.LEARN_ON_MISTAKE, self.TrainingStrategy.LEARN_ON_BOTH, self.TrainingStrategy.LEARN_ON_EXTREME], 
+            [self.learn_on_success_weight, self.learn_on_mistake_weight, self.learn_on_both_weight, self.learn_on_extreme_weight]
         )[0]
+
