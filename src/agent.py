@@ -72,7 +72,7 @@ class Agent:
                     if quotes.has_asset(asset)
                     and 0.9 < features.relative_buy_price <= 1
                     and features.relative_buy_volume > 0
-                    and 1.4 < features.score
+                    and 0.99 < features.score
                     and not asset.startswith("USD")
                     and asset not in [p.asset for p in portfolio.positions]
                     else np.nan
