@@ -205,6 +205,7 @@ class DataRegistry:
             self.remote_trainset.upload_bytes(f"{self.remote_trainset.path}/{trainset_file}", trainset_bytes)
         n_assets = len(asset_list)
         trainset = self.fix_n_assets(trainset, n_assets)
+        trainset = self.fix_n_outputs(trainset, 4)
         indices = [index for index, asset in enumerate(asset_list) if asset in current_assets]
         trainset = self.filter_assets(trainset, indices)
         random.shuffle(trainset)
@@ -240,3 +241,16 @@ class DataRegistry:
         print("input:", np.shape(trainset[0][0]))
         print("output:", np.shape(trainset[0][1]))
         return [(input, output[:, indices, :3], reward) for input, output, reward in trainset]
+
+    def fix_n_outputs(self, trainset: RlTrainset, n_outputs: int):
+        orig_n_outputs = len(trainset[0][1][0][0])
+        if n_outputs == orig_n_outputs:
+            return trainset
+        print("Fix n_outputs from", orig_n_outputs, "to", n_outputs)
+        fixed = []
+        for input, output, reward in trainset:
+            new_output = np.pad(output, ((0, 0), (0, 0), (0, n_outputs - orig_n_outputs)))
+            fixed.append((input, new_output, reward))
+        return fixed
+
+

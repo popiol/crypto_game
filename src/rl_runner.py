@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from src.agent import Agent
-from src.baseline.baseline_agent import BaselineAgent
 from src.constants import RlTrainset
 from src.data_transformer import QuotesSnapshot
 from src.environment import Environment
@@ -297,8 +296,6 @@ class RlRunner:
         model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
         self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
         self.agents[-1].model_name = "_".join([self.agents[-1].model_name.split("_")[0], create_dt.strftime("%Y%m%d%H%M%S"), "00000"])
-        metrics = self.model_registry.get_baseline_metrics()
-        self.agents.append(BaselineAgent("Baseline", self.data_transformer, metrics))
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
@@ -327,8 +324,6 @@ class RlRunner:
             self.all_metrics.append(metrics_dict)
             if agent.agent_name == "Leader":
                 self.model_registry.set_leader_metrics(metrics_dict)
-            elif agent.agent_name == "Baseline":
-                self.model_registry.set_baseline_metrics(metrics_dict)
             else:
                 self.model_registry.set_metrics(agent.model_name, metrics_dict)
             self.logger.log(agent.model_name, score)
@@ -336,10 +331,10 @@ class RlRunner:
     def get_model_correlations(self):
         correlations = pd.DataFrame(columns=["model_1", "model_2", "correlation", "score_1", "score_2"])
         for agent_1, metrics_1 in zip(self.agents, self.all_metrics):
-            if agent_1.agent_name in ["Leader", "Baseline"]:
+            if agent_1.agent_name in ["Leader"]:
                 continue
             for agent_2, metrics_2 in zip(self.agents, self.all_metrics):
-                if agent_2.agent_name in ["Leader", "Baseline"]:
+                if agent_2.agent_name in ["Leader"]:
                     continue
                 if agent_1.model_name >= agent_2.model_name:
                     continue

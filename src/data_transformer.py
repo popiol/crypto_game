@@ -172,6 +172,7 @@ class OutputFeatures(ModelFeatures):
     relative_buy_volume: float = None
     relative_buy_price: float = None
     relative_sell_price: float = None
+    risk: float = None
 
 
 class DataTransformer:
@@ -310,10 +311,11 @@ class DataTransformer:
         relative_buy_volume = np.clip(output_matrix[:, 0], 0, 1)
         relative_buy_price = np.clip(1 - output_matrix[:, 1] * self.expected_daily_change, 0, 1)
         relative_sell_price = np.clip(1 + output_matrix[:, 2] * self.expected_daily_change, 1, 2)
+        risk = output_matrix[:, 3]
         self.output_stats.add_to_stats(output_matrix)
         return {
             row[0]: OutputFeatures(*row[1:])
-            for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price)
+            for row in zip(asset_list, score, relative_buy_volume, relative_buy_price, relative_sell_price, risk)
         }
 
     def get_shared_input_stats(self):

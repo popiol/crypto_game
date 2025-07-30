@@ -313,6 +313,7 @@ class ModelBuilder:
     def adjust_dimensions(self, model: MlModel) -> MlModel:
         model = self.adjust_n_assets(model)
         model = self.adjust_n_features(model)
+        model = self.adjust_n_outputs(model)
         return model
 
     def adjust_n_assets(self, model: MlModel) -> MlModel:
@@ -352,6 +353,26 @@ class ModelBuilder:
             elif input.config["name"].startswith("reshape") and n_features in input.config["target_shape"]:
                 shape = list(input.config["target_shape"])
                 shape[shape.index(n_features)] = self.n_features
+                input.config["target_shape"] = shape
+
+        return self.modify_model(model, on_layer_start, raise_on_failure=True)
+
+    def adjust_n_outputs(self, model: MlModel) -> MlModel:
+        n_outputs = model.model.output_shape[-1]
+        assert self.n_outputs >= n_outputs, f"New n_features has to be higher got {self.n_features} < {n_features}"
+        if self.n_outputs == n_outputs:
+            return model
+
+        print("Adjust n_outputs")
+
+        def on_layer_start(input: ModificationInput):
+            if "units" in input.config and input.config["units"] == n_outputs:
+                input.config["units"] = self.n_outputs
+            elif "filters" in input.config and input.config["filters"] == n_outputs:
+                input.config["filters"] = self.n_outputs
+            elif input.config["name"].startswith("reshape") and n_outputs in input.config["target_shape"]:
+                shape = list(input.config["target_shape"])
+                shape[shape.index(n_outputs)] = self.n_outputs
                 input.config["target_shape"] = shape
 
         return self.modify_model(model, on_layer_start, raise_on_failure=True)

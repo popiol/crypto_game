@@ -71,7 +71,14 @@ class LearnOnExtreme(TrainingStrategy):
 
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
+        output = output.copy()
         if reward > self.stats["mean"] + self.stats["std"] * 2:
+            output[:,:,0] = 1
+            output[:,:,3] = 0
+            self.model.train(input, output)
+        elif reward < self.stats["mean"] - self.stats["std"] * 2:
+            output[:,:,0] = 0
+            output[:,:,3] = 1
             self.model.train(input, output)
 
 
@@ -86,7 +93,13 @@ class LearnOnBoth(TrainingStrategy):
 
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
-        if reward < self.stats["mean"] - self.stats["std"]:
-            self.model.train(input, np.round(1 - output))
-        elif reward > self.stats["mean"] + self.stats["std"]:
+        output = output.copy()
+        if reward > self.stats["mean"] + self.stats["std"]:
+            output[:,:,0] = 1
+            output[:,:,3] = 0
             self.model.train(input, output)
+        elif reward < self.stats["mean"] - self.stats["std"]:
+            output[:,:,0] = 0
+            output[:,:,3] = 1
+            self.model.train(input, output)
+
