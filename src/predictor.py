@@ -195,7 +195,7 @@ class Predictor:
         print("Current leader score", leader.score, "with", leader.n_transactions, "transactions")
         best_model = df[df.score == df.score.max()].iloc[0]
         print("Best model score", best_model.score, "with", best_model.n_transactions, "transactions")
-        active_models = df[df.n_transactions >= 3]
+        active_models = df[df.n_transactions >= 2]
         best_active = active_models[active_models.score == active_models.score.max()].iloc[0]
         print("Best active model score", best_active.score, "with", best_active.n_transactions, "transactions")
         new_model = leader
