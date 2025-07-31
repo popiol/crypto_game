@@ -211,8 +211,9 @@ class RlRunner:
                     sorted_scores = sorted(outputs_)
                     best_th = sorted_scores[int(len(sorted_scores) * 0.9)]
                     worst_th = sorted_scores[int(len(sorted_scores) * 0.1)]
-                    outputs_ = [1 if score > best_th else -1 if score < worst_th else 0 for score in outputs_]
-                    outputs_ = [(score, 0.5, 1) for score in outputs_]
+                    scores = [1 if score > best_th else 0 for score in outputs_]
+                    risks = [1 if score < worst_th else 0 for score in outputs_]
+                    outputs_ = [(score, 0.5, 1, risk) for score, risk in zip(scores, risks)]
                     outputs_ = np.array(outputs_)[indices]
                     outputs.append(outputs_)
             index += 1

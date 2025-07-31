@@ -8,21 +8,19 @@ from src.rl_runner import RlRunner
 class TestPerformance:
     @patch("src.data_registry.DataRegistry.get_random_trainset_file")
     @patch("src.model_registry.ModelRegistry.iterate_models")
-    @patch("src.training_strategy.StrategyPicker.pick_class")
+    @patch("src.evolution_randomizer.EvolutionRandomizer.training_strategy")
     @patch("src.evolution_handler.EvolutionHandler.create_model")
-    def test_performance(self, create_model, pick_class, iterate_models, get_random_trainset_file):
-        from src.training_strategy import LearnOnSuccess
-
-        pick_class.return_value = LearnOnSuccess
-        get_random_trainset_file.return_value = "20241225175409.pickle.lzma"
+    def test_performance(self, create_model, training_strategy, iterate_models, get_random_trainset_file):
         environment = Environment("config/config.yml")
+        training_strategy.return_value = environment.evolution_randomizer.TrainingStrategy.LEARN_ON_BOTH
+        get_random_trainset_file.return_value = "20241225175409.pickle.lzma"
         environment.config["rl_runner"]["training_time_min"] = 2
         environment.config["agent_builder"]["n_agents"] = 1
         rl_runner = RlRunner(environment)
         rl_runner.prepare()
         rl_runner.initial_run()
         model_builder = environment.model_builder
-        model = model_builder.build_model_v7(asset_dependent=False)
+        model = model_builder.build_model_v6ind()
         model = model_builder.adjust_dimensions(model)
         model = model_builder.filter_assets(model, environment.asset_list, environment.data_transformer.current_assets)
         create_model.return_value = (model, {})
