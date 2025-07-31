@@ -240,7 +240,7 @@ class DataRegistry:
         print("Filter assets from", orig_n_assets, "to", len(indices))
         print("input:", np.shape(trainset[0][0]))
         print("output:", np.shape(trainset[0][1]))
-        return [(input, output[:, indices, :3], reward) for input, output, reward in trainset]
+        return [(input, output[:, indices, :], reward) for input, output, reward in trainset]
 
     def fix_n_outputs(self, trainset: RlTrainset, n_outputs: int):
         orig_n_outputs = len(trainset[0][1][0][0])

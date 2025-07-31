@@ -51,7 +51,7 @@ class TestPerformance:
         ]
         environment.eval_mode = True
         rl_runner2.evaluate_models()
-        # rl_runner.train_on_historical()
+        rl_runner.train_on_historical()
         # iterate_models.return_value = [
         #     (agent.model_name, ModelSerializer().serialize(agent.training_strategy.model)) for agent in rl_runner.agents
         # ]
