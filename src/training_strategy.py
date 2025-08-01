@@ -40,7 +40,7 @@ class LearnOnMistakes(TrainingStrategy):
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
         if reward < 0:
-            output = np.round(1 - output)
+            output = np.clip(np.round(1 - output), 0, 1)
             n_epochs = 1 if reward > self.stats["mean"] - self.stats["std"] else 2
             self.model.train(input, output, n_epochs=n_epochs)
 
@@ -57,6 +57,7 @@ class LearnOnSuccess(TrainingStrategy):
     def train(self, input: np.ndarray, output: np.ndarray, reward: float):
         self.add_to_stats(reward)
         if reward > self.stats["mean"] + self.stats["std"]:
+            output = np.clip(output, 0, 1)
             self.model.train(input, output)
 
 
