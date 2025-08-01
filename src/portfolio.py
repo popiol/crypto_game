@@ -17,7 +17,7 @@ class PortfolioOrder:
     volume: float
     price: float
     place_dt: datetime
-    predicted_score: float = None
+    predicted_score: float | list[float] = None
 
     @staticmethod
     def from_json(obj: dict):
@@ -50,7 +50,7 @@ class PortfolioPosition:
     place_dt: datetime
     value: float = None
     last_sell_price: float = None
-    predicted_score: float = None
+    predicted_score: float | list[float] = None
 
     @staticmethod
     def from_json(obj: dict):
@@ -103,7 +103,7 @@ class ClosedTransaction:
     place_sell_dt: datetime
     cost: float
     profit: float
-    predicted_score: float = None
+    predicted_score: float | list[float] = None
 
     def to_json(self):
         return {
@@ -123,3 +123,4 @@ class ClosedTransaction:
 class AssetPrecision:
     volume_precision: int = None
     price_precision: int = None
+

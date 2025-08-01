@@ -80,6 +80,7 @@ class Agent:
                 )
                 for asset, features in output.items()
             ]
+            risks = [f.risk for f in output.values()]
         if not np.isnan(scores).all():
             best_asset_index = np.nanargmax(scores)
             best_asset = asset_list[best_asset_index]
@@ -91,7 +92,7 @@ class Agent:
                 volume=cost / buy_price,
                 price=buy_price,
                 place_dt=timestamp,
-                predicted_score=float(np.nanmax(scores)),
+                predicted_score=[float(np.nanmax(scores)), float(np.nanmax(risks))],
             )
             orders.append(buy_order)
         return orders
