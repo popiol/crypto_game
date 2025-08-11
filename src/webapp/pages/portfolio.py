@@ -71,7 +71,7 @@ else:
 
 st.write("## Closed transactions")
 
-files = sorted(glob.glob(environment.reports.transactions_path + "/*.json"))[-10:]
+files = sorted(glob.glob(environment.reports.transactions_path + "/*.json"))[-3:]
 transactions = []
 for file in files:
     with open(file) as f:
@@ -81,7 +81,7 @@ data = {index: row for index, row in enumerate(transactions)}
 
 if data:
     df = pd.DataFrame.from_dict(data, orient="index")
-    df = df.sort_values("place_sell_dt", ascending=False)
+    df = df.sort_values(["place_sell_dt", "place_buy_dt"], ascending=False)
     st.dataframe(df, hide_index=True)
 else:
     st.write("No closed transactions")
