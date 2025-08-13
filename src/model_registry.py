@@ -180,6 +180,7 @@ class ModelRegistry:
         self.s3_utils.upload_json(f"{self.leader_prefix}/metrics.json", metrics)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         self.s3_utils.upload_json(f"{self.leader_prefix}/history/metrics_{timestamp}.json", metrics)
+        self.s3_utils.upload_json(f"{self.real_prefix}/history/metrics_{timestamp}.json", metrics)
 
     def get_leader_portfolio(self):
         return self.s3_utils.download_json(f"{self.leader_prefix}/portfolio.json")
