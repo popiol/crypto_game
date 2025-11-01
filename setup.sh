@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# ssh keys
-ssh-keygen
-
 # install python
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
