@@ -64,8 +64,8 @@ class EvolutionHandler:
 
     def load_existing_model(self) -> tuple[MlModel, dict]:
         self.model_registry.download_report(self.quick_stats_path)
-        df = pd.read_csv(self.quick_stats_path)
         try:
+            df = pd.read_csv(self.quick_stats_path)
             model_name = self.evolution_randomizer.choose_model(list(df["model"]), list(df["score"]))
             if model_name is None:
                 return self.create_new_model()
