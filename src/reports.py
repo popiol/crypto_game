@@ -184,6 +184,6 @@ class Reports:
     def upload_reports(self):
         self.model_registry.upload_report(self.quick_stats_path)
         self.model_registry.upload_report(self.change_in_time_path)
-        if os.path.exists(self.leader_history_path):
-            self.model_registry.upload_report(self.leader_history_path)
+        if os.path.exists(self.leader_stats_path):
+            self.model_registry.upload_report(self.leader_stats_path)
         self.model_registry.upload_report(self.custom_metrics_path)
