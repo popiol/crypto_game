@@ -1,6 +1,7 @@
-import pandas as pd
 import random
 from dataclasses import dataclass
+
+import pandas as pd
 
 from src.evolution_randomizer import EvolutionRandomizer
 from src.ml_model import MlModel
@@ -11,7 +12,6 @@ from src.model_serializer import ModelSerializer
 
 @dataclass
 class EvolutionHandler:
-
     model_registry: ModelRegistry
     model_serializer: ModelSerializer
     model_builder: ModelBuilder
@@ -70,10 +70,9 @@ class EvolutionHandler:
             if model_name is None:
                 return self.create_new_model()
             return self.load_spicific_model(model_name)
-        except FileNotFoundError as ex:
+        except Exception as ex:
             print(ex)
             return self.create_new_model()
-
 
     def merge_existing_models(self) -> tuple[MlModel, dict]:
         model_name_1, serialized_model_1 = self.model_registry.get_random_model()
