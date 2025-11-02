@@ -6,8 +6,10 @@ import random
 import sys
 import time
 from datetime import datetime, timedelta
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
 from src.agent import Agent
 from src.constants import RlTrainset
 from src.data_transformer import QuotesSnapshot
@@ -19,7 +21,6 @@ from src.training_strategy import TrainingStrategy
 
 
 class RlRunner:
-
     def __init__(self, environment: Environment):
         self.environment = environment
         self.training_time_min: int = environment.config["rl_runner"]["training_time_min"]
@@ -292,11 +293,14 @@ class RlRunner:
             except:
                 self.model_registry.archive_model(model_name)
         serialized_model, metrics, create_dt = self.model_registry.get_leader()
-        model = self.model_serializer.deserialize(serialized_model)
-        model = model_builder.adjust_dimensions(model)
-        model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
-        self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
-        self.agents[-1].model_name = "_".join([self.agents[-1].model_name.split("_")[0], create_dt.strftime("%Y%m%d%H%M%S"), "00000"])
+        if serialized_model is not None:
+            model = self.model_serializer.deserialize(serialized_model)
+            model = model_builder.adjust_dimensions(model)
+            model = model_builder.filter_assets(model, self.asset_list, self.data_transformer.current_assets)
+            self.agents.append(Agent("Leader", self.data_transformer, None, TrainingStrategy(model), metrics))
+            self.agents[-1].model_name = "_".join(
+                [self.agents[-1].model_name.split("_")[0], create_dt.strftime("%Y%m%d%H%M%S"), "00000"]
+            )
         self.portfolio_managers = self.environment.get_portfolio_managers(len(self.agents))
         bitcoin_init = None
         get_bitcoin_quote = lambda q: (q.closing_price("TBTCUSD") + q.closing_price("WBTCUSD")) / 2
@@ -366,7 +370,7 @@ class RlRunner:
         max_score = df.score_1.max()
         df["score"] = df.apply(lambda x: x.score_1 - (x.correlation if x.score_1 else 0) * (max_score - min_score) / 2, axis=1)
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
-            print(df[(df.correlation > 0.5)&(df.score_1 < df.score_2)].sort_values("correlation", ascending=False))
+            print(df[(df.correlation > 0.5) & (df.score_1 < df.score_2)].sort_values("correlation", ascending=False))
         best = df[df.score_1 == max_score]
         best.score = best.score_1
         best = best.set_index("model_1").score.to_dict()
