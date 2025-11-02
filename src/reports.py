@@ -14,7 +14,6 @@ from src.model_registry import ModelRegistry
 
 @dataclass
 class Reports:
-
     model_registry: ModelRegistry
     aggregated_path: str
     quick_stats_path: str
@@ -29,17 +28,17 @@ class Reports:
     real_portfolio_path: str
     real_transactions_path: str
 
-    def get_leader_portfolio_value(self) -> float:
+    def get_leader_portfolio_value(self) -> float | None:
         portfolio = self.model_registry.get_leader_portfolio()
-        return portfolio["value"]
+        return portfolio.get("value")
 
-    def get_real_portfolio_value(self) -> float:
+    def get_real_portfolio_value(self) -> float | None:
         portfolio = self.model_registry.get_real_portfolio()
-        return portfolio["value"]
+        return portfolio.get("value")
 
-    def get_baseline_portfolio_value(self) -> float:
+    def get_baseline_portfolio_value(self) -> float | None:
         portfolio = self.model_registry.get_baseline_portfolio()
-        return portfolio["value"]
+        return portfolio.get("value")
 
     def aggregate_metrics(self, all_metrics: list[dict]):
         if not all_metrics:
@@ -162,7 +161,7 @@ class Reports:
             portfolio = all_data["portfolio"][portfolio_timestamp]
             stats["n_open_positions"] = [len(portfolio["positions"])]
             stats["n_orders"] = [len(portfolio["orders"])]
-            from_timestamp = datetime.strftime(datetime.strptime(timestamp, '%Y%m%d%H') - timedelta(days=1), '%Y%m%d%H')
+            from_timestamp = datetime.strftime(datetime.strptime(timestamp, "%Y%m%d%H") - timedelta(days=1), "%Y%m%d%H")
             stats["n_closed_transactions"] = [len([key for key in transactions if from_timestamp < key[:10] <= timestamp])]
             dfs.append(pd.DataFrame.from_dict(stats))
         return pd.concat(dfs)
