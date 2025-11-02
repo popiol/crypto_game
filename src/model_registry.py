@@ -3,6 +3,7 @@ import os
 import random
 import re
 from datetime import datetime, timedelta
+from functools import cached_property
 
 import numpy as np
 import pandas as pd
@@ -56,15 +57,33 @@ class ModelRegistry:
             return f.read()
 
     def iterate_models(self):
-        for key in self.s3_utils.list_files(self.current_prefix + "/"):
-            model_name = key.split("/")[-1]
-            yield model_name, self.get_model(model_name)
+        for files in self.models_by_level:
+            for file in files:
+                model_name = file.split("/")[-1]
+                yield model_name, self.get_model(model_name)
 
     def get_metrics(self, model_name: str) -> dict:
         return self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
 
     def set_metrics(self, model_name: str, metrics: dict):
         self.s3_utils.upload_json(f"{self.metrics_prefix}/{model_name}", metrics)
+
+    @cached_property
+    def models_by_level(self) -> list[list[str]]:
+        models = self.s3_utils.list_files(self.current_prefix + "/")
+        maturity_days = []
+        for model in models:
+            create_dt = model.split("/")[-1].split("_")[1]
+            create_dt = datetime.strptime(create_dt, "%Y%m%d%H%M%S")
+            maturity_days.append((datetime.now() - create_dt).days)
+        result = []
+        for start, end in zip([None] + self.maturity_levels_day, self.maturity_levels_day + [None]):
+            level_models = []
+            for model, days in zip(models, maturity_days):
+                if (start is None or days >= start) and (end is None or days < end):
+                    level_models.append(model)
+            result.append(level_models)
+        return result
 
     def archive_models(self, scores: dict):
         self.show_new_mature_models()
@@ -75,12 +94,8 @@ class ModelRegistry:
 
     def show_new_mature_models(self):
         younger = None
-        for level, (start, end) in enumerate(zip([None] + self.maturity_levels_day, self.maturity_levels_day + [None])):
-            start_hours = start * 24 if start is not None else None
-            end_hours = end * 24 if end is not None else None
-            older = set(
-                self.s3_utils.list_files(self.current_prefix + "/", older_than_hours=start_hours, younger_than_hours=end_hours)
-            )
+        for level, models in enumerate(self.models_by_level):
+            older = set(models)
             if younger is not None:
                 files = older & younger
                 for file in files:
@@ -92,12 +107,9 @@ class ModelRegistry:
         self.s3_utils.move_file(f"{self.current_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}")
         self.s3_utils.move_file(f"{self.metrics_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}.json")
 
-    def get_weak_models(self, scores: dict, maturity_level: int) -> list[tuple[str, str]]:
+    def get_weak_models(self, scores: dict, maturity_level: int, files: list[str]) -> list[tuple[str, str]]:
         df = pd.DataFrame(columns=["model", "score"])
-        older_than = self.maturity_levels_day[maturity_level - 1] * 24 if maturity_level > 0 else None
-        younger_than = self.maturity_levels_day[maturity_level] * 24 if maturity_level < len(self.maturity_levels_day) else None
         max_models = self.max_models_per_level
-        files = self.s3_utils.list_files(self.current_prefix + "/", older_than, younger_than)
         models = []
         to_archive = []
         for file in files:
@@ -122,8 +134,8 @@ class ModelRegistry:
         return to_archive
 
     def archive_weak_models(self, scores: dict):
-        for maturity_level in range(len(self.maturity_levels_day) + 1):
-            models = self.get_weak_models(scores, maturity_level)
+        for maturity_level, files in enumerate(self.models_by_level):
+            models = self.get_weak_models(scores, maturity_level, files)
             for model, reason in models:
                 print("archive", reason, "level", maturity_level, model)
                 self.archive_model(model)
