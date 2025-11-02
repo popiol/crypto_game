@@ -3,30 +3,26 @@ import os
 import random
 import re
 from datetime import datetime, timedelta
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 from src.s3_utils import S3Utils
 
 
 class ModelRegistry:
-
     def __init__(
         self,
         remote_path: str,
-        maturity_min_hours: int,
-        max_mature_models: int,
-        max_immature_models: int,
-        retirement_min_days: int,
+        maturity_levels_day: list[int],
+        max_models_per_level: int,
         archive_retention_days: int,
         local_path: str,
         local_retention_days: int,
     ):
         self.s3_utils = S3Utils(remote_path)
-        self.maturity_min_hours = maturity_min_hours
-        self.max_mature_models = max_mature_models
-        self.max_immature_models = max_immature_models
-        self.retirement_min_days = retirement_min_days
+        self.maturity_levels_day = maturity_levels_day
+        self.max_models_per_level = max_models_per_level
         self.archive_retention_days = archive_retention_days
         self.local_path = local_path
         self.local_retention_days = local_retention_days
@@ -43,7 +39,7 @@ class ModelRegistry:
         self.s3_utils.upload_bytes(f"{self.current_prefix}/{model_name}", serialized_model)
         self.s3_utils.upload_json(f"{self.metrics_prefix}/{model_name}", metrics)
 
-    def get_random_model(self) -> tuple[str, bytes]:
+    def get_random_model(self) -> tuple[str, bytes] | tuple[None, None]:
         keys = list(self.s3_utils.list_files(self.current_prefix + "/"))
         if not keys:
             return None, None
@@ -67,41 +63,40 @@ class ModelRegistry:
     def get_metrics(self, model_name: str) -> dict:
         return self.s3_utils.download_json(f"{self.metrics_prefix}/{model_name}")
 
-    def set_metrics(self, model_name: str, metrics: dict) -> dict:
+    def set_metrics(self, model_name: str, metrics: dict):
         self.s3_utils.upload_json(f"{self.metrics_prefix}/{model_name}", metrics)
 
     def archive_models(self, scores: dict):
-        self.archive_old_models()
         self.show_new_mature_models()
-        self.archive_weak_models(scores, mature=True)
-        self.archive_weak_models(scores, mature=False)
+        self.archive_weak_models(scores)
+        self.archive_weak_models(scores)
         self.clean_archive()
         self.clean_local_cache()
 
     def show_new_mature_models(self):
-        older = set(self.s3_utils.list_files(self.current_prefix + "/", older_than_hours=self.maturity_min_hours))
-        younger = set(self.s3_utils.list_files(self.current_prefix + "/", younger_than_hours=self.maturity_min_hours + .75))
-        files = older & younger
-        for file in files:
-            model_name = file.split("/")[-1]
-            print("new mature", model_name)
+        younger = None
+        for level, (start, end) in enumerate(zip([None] + self.maturity_levels_day, self.maturity_levels_day + [None])):
+            start_hours = start * 24 if start is not None else None
+            end_hours = end * 24 if end is not None else None
+            older = set(
+                self.s3_utils.list_files(self.current_prefix + "/", older_than_hours=start_hours, younger_than_hours=end_hours)
+            )
+            if younger is not None:
+                files = older & younger
+                for file in files:
+                    model_name = file.split("/")[-1]
+                    print(f"new mature level {level + 1}", model_name)
+            younger = older
 
     def archive_model(self, model_name: str):
         self.s3_utils.move_file(f"{self.current_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}")
         self.s3_utils.move_file(f"{self.metrics_prefix}/{model_name}", f"{self.archived_prefix}/{model_name}.json")
 
-    def archive_old_models(self):
-        files = self.s3_utils.list_files(self.current_prefix + "/", self.retirement_min_days * 24)
-        for file in files:
-            model = file.split("/")[-1]
-            print("archive old", model)
-            self.archive_model(model)
-
-    def get_weak_models(self, scores: dict, mature: bool) -> list[tuple[str, str]]:
+    def get_weak_models(self, scores: dict, maturity_level: int) -> list[tuple[str, str]]:
         df = pd.DataFrame(columns=["model", "score"])
-        older_than = self.maturity_min_hours if mature else None
-        younger_than = self.maturity_min_hours if not mature else None
-        max_models = self.max_mature_models if mature else self.max_immature_models
+        older_than = self.maturity_levels_day[maturity_level - 1] * 24 if maturity_level > 0 else None
+        younger_than = self.maturity_levels_day[maturity_level] * 24 if maturity_level < len(self.maturity_levels_day) else None
+        max_models = self.max_models_per_level
         files = self.s3_utils.list_files(self.current_prefix + "/", older_than, younger_than)
         models = []
         to_archive = []
@@ -114,22 +109,24 @@ class ModelRegistry:
                     to_archive.append((model_name, "inactive"))
                 else:
                     models.append((model_name, score))
-            except:
-                if mature:
+            except Exception as ex:
+                print("error", model_name, ex)
+                if maturity_level > 0:
                     to_archive.append((model_name, "invalid"))
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend([(model, "weak") for model, _ in weak_models])
-        print("Mature" if mature else "Immature", "models")
+        print(maturity_level, "level models")
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
             print(df.sort_values("score", ascending=False).reset_index())
         return to_archive
 
-    def archive_weak_models(self, scores: dict, mature: bool):
-        models = self.get_weak_models(scores, mature)
-        for model, reason in models:
-            print(f"archive {reason}", "mature" if mature else "immature", model)
-            self.archive_model(model)
+    def archive_weak_models(self, scores: dict):
+        for maturity_level in range(len(self.maturity_levels_day) + 1):
+            models = self.get_weak_models(scores, maturity_level)
+            for model, reason in models:
+                print("archive", reason, "level", maturity_level, model)
+                self.archive_model(model)
 
     def clean_archive(self):
         files = self.s3_utils.list_files(self.archived_prefix + "/", self.archive_retention_days * 24)

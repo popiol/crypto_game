@@ -3,13 +3,11 @@ rl_runner:
 
 model_registry:
   remote_path: s3://popiol-crypto-models
-  maturity_min_hours: 24
-  max_mature_models: 60
-  max_immature_models: 20
-  retirement_min_days: 7
-  archive_retention_days: 1
+  maturity_levels_day: [1, 3, 9, 27, 81, 243]
+  max_models_per_level: 8
+  archive_retention_days: 7
   local_path: data/models
-  local_retention_days: 10
+  local_retention_days: 60
 
 data_registry:
   quotes_remote_path: s3://popiol-crypto/kraken

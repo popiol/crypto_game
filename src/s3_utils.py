@@ -3,20 +3,20 @@ import os
 import re
 import subprocess
 from datetime import datetime, timedelta, timezone
+from typing import Generator
 
 import boto3
 from botocore.exceptions import ClientError
 
 
 class S3Utils:
-
     def __init__(self, s3_path: str):
         assert s3_path.startswith("s3://")
         self.bucket_name = s3_path.split("/")[2]
         self.path = "/".join(s3_path.split("/")[3:])
         self.path = re.sub("/+$", "", self.path)
 
-    def get_last_modification_time(self, remote_path: str) -> datetime:
+    def get_last_modification_time(self, remote_path: str) -> datetime | None:
         s3 = boto3.resource("s3")
         try:
             return s3.Object(self.bucket_name, remote_path).last_modified
@@ -62,7 +62,7 @@ class S3Utils:
         except ClientError:
             return False
 
-    def download_bytes(self, remote_path: str) -> bytes:
+    def download_bytes(self, remote_path: str) -> bytes | None:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(self.bucket_name)
         try:
@@ -88,7 +88,9 @@ class S3Utils:
     def upload_json(self, remote_path: str, json_obj) -> bool:
         return self.upload_bytes(remote_path, json.dumps(json_obj).encode())
 
-    def list_files(self, remote_path: str, older_than_hours: int = None, younger_than_hours: int = None) -> list[str]:
+    def list_files(
+        self, remote_path: str, older_than_hours: int | None = None, younger_than_hours: int | None = None
+    ) -> Generator[str, None, None]:
         s3 = boto3.client("s3")
         paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=remote_path)
