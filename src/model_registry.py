@@ -70,7 +70,7 @@ class ModelRegistry:
 
     @cached_property
     def models_by_level(self) -> list[list[str]]:
-        models = self.s3_utils.list_files(self.current_prefix + "/")
+        models = list(self.s3_utils.list_files(self.current_prefix + "/"))
         maturity_days = []
         for model in models:
             create_dt = model.split("/")[-1].split("_")[1]
@@ -87,7 +87,6 @@ class ModelRegistry:
 
     def archive_models(self, scores: dict):
         self.show_new_mature_models()
-        self.archive_weak_models(scores)
         self.archive_weak_models(scores)
         self.clean_archive()
         self.clean_local_cache()

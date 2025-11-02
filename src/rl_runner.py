@@ -372,7 +372,7 @@ class RlRunner:
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
             print(df[(df.correlation > 0.5) & (df.score_1 < df.score_2)].sort_values("correlation", ascending=False))
         best = df[df.score_1 == max_score]
-        best.score = best.score_1
+        best.loc[:, "score"] = best.score_1
         best = best.set_index("model_1").score.to_dict()
         df = df[df.score_1 < df.score_2]
         df = df[["model_1", "score"]]
