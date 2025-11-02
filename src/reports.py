@@ -177,7 +177,8 @@ class Reports:
         df = self.calc_change_in_time(files)
         df.to_csv(self.change_in_time_path, index=False)
         df = self.calc_leader_stats()
-        df.to_csv(self.leader_stats_path, index=False)
+        if len(df) > 0:
+            df.to_csv(self.leader_stats_path, index=False)
         self.upload_reports()
 
     def upload_reports(self):
