@@ -7,16 +7,15 @@ from src.model_serializer import ModelSerializer
 
 
 class TestModel:
-
     @pytest.fixture
     def builder(self):
         return ModelBuilder(4, 6, 5, 3)
 
     @pytest.fixture
     def model(self, builder: ModelBuilder):
-        model_1 = builder.build_model(asset_dependent=True, version=builder.ModelVersion.V1)
-        model_2 = builder.build_model(asset_dependent=False, version=builder.ModelVersion.V2)
-        return builder.merge_models(model_1, model_2, builder.MergeVersion.MULTIPLY)
+        model_1 = builder.build_model(builder.ModelVersion.V2DEP)
+        model_2 = builder.build_model(builder.ModelVersion.V6IND)
+        return builder.merge_models(model_1, model_2, builder.MergeVersion.DOT)
 
     def test_clone_model(self, model: MlModel):
         model_1 = model
@@ -37,3 +36,6 @@ class TestModel:
     def test_get_edges(self, model: MlModel):
         edges = model.get_edges()
         print(edges)
+
+    def test_model_to_str(self, model: MlModel):
+        print(model)

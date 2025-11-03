@@ -18,10 +18,10 @@ class MlModelLayer:
     input_shape: tuple
     output_shape: tuple
     activation: str
+    n_params: int
 
 
 class MlModel:
-
     def __init__(self, model: keras.Model):
         self.model = model
 
@@ -69,6 +69,7 @@ class MlModel:
                     input_shape=input_shape_without_batch,
                     output_shape=output_shape[1:],
                     activation=format_activation(l.activation.__name__) if hasattr(l, "activation") else None,
+                    n_params=sum(np.prod(v.shape) for v in l.trainable_weights),
                 )
             )
             input_shapes[l.name] = output_shape
@@ -139,11 +140,11 @@ class MlModel:
 
     def __str__(self):
         s = io.StringIO()
-        df = pd.DataFrame(columns=["name", "parent", "out_shape", "act"])
-        df.loc[len(df)] = ["input_layer", "", self.model.layers[0].batch_shape[1:], ""]
+        df = pd.DataFrame(columns=["name", "parent", "out_shape", "act", "params"])
+        df.loc[len(df)] = ["input_layer", "", self.model.layers[0].batch_shape[1:], "", 0]
         for index, layer in enumerate(self.get_layers()):
             parents = self.get_parent_layer_names(index)
-            df.loc[len(df)] = [layer.name, ",".join(parents), layer.output_shape, layer.activation or ""]
+            df.loc[len(df)] = [layer.name, ",".join(parents), layer.output_shape, layer.activation or "", layer.n_params]
         print()
         print(tabulate(df, headers="keys", tablefmt="psql"))
         print("Params:", self.get_n_params())

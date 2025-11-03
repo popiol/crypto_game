@@ -33,7 +33,6 @@ class ModificationError(Exception):
 
 @dataclass
 class ModelBuilder:
-
     n_steps: int
     n_assets: int
     n_features: int
@@ -61,7 +60,6 @@ class ModelBuilder:
         if version == self.ModelVersion.V9IND:
             return self.build_model_v9ind()
 
-
     def build_model_v2dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
@@ -77,7 +75,7 @@ class ModelBuilder:
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
-    
+
     def build_model_v2ind(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
@@ -90,7 +88,7 @@ class ModelBuilder:
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
         return MlModel(model)
-    
+
     def build_model_v6dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
@@ -563,7 +561,9 @@ class ModelBuilder:
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
                 for size in [100, 10]:
                     layer_name = self.fix_layer_name("conv1d", input.layer_names)
-                    tensor = keras.layers.TimeDistributed(keras.layers.Conv1D(size, 3, activation="relu"), name=layer_name)(tensor)
+                    tensor = keras.layers.TimeDistributed(keras.layers.Conv1D(size, 3, activation="relu"), name=layer_name)(
+                        tensor
+                    )
                 if permutation is not None:
                     layer_name = self.fix_layer_name("permute", input.layer_names)
                     tensor = keras.layers.Permute(permutation, name=layer_name)(tensor)
@@ -734,7 +734,6 @@ class ModelBuilder:
             tensor = self.OuterProduct(name=self.fix_layer_name("outer_product", layer_names))([tensor_1_10, tensor_2_10])
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2, tensor])
             tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
-            tensor = keras.layers.Dense(100, name=self.fix_layer_name("dense", layer_names))(tensor)
         else:
             tensor = keras.layers.Concatenate(name=self.fix_layer_name("concatenate", layer_names))([tensor_1, tensor_2])
             tensor = keras.layers.UnitNormalization(name=self.fix_layer_name("unit_normalization", layer_names))(tensor)
