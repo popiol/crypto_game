@@ -127,7 +127,7 @@ class ModelRegistry:
         if len(models) > max_models:
             weak_models = sorted(models, key=lambda x: x[1])[:-max_models]
             to_archive.extend([(model, "weak") for model, _ in weak_models])
-        print(maturity_level, "level models")
+        print("level", maturity_level, "models")
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", None):
             print(df.sort_values("score", ascending=False).reset_index())
         return to_archive
