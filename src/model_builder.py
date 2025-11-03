@@ -179,12 +179,17 @@ class ModelBuilder:
         l = keras.layers.Reshape((self.n_assets, -1))(l)
         l = keras.layers.UnitNormalization()(l)
         l = keras.layers.Dense(10, activation="relu")(l)
+        for _ in range(3):
+            l1 = l
+            l = keras.layers.Dense(10, activation="relu")(l)
+            l = keras.layers.Concatenate()([l, l1])
         l1 = l
         l = keras.layers.Permute((2, 1))(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(1)(l)
         l = keras.layers.Flatten()(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Reshape((10, 10))(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Reshape((10, 1))(l)
         l = keras.layers.Dense(self.n_assets)(l)
         l = keras.layers.Permute((2, 1))(l)
         l = keras.layers.Concatenate()([l, l1])
