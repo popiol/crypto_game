@@ -47,6 +47,7 @@ class ModelBuilder:
         V9IND = auto()
         V10DEP = auto()
         V11DEP = auto()
+        V12DEP = auto()
 
     def build_model(self, version: ModelVersion = ModelVersion.V6IND) -> MlModel:
         if version == self.ModelVersion.V2DEP:
@@ -65,6 +66,8 @@ class ModelBuilder:
             return self.build_model_v10dep()
         if version == self.ModelVersion.V11DEP:
             return self.build_model_v11dep()
+        if version == self.ModelVersion.V12DEP:
+            return self.build_model_v12dep()
 
     def build_model_v2dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
@@ -194,6 +197,19 @@ class ModelBuilder:
         l = keras.layers.Permute((2, 1))(l)
         l = keras.layers.Concatenate()([l, l1])
         l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v12dep(self) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(10)(l)
+        l = keras.layers.Dot(axes=2)([l, l])
         l = keras.layers.Dense(self.n_outputs)(l)
         model = keras.Model(inputs=inputs, outputs=l)
         self.compile_model(model)
