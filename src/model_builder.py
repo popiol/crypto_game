@@ -45,6 +45,8 @@ class ModelBuilder:
         V6IND = auto()
         V8DEP = auto()
         V9IND = auto()
+        V10DEP = auto()
+        V11DEP = auto()
 
     def build_model(self, version: ModelVersion = ModelVersion.V6IND) -> MlModel:
         if version == self.ModelVersion.V2DEP:
@@ -59,6 +61,10 @@ class ModelBuilder:
             return self.build_model_v8dep()
         if version == self.ModelVersion.V9IND:
             return self.build_model_v9ind()
+        if version == self.ModelVersion.V10DEP:
+            return self.build_model_v10dep()
+        if version == self.ModelVersion.V11DEP:
+            return self.build_model_v11dep()
 
     def build_model_v2dep(self) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
@@ -146,13 +152,52 @@ class ModelBuilder:
         self.compile_model(model)
         return MlModel(model)
 
+    def build_model_v10dep(self) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        n_convs2 = 4
+        l = keras.layers.ZeroPadding2D((n_convs2, 0))(l)
+        for _ in range(n_convs2):
+            l = keras.layers.Conv2D(10, 3, activation="relu")(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        n_convs1 = 4
+        l = keras.layers.ZeroPadding1D(n_convs1)(l)
+        for _ in range(n_convs1):
+            l = keras.layers.Conv1D(10, 3, activation="relu")(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
+    def build_model_v11dep(self) -> MlModel:
+        inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
+        l = inputs
+        l = keras.layers.Permute((2, 1, 3))(l)
+        l = keras.layers.Reshape((self.n_assets, -1))(l)
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Permute((2, 1))(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Flatten()(l)
+        l1 = l
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Concatenate()([l, l1])
+        l = keras.layers.UnitNormalization()(l)
+        l = keras.layers.Dense(self.n_outputs)(l)
+        model = keras.Model(inputs=inputs, outputs=l)
+        self.compile_model(model)
+        return MlModel(model)
+
     def compile_model(self, model):
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss="mean_squared_error")
 
     def most_important_dims(self, array: np.ndarray, dim: int, size: int):
         return np.argsort([np.abs(x).sum() for x in np.rollaxis(array, dim)])[-size:]
 
-    def adjust_array_shape(self, array: np.ndarray, dim: int, size: int, filter_indices: list[int] = None) -> np.ndarray:
+    def adjust_array_shape(self, array: np.ndarray, dim: int, size: int, filter_indices: list[int] | None = None) -> np.ndarray:
         assert size > 0, f"Invalid size {size}"
         old_shape = np.shape(array)
         assert 0 <= dim < len(old_shape), f"Invalid dimension {dim}"

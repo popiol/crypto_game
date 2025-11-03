@@ -6,3 +6,4 @@ profile = "black"
 
 [tool.ruff]
 line-length = 130
+ignore = ["E741"]

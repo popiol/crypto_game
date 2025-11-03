@@ -41,5 +41,5 @@ class TestModel:
     def test_model_to_str(self):
         environment = Environment("config/config.yml")
         model_builder = environment.model_builder
-        model = model_builder.build_model_v2dep()
+        model = model_builder.build_model_v11dep()
         print(model)
