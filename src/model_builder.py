@@ -64,7 +64,7 @@ class ModelBuilder:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features))
         l = inputs
         l = keras.layers.Permute((1, 3, 2))(l)
-        l = keras.layers.Dense(100)(l)
+        l = keras.layers.Dense(10)(l)
         l = keras.layers.Dense(self.n_assets)(l)
         l = keras.layers.Permute((3, 1, 2))(l)
         l = keras.layers.Reshape((self.n_assets, self.n_steps * self.n_features))(l)

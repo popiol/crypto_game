@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from src.environment import Environment
 from src.ml_model import MlModel
 from src.model_builder import ModelBuilder
 from src.model_serializer import ModelSerializer
@@ -37,5 +38,8 @@ class TestModel:
         edges = model.get_edges()
         print(edges)
 
-    def test_model_to_str(self, model: MlModel):
+    def test_model_to_str(self):
+        environment = Environment("config/config.yml")
+        model_builder = environment.model_builder
+        model = model_builder.build_model_v2dep()
         print(model)
