@@ -1,7 +1,9 @@
 import random
 from dataclasses import dataclass
 from enum import Enum, auto
+
 from src.model_builder import ModelBuilder
+
 
 @dataclass
 class EvolutionRandomizer:
@@ -20,11 +22,11 @@ class EvolutionRandomizer:
     dot_weight: float
     transform_weight: float
     concat_weight: float
+    serial_weight: float
     learn_on_success_weight: float
     learn_on_mistake_weight: float
     learn_on_both_weight: float
     learn_on_extreme_weight: float
-
 
     class ModelCreationMethod(Enum):
         NEW_MODEL = auto()
@@ -38,7 +40,7 @@ class EvolutionRandomizer:
             return self.ModelCreationMethod.MERGE_MODELS
         return self.ModelCreationMethod.EXISTING_MODEL
 
-    def choose_model(self, models: list[str], weights: list[float]) -> str:
+    def choose_model(self, models: list[str], weights: list[float]) -> str | None:
         if not models:
             return None
         min_w = min(weights)
@@ -90,8 +92,15 @@ class EvolutionRandomizer:
 
     def merge_version(self, versions: type[ModelBuilder.MergeVersion]):
         return random.choices(
-            [versions.SELECT, versions.MULTIPLY, versions.DOT, versions.TRANSFORM, versions.CONCAT], 
-            [self.select_weight, self.multiply_weight, self.dot_weight, self.transform_weight, self.concat_weight],
+            [versions.SELECT, versions.MULTIPLY, versions.DOT, versions.TRANSFORM, versions.CONCAT, versions.SERIAL],
+            [
+                self.select_weight,
+                self.multiply_weight,
+                self.dot_weight,
+                self.transform_weight,
+                self.concat_weight,
+                self.serial_weight,
+            ],
         )[0]
 
     class TrainingStrategy(Enum):
@@ -102,7 +111,11 @@ class EvolutionRandomizer:
 
     def training_strategy(self):
         return random.choices(
-            [self.TrainingStrategy.LEARN_ON_SUCCESS, self.TrainingStrategy.LEARN_ON_MISTAKE, self.TrainingStrategy.LEARN_ON_BOTH, self.TrainingStrategy.LEARN_ON_EXTREME], 
-            [self.learn_on_success_weight, self.learn_on_mistake_weight, self.learn_on_both_weight, self.learn_on_extreme_weight]
+            [
+                self.TrainingStrategy.LEARN_ON_SUCCESS,
+                self.TrainingStrategy.LEARN_ON_MISTAKE,
+                self.TrainingStrategy.LEARN_ON_BOTH,
+                self.TrainingStrategy.LEARN_ON_EXTREME,
+            ],
+            [self.learn_on_success_weight, self.learn_on_mistake_weight, self.learn_on_both_weight, self.learn_on_extreme_weight],
         )[0]
-

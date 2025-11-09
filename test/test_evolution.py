@@ -12,7 +12,6 @@ from src.model_serializer import ModelSerializer
 
 
 class TestEvolution:
-
     @pytest.fixture
     def builder(self):
         return ModelBuilder(10, 11, 12, 13)
@@ -377,9 +376,15 @@ class TestEvolution:
         evolution_handler = environment.evolution_handler
         evolution_handler.current_assets = set(evolution_handler.asset_list[:400])
         with (
-            patch("src.evolution_handler.EvolutionHandler.create_new_model", wraps=evolution_handler.create_new_model) as create_new_model,
-            patch("src.evolution_handler.EvolutionHandler.load_existing_model", wraps=evolution_handler.load_existing_model) as load_existing_model,
-            patch("src.evolution_handler.EvolutionHandler.merge_existing_models", wraps=evolution_handler.merge_existing_models) as merge_existing_models,
+            patch(
+                "src.evolution_handler.EvolutionHandler.create_new_model", wraps=evolution_handler.create_new_model
+            ) as create_new_model,
+            patch(
+                "src.evolution_handler.EvolutionHandler.load_existing_model", wraps=evolution_handler.load_existing_model
+            ) as load_existing_model,
+            patch(
+                "src.evolution_handler.EvolutionHandler.merge_existing_models", wraps=evolution_handler.merge_existing_models
+            ) as merge_existing_models,
             patch("src.model_builder.ModelBuilder.pretrain"),
             patch("src.model_builder.ModelBuilder.reuse_layer", wraps=evolution_handler.model_builder.reuse_layer) as reuse_layer,
         ):
@@ -389,3 +394,25 @@ class TestEvolution:
         print("create_new_model", create_new_model.call_count)
         print("load_existing_model", load_existing_model.call_count)
         print("merge_existing_models", merge_existing_models.call_count)
+
+    def test_merge_serial(self, builder: ModelBuilder):
+        model_1 = builder.build_model(builder.ModelVersion.V2DEP)
+        model_2 = builder.merge_models(model_1, model_1, builder.MergeVersion.SERIAL)
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        output_2 = model_2.predict(input)
+        assert np.shape(output_1) == np.shape(output_2)
+        print(model_2)
+
+    def test_merge_serial_real(self, environment: Environment):
+        builder = environment.model_builder
+        model_1 = builder.build_model(builder.ModelVersion.V11DEP)
+        model_2 = builder.build_model(builder.ModelVersion.V12DEP)
+        model_3 = builder.merge_models(model_1, model_2, builder.MergeVersion.SERIAL)
+        input = np.zeros([*model_1.get_layers()[0].input_shape])
+        output_1 = model_1.predict(input)
+        output_2 = model_2.predict(input)
+        output_3 = model_3.predict(input)
+        assert np.shape(output_1) == np.shape(output_2)
+        assert np.shape(output_1) == np.shape(output_3)
+        print(model_3)

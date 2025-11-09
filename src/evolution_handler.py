@@ -51,7 +51,9 @@ class EvolutionHandler:
         }
         return self.model_builder.build_model(version), metrics
 
-    def load_spicific_model(self, model_name: str, model: MlModel = None, serialized_model: bytes = None) -> tuple[MlModel, dict]:
+    def load_spicific_model(
+        self, model_name: str, model: MlModel | None = None, serialized_model: bytes | None = None
+    ) -> tuple[MlModel, dict]:
         if model is None:
             if serialized_model is None:
                 serialized_model = self.model_registry.get_model(model_name)
@@ -76,10 +78,11 @@ class EvolutionHandler:
 
     def merge_existing_models(self) -> tuple[MlModel, dict]:
         model_name_1, serialized_model_1 = self.model_registry.get_random_model()
-        if model_name_1 is None:
+        if model_name_1 is None or serialized_model_1 is None:
             return self.create_new_model()
         model_1 = self.model_serializer.deserialize(serialized_model_1)
         model_name_2, serialized_model_2 = self.model_registry.get_random_model()
+        assert model_name_2 is not None and serialized_model_2 is not None
         model_2 = self.model_serializer.deserialize(serialized_model_2)
         if model_name_1 == model_name_2 or model_1.get_n_params() + model_2.get_n_params() > self.max_n_params:
             return self.load_spicific_model(model_name_1, model_1)
@@ -94,7 +97,7 @@ class EvolutionHandler:
                 key2: values_1.get(key2, 0) + values_2.get(key2, 0) for key2 in set(values_1.keys()).union(set(values_2.keys()))
             }
         for metric_name in metrics_1:
-            if type(metrics_1[metric_name]) == int and type(metrics_2.get(metric_name)) == int:
+            if isinstance(metrics_1[metric_name], int) and isinstance(metrics_2.get(metric_name), int):
                 metrics[metric_name] = metrics_1[metric_name] + metrics_2[metric_name]
         merge_version = self.evolution_randomizer.merge_version(self.model_builder.MergeVersion)
         merge_version_metrics: dict = metrics.get("merge_version", {})

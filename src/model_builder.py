@@ -260,7 +260,11 @@ class ModelBuilder:
         return new_weights
 
     def copy_weights(
-        self, from_model: keras.Model, to_model: keras.Model, names_map: dict = None, filter_indices: list[int] = None
+        self,
+        from_model: keras.Model,
+        to_model: keras.Model,
+        names_map: dict | None = None,
+        filter_indices: list[int] | None = None,
     ):
         for l in to_model.layers[1:]:
             if not l.get_weights():
@@ -306,8 +310,9 @@ class ModelBuilder:
         model: MlModel,
         inputs: keras.layers.Input,
         layer_names: set,
-        on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
-        on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
+        on_layer_start: Callable[[ModificationInput], ModificationOutput | None] | None = None,
+        on_layer_end: Callable[[ModificationInput], ModificationOutput | None] | None = None,
+        raise_on_layer_failure: bool = True,
     ) -> keras.KerasTensor:
         tensors = {inputs.name: inputs}
         for index, l in enumerate(model.model.layers[1:]):
@@ -322,7 +327,7 @@ class ModelBuilder:
                     continue
                 tensor = tensor[0]
             if on_layer_start:
-                resp: ModificationOutput = on_layer_start(
+                resp: ModificationOutput | None = on_layer_start(
                     ModificationInput(index, config, tensor, layer_names, parent_layers, inputs)
                 )
                 if resp and resp.tensor is not None:
@@ -336,10 +341,15 @@ class ModelBuilder:
             self.fix_reshape(config)
             if index == len(model.model.layers) - 2 and config["name"].startswith("dense"):
                 config["units"] = self.n_outputs
-            new_layer = l.from_config(config)
-            tensor = new_layer(tensor)
+            try:
+                new_layer = l.from_config(config)
+                tensor = new_layer(tensor)
+            except Exception as ex:
+                if raise_on_layer_failure:
+                    raise ex
+                print("Creating layer failed:", ex)
             if on_layer_end:
-                resp: ModificationOutput = on_layer_end(
+                resp: ModificationOutput | None = on_layer_end(
                     ModificationInput(index, config, tensor, layer_names, parent_layers, inputs)
                 )
                 if resp and resp.tensor is not None:
@@ -350,17 +360,18 @@ class ModelBuilder:
     def modify_model(
         self,
         model: MlModel,
-        on_layer_start: Callable[[ModificationInput], ModificationOutput] = None,
-        on_layer_end: Callable[[ModificationInput], ModificationOutput] = None,
-        filter_indices: list[int] = None,
+        on_layer_start: Callable[[ModificationInput], ModificationOutput | None] | None = None,
+        on_layer_end: Callable[[ModificationInput], ModificationOutput | None] | None = None,
+        filter_indices: list[int] | None = None,
         raise_on_failure: bool = False,
+        raise_on_layer_failure: bool = True,
         check_output_shape: bool = True,
     ) -> MlModel:
         inputs = keras.layers.Input(shape=(self.n_steps, self.n_assets, self.n_features), name=model.model.layers[0].name)
         self.last_failed = False
         layer_names = set()
         try:
-            tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end)
+            tensor = self.get_model_tensor(model, inputs, layer_names, on_layer_start, on_layer_end, raise_on_layer_failure)
             if check_output_shape:
                 assert len(tensor.shape) == 3 and tensor.shape[2] == self.n_outputs, f"Invalid output shape {tensor.shape}"
             new_model = keras.Model(inputs=inputs, outputs=tensor)
@@ -729,6 +740,7 @@ class ModelBuilder:
         SELECT = auto()
         MULTIPLY = auto()
         DOT = auto()
+        SERIAL = auto()
 
     @keras.utils.register_keras_serializable()
     class OuterProduct(keras.layers.Layer):
@@ -737,7 +749,7 @@ class ModelBuilder:
             super().__init__(name=name, **kwargs)
 
         def build(self, input_shape):
-            assert type(input_shape) == list, f"Invalid input_shape type {type(input_shape)}"
+            assert isinstance(input_shape, list), f"Invalid input_shape type {type(input_shape)}"
             assert len(input_shape) == 2, f"Expected 2 shapes got {input_shape}"
             shape_1, shape_2 = input_shape
             assert shape_1[:-1] == shape_2[:-1], f"Shapes need to have same last dimension, got {shape_1}, {shape_2}"
@@ -757,8 +769,9 @@ class ModelBuilder:
         inputs: keras.layers.Input,
         merge_version: MergeVersion,
         names_map: dict,
-        layer_names: dict,
+        layer_names: set,
         remove_last: bool = True,
+        raise_on_layer_failure: bool = True,
     ) -> keras.KerasTensor:
         if merge_version == self.MergeVersion.SELECT:
             first_layers = []
@@ -779,7 +792,7 @@ class ModelBuilder:
 
         n_layers = len(model.model.layers) - 1
         inputs.name = model.model.layers[0].name
-        return self.get_model_tensor(model, inputs, layer_names, on_layer_start)
+        return self.get_model_tensor(model, inputs, layer_names, on_layer_start, raise_on_layer_failure=raise_on_layer_failure)
 
     def merge_models(self, model_1: MlModel, model_2: MlModel, merge_version: MergeVersion = MergeVersion.CONCAT) -> MlModel:
         model_1 = self.adjust_dimensions(model_1)
@@ -788,9 +801,14 @@ class ModelBuilder:
         names_map = {}
         layer_names = set()
         tensor_1 = self.prepare_for_merge(model_1, inputs, merge_version, names_map, layer_names)
-        remove_last = merge_version != self.MergeVersion.DOT
-        tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names, remove_last=remove_last)
-        if merge_version == self.MergeVersion.DOT:
+        if merge_version != self.MergeVersion.SERIAL:
+            remove_last = merge_version != self.MergeVersion.DOT
+            tensor_2 = self.prepare_for_merge(model_2, inputs, merge_version, names_map, layer_names, remove_last=remove_last)
+        if merge_version == self.MergeVersion.SERIAL:
+            tensor = self.prepare_for_merge(
+                model_2, tensor_1, merge_version, names_map, layer_names, raise_on_layer_failure=False
+            )
+        elif merge_version == self.MergeVersion.DOT:
             tensor_1 = keras.layers.Activation("softmax", name=self.fix_layer_name("softmax", layer_names))(tensor_1)
             tensor_2 = keras.layers.Permute((2, 1), name=self.fix_layer_name("permute", layer_names))(tensor_2)
             tensor_2 = keras.layers.Dense(tensor_1.shape[-1], name=self.fix_layer_name("dense", layer_names))(tensor_2)
