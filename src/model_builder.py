@@ -496,16 +496,21 @@ class ModelBuilder:
                 return
             if input.index == len(model.model.layers) - 2:
                 return
-            tensor = self.add_layers_for_pretrain(
-                input.tensor, n_assets, (None, self.n_steps, n_assets, self.n_features), input.layer_names
-            )
-            model_2 = keras.Model(inputs=input.input_tensor, outputs=tensor)
-            self.compile_model(model_2)
-            self.copy_weights(model.model, model_2, names_map)
-            x = np.random.normal(size=(10, self.n_steps, self.n_assets, self.n_features))
-            y = x.take(indices, 2)
-            MlModel(model_2).train(x, y, n_epochs=10)
-            self.copy_weights(model_2, model.model, names_map_inv)
+            try:
+                tensor = self.add_layers_for_pretrain(
+                    input.tensor, n_assets, (None, self.n_steps, n_assets, self.n_features), input.layer_names
+                )
+                model_2 = keras.Model(inputs=input.input_tensor, outputs=tensor)
+                self.compile_model(model_2)
+                self.copy_weights(model.model, model_2, names_map)
+                x = np.random.normal(size=(10, self.n_steps, self.n_assets, self.n_features))
+                y = x.take(indices, 2)
+                MlModel(model_2).train(x, y, n_epochs=10)
+                self.copy_weights(model_2, model.model, names_map_inv)
+            except Exception as ex:
+                print(ex)
+                print(model)
+                print("Pretrain failed for a layer", input.tensor)
 
         self.modify_model(model, on_layer_start, on_layer_end, raise_on_failure=True)
 
@@ -577,7 +582,6 @@ class ModelBuilder:
         except Exception as ex:
             print(ex)
             print("Pretrain failed")
-            pass
 
     @keras.utils.register_keras_serializable()
     class Gather(keras.layers.Layer):
